@@ -1,0 +1,165 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `connection` mod in crate `rbot_discord`."><meta name="keywords" content="rust, rustlang, rust-lang, connection"><title>rbot_discord::core::connection - Rust</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css"><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script src="../../../storage.js"></script></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><p class='location'>Module connection</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#structs">Structs</a></li><li><a href="#statics">Statics</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../../index.html'>rbot_discord</a>::<wbr><a href='../index.html'>core</a></p><script>window.sidebarCurrent = {name: 'connection', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><input class="search-input" name="search" autocomplete="off" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../../../src/rbot_discord/core/connection.rs.html#1-325' title='goto source code'>[src]</a></span><span class='in-band'>Module <a href='../../index.html'>rbot_discord</a>::<wbr><a href='../index.html'>core</a>::<wbr><a class="mod" href=''>connection</a></span></h1><div class='docblock'><p>Handle the connection with discord and it's events.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>use <a class="mod" href="../../../rbot_discord/features/index.html" title="mod rbot_discord::features">features</a>;</code></td></tr><tr><td><code>use features::<a class="mod" href="../../../rbot_discord/features/mail/index.html" title="mod rbot_discord::features::mail">mail</a>;</code></td></tr><tr><td><code>use features::<a class="mod" href="../../../rbot_discord/features/monitor/index.html" title="mod rbot_discord::features::monitor">monitor</a>;</code></td></tr><tr><td><code>use notify::<a class="struct" href="../../../rbot_discord/features/notify/struct.Event.html" title="struct rbot_discord::features::notify::Event">Event</a>;</code></td></tr><tr><td><code>use <a class="mod" href="https://docs.rs/rand/0.3/rand/index.html" title="mod rand">rand</a>;</code></td></tr><tr><td><code>use serenity::model::channel::<a class="struct" href="https://docs.rs/serenity/*/serenity/model/channel/message/struct.Message.html" title="struct serenity::model::channel::message::Message">Message</a>;</code></td></tr><tr><td><code>use serenity::model::gateway::<a class="struct" href="https://docs.rs/serenity/*/serenity/model/gateway/struct.Ready.html" title="struct serenity::model::gateway::Ready">Ready</a>;</code></td></tr><tr><td><code>use serenity::model::id::<a class="struct" href="https://docs.rs/serenity/*/serenity/model/id/struct.ChannelId.html" title="struct serenity::model::id::ChannelId">ChannelId</a>;</code></td></tr><tr><td><code>use serenity::<a class="mod" href="https://docs.rs/serenity/*/serenity/prelude/index.html" title="mod serenity::prelude">prelude</a>::*;</code></td></tr><tr><td><code>use serenity::<a class="struct" href="https://docs.rs/serenity/*/serenity/struct.CACHE.html" title="struct serenity::CACHE">CACHE</a>;</code></td></tr><tr><td><code>use serenity::CACHE;</code></td></tr><tr><td><code>use std::collections::<a class="struct" href="https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>;</code></td></tr><tr><td><code>use std::<a class="mod" href="https://doc.rust-lang.org/nightly/std/process/index.html" title="mod std::process">process</a>;</code></td></tr><tr><td><code>use <a class="struct" href="../../../rbot_discord/struct.CREDENTIALS_FILE.html" title="struct rbot_discord::CREDENTIALS_FILE">CREDENTIALS_FILE</a>;</code></td></tr><tr><td><code>use <a class="static" href="../../../rbot_discord/static.CREDENTIALS_FILE.html" title="static rbot_discord::CREDENTIALS_FILE">CREDENTIALS_FILE</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ATTACKED.html"
+                                  title='struct rbot_discord::core::connection::ATTACKED'>ATTACKED</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.COMMANDS_LIST.html"
+                                  title='struct rbot_discord::core::connection::COMMANDS_LIST'>COMMANDS_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CONTAIN_MSG_LIST.html"
+                                  title='struct rbot_discord::core::connection::CONTAIN_MSG_LIST'>CONTAIN_MSG_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CONTAIN_REACTION_LIST.html"
+                                  title='struct rbot_discord::core::connection::CONTAIN_REACTION_LIST'>CONTAIN_REACTION_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Command.html"
+                                  title='struct rbot_discord::core::connection::Command'>Command</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Handler.html"
+                                  title='struct rbot_discord::core::connection::Handler'>Handler</a></td>
+                           <td class='docblock-short'>
+                                <p>Struct that old Traits Implementations to Handle the different events send by discord.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.TAG_MSG_LIST.html"
+                                  title='struct rbot_discord::core::connection::TAG_MSG_LIST'>TAG_MSG_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='statics' class='section-header'><a href="#statics">Statics</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.ATTACKED.html"
+                                  title='static rbot_discord::core::connection::ATTACKED'>ATTACKED</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.CHANNEL_BOT.html"
+                                  title='static rbot_discord::core::connection::CHANNEL_BOT'>CHANNEL_BOT</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.CHANNEL_MAILS.html"
+                                  title='static rbot_discord::core::connection::CHANNEL_MAILS'>CHANNEL_MAILS</a></td>
+                           <td class='docblock-short'>
+                                <p><code>ChannelId</code> for mail channel</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.CHANNEL_MAIN.html"
+                                  title='static rbot_discord::core::connection::CHANNEL_MAIN'>CHANNEL_MAIN</a></td>
+                           <td class='docblock-short'>
+                                <p><code>ChannelId</code> for main channel</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.COMMANDS_LIST.html"
+                                  title='static rbot_discord::core::connection::COMMANDS_LIST'>COMMANDS_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.CONTAIN_MSG_LIST.html"
+                                  title='static rbot_discord::core::connection::CONTAIN_MSG_LIST'>CONTAIN_MSG_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.CONTAIN_REACTION_LIST.html"
+                                  title='static rbot_discord::core::connection::CONTAIN_REACTION_LIST'>CONTAIN_REACTION_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="static" href="static.TAG_MSG_LIST.html"
+                                  title='static rbot_discord::core::connection::TAG_MSG_LIST'>TAG_MSG_LIST</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.IsEmpty.html"
+                                  title='trait rbot_discord::core::connection::IsEmpty'>IsEmpty</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.bot_connect.html"
+                                  title='fn rbot_discord::core::connection::bot_connect'>bot_connect</a></td>
+                           <td class='docblock-short'>
+                                <p>Get the discord token from <code>CREDENTIALS_FILE</code> and run the client.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.process_command.html"
+                                  title='fn rbot_discord::core::connection::process_command'>process_command</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.process_contains.html"
+                                  title='fn rbot_discord::core::connection::process_contains'>process_contains</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.process_tag_msg.html"
+                                  title='fn rbot_discord::core::connection::process_tag_msg'>process_tag_msg</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.quit.html"
+                                  title='fn rbot_discord::core::connection::quit'>quit</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.split_args.html"
+                                  title='fn rbot_discord::core::connection::split_args'>split_args</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g. <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g. <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g. <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../../";window.currentCrate = "rbot_discord";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script defer src="../../../search-index.js"></script></body></html>

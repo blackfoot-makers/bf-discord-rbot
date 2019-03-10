@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["build","Create a new [`FileReader`] and read/fill with [`read_struct`]"]],"struct":[["FileReader",""]]});

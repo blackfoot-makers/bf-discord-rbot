@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["run","Spawn thread to run core functions."]],"mod":[["connection","Handle the connection with discord and it's events."],["files","Abstraction of a file handler, allow you to open a file and give it a structure, to serialize/deserialize from."]]});
