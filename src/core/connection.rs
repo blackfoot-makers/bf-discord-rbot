@@ -65,8 +65,7 @@ lazy_static! {
 		"bad bot" => "😎"
 	];
 	static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
-		"👊" => "👊",
-		"bad bot" => "😎"
+		"bad bot" => "😎",
 ,		"licorne" => "🦄",
 		"leslie" => "🦄",
 		"max" => "🍌",
@@ -247,8 +246,7 @@ impl EventHandler for Handler {
 			message.react(ANNOYING[random1]).unwrap();
 			message.react(ANNOYING[random2]).unwrap();
 		}
-		process_contains(&message);
-		//Check if i am tagged in the message
+		//Check if i am tagged in the message else do the reactions
 		if message.mentions_user_id(CACHE.read().user.id) {
 			if message.author.mention() == *ATTACKED.read() {
 				const ANNOYING: [&str; 6] = [
@@ -289,6 +287,8 @@ impl EventHandler for Handler {
 			{
 				let _ = message.channel_id.say("How about a proper request ?");
 			}
+		} else {
+			process_contains(&message);
 		}
 	}
 
