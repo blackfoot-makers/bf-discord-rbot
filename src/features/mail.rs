@@ -1,3 +1,4 @@
+//! Discontinued
 //! Connect to a mail account, and track incoming mails.
 //! Allow discord user to check, assign and resolve received mails.
 

@@ -11,7 +11,7 @@ pub struct Event {
     started: time::SystemTime,
     message: String,
     channel: ChannelId,
-    repeat: bool,
+    repeat: time::Duration,
 }
 
 fn get_chan_id(chan_param: &str ) -> Result<ChannelId, serenity::model::misc::ChannelIdParseError> {
@@ -32,13 +32,18 @@ impl Event {
         let duration_chrono = date.unwrap() - Local::now();
         let duration_time = time::Duration::new(duration_chrono.num_seconds() as u64, 0);
         let chan_id = get_chan_id(params[4]);
+        let repeat = if params.len() != 6 {
+            time::Duration::new(params[5].parse::<u64>().unwrap() * 60, 0)
+        } else {
+            time::Duration::new(0, 0)
+        };
         let new_event = Event {
             name: String::from(params[1]),
             duration: duration_time,
             started: time::SystemTime::now(),
             message: String::from(params[3]),
             channel: chan_id.unwrap(),
-            repeat: params.len() == 6 && params[5] == "repeat",
+            repeat: repeat
         };
         let mut file = NOTIFY_EVENT_FILE.write().unwrap();
         file.stored.push(new_event);
@@ -77,17 +82,11 @@ pub fn check_events() {
             //Free the lock durring sleep
             let events = &mut NOTIFY_EVENT_FILE.write().unwrap();
             for mut event in events.stored.iter_mut() {
-                println!("Checking {}", event.name);
-                println!(
-                    "Started {} > {} Duration",
-                    event.started.elapsed().unwrap().as_secs(),
-                    event.duration.as_secs()
-                );
-
-                if event.started.elapsed().unwrap().as_secs() > event.duration.as_secs() {
+                if event.started.elapsed().unwrap().as_secs() >= event.duration.as_secs() {
                     println!("Trigered {}", event.name);
-                    if event.repeat {
+                    if event.repeat.as_secs() > 0 {
                         event.started = time::SystemTime::now();
+                        event.duration = event.repeat;
                     }
                     let _ = event.channel.say(&event.message).unwrap();
                 } else {
@@ -102,6 +101,6 @@ pub fn check_events() {
             });
             events.write_stored().unwrap();
         }
-        thread::sleep(time::Duration::from_secs(60));
+        thread::sleep(time::Duration::from_secs(30));
     }
 }

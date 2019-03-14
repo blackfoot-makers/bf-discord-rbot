@@ -25,10 +25,10 @@
 //! [features docs]: features/index.html
 
 extern crate chrono;
-extern crate imap;
-extern crate native_tls;
+// extern crate imap;
+// extern crate native_tls;
+// extern crate reqwest;
 extern crate rand;
-extern crate reqwest;
 extern crate serde;
 extern crate serde_json;
 extern crate serenity;
@@ -43,7 +43,7 @@ mod core;
 mod features;
 
 use core::files;
-use features::mail::Info;
+// use features::mail::Info;
 use features::notify;
 use serenity::model::id::ChannelId;
 use std::io;
@@ -69,15 +69,15 @@ impl Credentials {
     }
 }
 
+// Represent the file for mails config
+// static ref MAIL_INFO_FILE: Arc<RwLock<files::FileReader<Info>>> = Arc::new(RwLock::new(
+//     files::build(String::from("mail_info.json"), Info::new())
+// ));
 lazy_static! {
     /// Represent the file that store the credential
     static ref CREDENTIALS_FILE: Arc<files::FileReader<Credentials>> = Arc::new(files::build(
         String::from("credentials.json"),
         Credentials::new()
-    ));
-    /// Represent the file for mails config
-    static ref MAIL_INFO_FILE: Arc<RwLock<files::FileReader<Info>>> = Arc::new(RwLock::new(
-        files::build(String::from("mail_info.json"), Info::new())
     ));
     /// Is the last mail text, stored to be use on call back
     static ref MAIL_LOCK: Arc<RwLock<String>> =
@@ -86,10 +86,7 @@ lazy_static! {
     static ref NOTIFY_EVENT_FILE: Arc<RwLock<files::FileReader<Vec<notify::Event>>>> = Arc::new(RwLock::new(
         files::build(String::from("events.json"), Vec::new())
     ));
-
 }
-
-use chrono::prelude::*;
 
 /// We run the core and we loop on a basic cmd.
 fn main() {

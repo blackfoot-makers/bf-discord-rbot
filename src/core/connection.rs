@@ -1,8 +1,9 @@
 //! Handle the connection with discord and it's events.
 
 use features;
-use features::mail;
-use features::monitor;
+// discontinued
+// use features::mail;
+// use features::monitor;
 use notify::Event;
 use rand;
 use serenity::model::channel::Message;
@@ -18,10 +19,10 @@ use CREDENTIALS_FILE;
 struct Handler;
 
 /// `ChannelId` for main channel
-pub static CHANNEL_MAIN: ChannelId = ChannelId(464783335559004162);
+// pub static CHANNEL_MAIN: ChannelId = ChannelId(464783335559004162);
 /// `ChannelId` for mail channel
-pub static CHANNEL_MAILS: ChannelId = ChannelId(469143963585216512);
-pub static CHANNEL_BOT: ChannelId = ChannelId(454614003650527232);
+// pub static CHANNEL_MAILS: ChannelId = ChannelId(469143963585216512);
+// pub static CHANNEL_BOT: ChannelId = ChannelId(454614003650527232);
 
 struct Command {
 	exec: fn(&Vec<&str>) -> String,
@@ -61,12 +62,11 @@ lazy_static! {
 	static ref CONTAIN_MSG_LIST: HashMap<&'static str, &'static str> = hashmap![
 		"keke" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
 		"kéké" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
-		"👊" => "👊",
 		"bad bot" => "😎"
 	];
 	static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
-		"bad bot" => "😎",
-,		"licorne" => "🦄",
+		"👊" => "👊",
+		"licorne" => "🦄",
 		"leslie" => "🦄",
 		"max" => "🍌",
 		"retard" => "⌚",
@@ -78,79 +78,79 @@ lazy_static! {
 			exec: quit,
 			argument_min: 0,
 			argument_max: 0,
-			channel: CHANNEL_MAIN,
+			channel: ChannelId(0),
 			usage: String::from("Usage : @BOT quit"),
 		},
-		"health" =>
-		Command {
-			exec: monitor::display_codes,
-			argument_min: 0,
-			argument_max: 0,
-			channel: CHANNEL_MAIN,
-			usage: String::from("Usage : @BOT health"),
-		},
-		"mail" =>
-		Command {
-			exec: mail::content,
-			argument_min: 0,
-			argument_max: 0,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT mail"),
-		},
-		"unassigned" =>
-		Command {
-			exec: mail::display_unassigned,
-			argument_min: 0,
-			argument_max: 0,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT unassigned"),
-		},
-		"assigned" =>
-		Command {
-			exec: mail::display_assigned,
-			argument_min: 0,
-			argument_max: 1,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT assigned [@TAG]"),
-		},
-		"resolved" =>
-		Command {
-			exec: mail::display_resolved,
-			argument_min: 0,
-			argument_max: 1,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT resolved [@TAG]"),
-		},
-		"assign" =>
-		Command {
-			exec: mail::assign,
-			argument_min: 1,
-			argument_max: 2,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT assign MAIL_ID [@TAG]"),
-		},
-		"resolve" =>
-		Command {
-			exec: mail::resolve,
-			argument_min: 1,
-			argument_max: 2,
-			channel: CHANNEL_MAILS,
-			usage: String::from("Usage : @BOT resolve MAIL_ID [@TAG]"),
-		},
+		// "health" =>
+		// Command {
+		// 	exec: monitor::display_codes,
+		// 	argument_min: 0,
+		// 	argument_max: 0,
+		// 	channel: ChannelId(0),
+		// 	usage: String::from("Usage : @BOT health"),
+		// },
+		// "mail" =>
+		// Command {
+		// 	exec: mail::content,
+		// 	argument_min: 0,
+		// 	argument_max: 0,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT mail"),
+		// },
+		// "unassigned" =>
+		// Command {
+		// 	exec: mail::display_unassigned,
+		// 	argument_min: 0,
+		// 	argument_max: 0,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT unassigned"),
+		// },
+		// "assigned" =>
+		// Command {
+		// 	exec: mail::display_assigned,
+		// 	argument_min: 0,
+		// 	argument_max: 1,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT assigned [@TAG]"),
+		// },
+		// "resolved" =>
+		// Command {
+		// 	exec: mail::display_resolved,
+		// 	argument_min: 0,
+		// 	argument_max: 1,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT resolved [@TAG]"),
+		// },
+		// "assign" =>
+		// Command {
+		// 	exec: mail::assign,
+		// 	argument_min: 1,
+		// 	argument_max: 2,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT assign MAIL_ID [@TAG]"),
+		// },
+		// "resolve" =>
+		// Command {
+		// 	exec: mail::resolve,
+		// 	argument_min: 1,
+		// 	argument_max: 2,
+		// 	channel: CHANNEL_MAILS,
+		// 	usage: String::from("Usage : @BOT resolve MAIL_ID [@TAG]"),
+		// },
 		"event" =>
 		Command {
 			exec: Event::add,
 			argument_min: 4,
 			argument_max: 5,
 			channel: ChannelId(0),
-			usage: String::from("Usage : @BOT event NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT"),
+			usage: String::from("Usage : @BOT event NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
 		},
 		"import" =>
 		Command {
 			exec: features::slackimport::import,
 			argument_min: 0,
 			argument_max: 0,
-			channel: CHANNEL_MAIN,
+			channel: ChannelId(0),
 			usage: String::from("Usage : @BOT import"),
 		}
 	];
@@ -238,8 +238,7 @@ impl EventHandler for Handler {
 		};
 		if message.author.mention() == *ATTACKED.read() {
 			const ANNOYING: [&str; 11] = [
-				"🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡",
-				"⚠",
+				"🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
 			];
 			let random1 = rand::random::<usize>() % 6;
 			let random2 = rand::random::<usize>() % 6;
@@ -247,7 +246,11 @@ impl EventHandler for Handler {
 			message.react(ANNOYING[random2]).unwrap();
 		}
 		//Check if i am tagged in the message else do the reactions
-		if message.mentions_user_id(CACHE.read().user.id) {
+		// check for @me first so it's considered a command
+		if message
+			.content
+			.starts_with(&*format!("<@{}>", CACHE.read().user.id.as_u64()))
+		{
 			if message.author.mention() == *ATTACKED.read() {
 				const ANNOYING: [&str; 6] = [
 					"Ah oui mais y'a JPO",
@@ -282,9 +285,7 @@ impl EventHandler for Handler {
 				return;
 			}
 
-			if !process_tag_msg(&message_split, &message)
-				&& !process_command(&message_split, &message)
-			{
+			if !process_tag_msg(&message_split, &message) && !process_command(&message_split, &message) {
 				let _ = message.channel_id.say("How about a proper request ?");
 			}
 		} else {
@@ -292,12 +293,6 @@ impl EventHandler for Handler {
 		}
 	}
 
-	// Set a handler to be called on the `ready` event. This is called when a
-	// shard is booted, and a READY payload is sent by Discord. This payload
-	// contains data like the current user's guild Ids, current user data,
-	// private channels, and more.
-	//
-	// In this case, just print what the current user's username is.
 	fn ready(&self, _: Context, ready: Ready) {
 		println!("{} is connected!", ready.user.name);
 		features::run();
