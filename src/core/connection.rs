@@ -137,13 +137,21 @@ lazy_static! {
 		// 	channel: CHANNEL_MAILS,
 		// 	usage: String::from("Usage : @BOT resolve MAIL_ID [@TAG]"),
 		// },
-		"event" =>
+		"reminder" =>
 		Command {
-			exec: Event::add,
+			exec: Event::add_reminder,
 			argument_min: 4,
 			argument_max: 5,
 			channel: ChannelId(0),
-			usage: String::from("Usage : @BOT event NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
+			usage: String::from("Usage : @BOT reminder NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
+		},
+		"countdown" =>
+		Command {
+			exec: Event::add_countdown,
+			argument_min: 6,
+			argument_max: 6,
+			channel: ChannelId(0),
+			usage: String::from("Usage : @BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
 		},
 		"import" =>
 		Command {
