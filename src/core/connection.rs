@@ -165,7 +165,7 @@ fn process_command(message_split: &Vec<&str>, message: &Message) -> bool {
 		if *key == message_split[0] {
 			if !command.channel.is_empty() && command.channel != message.channel_id {
 				let _ = message.channel_id.say(format!(
-					"I am not allowed issue this command in this channel ! Use {} instead",
+					"I am not allowed to issue this command in this channel ! Use {} instead.",
 					command.channel.mention()
 				));
 				return true;
