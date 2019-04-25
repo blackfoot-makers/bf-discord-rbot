@@ -244,8 +244,8 @@ impl EventHandler for Handler {
 			const ANNOYING: [&str; 11] = [
 				"🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
 			];
-			let random1 = rand::random::<usize>() % 6;
-			let random2 = rand::random::<usize>() % 6;
+			let random1 = rand::random::<usize>() % ANNOYING.len();
+			let random2 = rand::random::<usize>() % ANNOYING.len();
 			message.react(ANNOYING[random1]).unwrap();
 			message.react(ANNOYING[random2]).unwrap();
 		}
