@@ -18,11 +18,7 @@ use CREDENTIALS_FILE;
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 struct Handler;
 
-/// `ChannelId` for main channel
-// pub static CHANNEL_MAIN: ChannelId = ChannelId(464783335559004162);
-/// `ChannelId` for mail channel
-// pub static CHANNEL_MAILS: ChannelId = ChannelId(469143963585216512);
-// pub static CHANNEL_BOT: ChannelId = ChannelId(454614003650527232);
+pub static CHANNEL_HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
 
 struct Command {
 	exec: fn(&Vec<&str>) -> String,
@@ -169,7 +165,7 @@ fn process_command(message_split: &Vec<&str>, message: &Message) -> bool {
 		if *key == message_split[0] {
 			if !command.channel.is_empty() && command.channel != message.channel_id {
 				let _ = message.channel_id.say(format!(
-					"I am not allowed issue this command in this channel ! Use {} instead",
+					"I am not allowed to issue this command in this channel ! Use {} instead.",
 					command.channel.mention()
 				));
 				return true;
@@ -248,10 +244,17 @@ impl EventHandler for Handler {
 			const ANNOYING: [&str; 11] = [
 				"🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
 			];
-			let random1 = rand::random::<usize>() % 6;
-			let random2 = rand::random::<usize>() % 6;
+			let random1 = rand::random::<usize>() % ANNOYING.len();
+			let random2 = rand::random::<usize>() % ANNOYING.len();
 			message.react(ANNOYING[random1]).unwrap();
 			message.react(ANNOYING[random2]).unwrap();
+		}
+		if message.channel_id == CHANNEL_HERDINGCHATTE {
+			const CATS: [&str; 12] = [
+				"😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
+			];
+			let random = rand::random::<usize>() % CATS.len();
+			message.react(CATS[random]).unwrap();
 		}
 		//Check if i am tagged in the message else do the reactions
 		// check for @me first so it's considered a command

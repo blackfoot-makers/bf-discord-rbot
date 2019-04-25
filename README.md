@@ -1,8 +1,8 @@
-A discord bot wrote in Rust
+A discord bot written in Rust
 
-The documentation for this project is located in [doc/rbot-discord](doc/rbot_discord/index.html)
+The documentation for this project is located at [doc/rbot-discord](doc/rbot_discord/index.html)
 
-To simply runs this bot fill the credentials.json file at the root of your directory with your informations
+To run this bot, just fill the credentials.json file at the root directory of the project with your information
 and use cargo run.
 
 ## Credential.json
