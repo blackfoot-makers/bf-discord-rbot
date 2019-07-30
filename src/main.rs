@@ -28,7 +28,10 @@ extern crate chrono;
 // extern crate imap;
 // extern crate native_tls;
 // extern crate reqwest;
+extern crate hyper;
+extern crate log;
 extern crate rand;
+extern crate rifling;
 extern crate serde;
 extern crate serde_json;
 extern crate serenity;
@@ -43,12 +46,12 @@ mod core;
 mod features;
 
 use core::files;
-// use features::mail::Info;
 use features::notify;
-use serenity::model::id::ChannelId;
+use hyper::rt::{run, Future};
+use hyper::{Error, Server};
+use rifling::{Constructor, Delivery, Hook};
 use std::io;
 use std::sync::{Arc, RwLock};
-
 /// Store the credential for the mail account, and discord token.
 #[derive(Serialize, Deserialize)]
 struct Credentials {
@@ -90,27 +93,37 @@ lazy_static! {
 
 /// We run the core and we loop on a basic cmd.
 fn main() {
-    let join_handle = core::run();
-    loop {
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(n) => {
-                if n == 0 {
-                    join_handle.join().unwrap();
-                    break;
-                }
-                input.pop();
-                if input == "quit" {
-                    break;
-                } else if input.starts_with("msg") {
-                    let split: Vec<&str> = input.split(' ').collect();
-                    let chan = split[1].parse::<u64>().unwrap();
-                    let _ = ChannelId(chan).send_message(|m| m.content(split[2]));
-                } else {
-                    println!("Invalid input [{}]", input);
-                }
-            }
-            Err(error) => println!("error: {}", error),
-        }
-    }
+    let mut cons = Constructor::new();
+    let hook = Hook::new("*", Some(String::from("secret")), |delivery: &Delivery| {
+        println!("Received delivery: {:?}", delivery)
+    });
+    cons.register(hook);
+    let addr = "0.0.0.0:4567".parse().unwrap();
+    let server = Server::bind(&addr)
+        .serve(cons)
+        .map_err(|e: Error| println!("Error: {:?}", e));
+    run(server);
+    // let join_handle = core::run();
+    // loop {
+    //     let mut input = String::new();
+    //     match io::stdin().read_line(&mut input) {
+    //         Ok(n) => {
+    //             if n == 0 {
+    //                 join_handle.join().unwrap();
+    //                 break;
+    //             }
+    //             input.pop();
+    //             if input == "quit" {
+    //                 break;
+    //             } else if input.starts_with("msg") {
+    //                 let split: Vec<&str> = input.split(' ').collect();
+    //                 let _chan = split[1].parse::<u64>().unwrap();
+    //             //FIXME let _ = ChannelId(chan).send_message(|m| m.content(split[2]));
+    //             } else {
+    //                 println!("Invalid input [{}]", input);
+    //             }
+    //         }
+    //         Err(error) => println!("error: {}", error),
+    //     }
+    // }
 }

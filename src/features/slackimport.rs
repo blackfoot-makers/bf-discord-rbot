@@ -8,6 +8,7 @@ use serenity::model::channel::ChannelType;
 use serenity::model::channel::GuildChannel;
 use serenity::model::id::ChannelId;
 use serenity::model::id::GuildId;
+use serenity::prelude::Context;
 use std::fs::{self, DirEntry};
 use std::io;
 use std::path::Path;
@@ -36,6 +37,7 @@ fn visit_dirs(
     dir: &Path,
     cb: &Fn(&DirEntry, &GuildChannel),
     channel: GuildChannel,
+    ctx: &Context
 ) -> io::Result<()> {
     if dir.is_dir() {
         let mut paths: Vec<_> = fs::read_dir(dir).unwrap().map(|r| r.unwrap()).collect();
@@ -43,12 +45,12 @@ fn visit_dirs(
         for path in paths {
             let file = path.path();
             if file.is_dir() {
-                let channel = GUILD.create_channel(
+                let channel = GUILD.create_channel(ctx,
                     file.file_name().unwrap().to_str().unwrap(),
                     ChannelType::Text,
                     None,
                 );
-                visit_dirs(&file, cb, channel.unwrap())?;
+                visit_dirs(&file, cb, channel.unwrap(), ctx)?;
             } else {
                 cb(&path, &channel);
             }

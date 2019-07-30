@@ -1,18 +1,15 @@
 //! Handle the connection with discord and it's events.
-
-use features;
-// discontinued
-// use features::mail;
-// use features::monitor;
-use notify::Event;
-use rand;
-use serenity::model::channel::Message;
-use serenity::model::gateway::Ready;
-use serenity::model::id::ChannelId;
-use serenity::prelude::*;
-use serenity::CACHE;
 use std::collections::HashMap;
 use std::process;
+use rand;
+use log::{error, info};
+use serenity::{
+    model::{channel::Message, id::ChannelId, event::ResumedEvent, gateway::Ready},
+    prelude::*,
+};
+
+use features;
+use notify::Event;
 use CREDENTIALS_FILE;
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
@@ -24,18 +21,8 @@ struct Command {
 	exec: fn(&Vec<&str>) -> String,
 	argument_min: usize,
 	argument_max: usize,
-	channel: ChannelId,
+	channel: Option<ChannelId>,
 	usage: String,
-}
-
-trait IsEmpty {
-	fn is_empty(&self) -> bool;
-}
-
-impl IsEmpty for ChannelId {
-	fn is_empty(&self) -> bool {
-		self.0 == 0
-	}
 }
 
 macro_rules! hashmap {
@@ -74,71 +61,15 @@ lazy_static! {
 			exec: quit,
 			argument_min: 0,
 			argument_max: 0,
-			channel: ChannelId(0),
+			channel: None,
 			usage: String::from("Usage : @BOT quit"),
 		},
-		// "health" =>
-		// Command {
-		// 	exec: monitor::display_codes,
-		// 	argument_min: 0,
-		// 	argument_max: 0,
-		// 	channel: ChannelId(0),
-		// 	usage: String::from("Usage : @BOT health"),
-		// },
-		// "mail" =>
-		// Command {
-		// 	exec: mail::content,
-		// 	argument_min: 0,
-		// 	argument_max: 0,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT mail"),
-		// },
-		// "unassigned" =>
-		// Command {
-		// 	exec: mail::display_unassigned,
-		// 	argument_min: 0,
-		// 	argument_max: 0,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT unassigned"),
-		// },
-		// "assigned" =>
-		// Command {
-		// 	exec: mail::display_assigned,
-		// 	argument_min: 0,
-		// 	argument_max: 1,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT assigned [@TAG]"),
-		// },
-		// "resolved" =>
-		// Command {
-		// 	exec: mail::display_resolved,
-		// 	argument_min: 0,
-		// 	argument_max: 1,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT resolved [@TAG]"),
-		// },
-		// "assign" =>
-		// Command {
-		// 	exec: mail::assign,
-		// 	argument_min: 1,
-		// 	argument_max: 2,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT assign MAIL_ID [@TAG]"),
-		// },
-		// "resolve" =>
-		// Command {
-		// 	exec: mail::resolve,
-		// 	argument_min: 1,
-		// 	argument_max: 2,
-		// 	channel: CHANNEL_MAILS,
-		// 	usage: String::from("Usage : @BOT resolve MAIL_ID [@TAG]"),
-		// },
 		"reminder" =>
 		Command {
 			exec: Event::add_reminder,
 			argument_min: 4,
 			argument_max: 5,
-			channel: ChannelId(0),
+			channel: None	,
 			usage: String::from("Usage : @BOT reminder NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
 		},
 		"countdown" =>
@@ -146,64 +77,69 @@ lazy_static! {
 			exec: Event::add_countdown,
 			argument_min: 6,
 			argument_max: 6,
-			channel: ChannelId(0),
+			channel: None	,
 			usage: String::from("Usage : @BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
-		},
-		"import" =>
-		Command {
-			exec: features::slackimport::import,
-			argument_min: 0,
-			argument_max: 0,
-			channel: ChannelId(0),
-			usage: String::from("Usage : @BOT import"),
 		}
 	];
 }
 
-fn process_command(message_split: &Vec<&str>, message: &Message) -> bool {
+fn allowed_channel(command_channel : Option<ChannelId>, message_channel: ChannelId, ctx: &Context) -> bool {
+	return match command_channel {
+			Some(ref chan) => {
+				if chan != &message_channel {
+					let _ = message_channel.say(&ctx.http, format!(
+						"I am not allowed to issue this command in this channel ! Use {} instead.",
+						chan.mention()
+					));
+					return false;
+				}
+				return true;
+			},
+			None => {
+				true
+			}
+	}
+}
+
+fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) -> bool {
 	for (key, command) in COMMANDS_LIST.iter() {
 		if *key == message_split[0] {
-			if !command.channel.is_empty() && command.channel != message.channel_id {
-				let _ = message.channel_id.say(format!(
-					"I am not allowed to issue this command in this channel ! Use {} instead.",
-					command.channel.mention()
-				));
+			if allowed_channel(command.channel, message.channel_id, ctx) {
+				// We remove default arguments: author and command name from the total
+				let arguments = message_split.len() - 2;
+				let result = if arguments >= command.argument_min && arguments <= command.argument_max {
+					(command.exec)(message_split)
+				} else {
+					command.usage.clone()
+				};
+				let _ = message.channel_id.send_message(&ctx.http, |m| m.content(result));
 				return true;
 			}
-			// We remove default arguments: author and command name from the total
-			let arguments = message_split.len() - 2;
-			let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-				(command.exec)(message_split)
-			} else {
-				command.usage.clone()
-			};
-			let _ = message.channel_id.send_message(|m| m.content(result));
-			return true;
 		}
 	}
 	false
 }
 
-fn process_tag_msg(message_split: &Vec<&str>, message: &Message) -> bool {
+fn process_tag_msg(message_split: &Vec<&str>, message: &Message, ctx: &Context) -> bool {
 	for (key, reaction) in TAG_MSG_LIST.iter() {
 		if *key == message_split[0] {
-			let _ = message.channel_id.say(reaction);
+			let _ = message.channel_id.say(&ctx.http, reaction);
 			return true;
 		}
 	}
 	false
 }
 
-fn process_contains(message: &Message) {
+fn process_contains(message: &Message, ctx: &Context) {
 	for (key, text) in CONTAIN_MSG_LIST.iter() {
 		if message.content.contains(key) {
-			let _ = message.channel_id.say(*text);
+			let _ = message.channel_id.say(&ctx.http, *text);
 		}
 	}
 
 	for (key, reaction) in CONTAIN_REACTION_LIST.iter() {
 		if message.content.contains(key) {
-			let _ = message.react(*reaction).unwrap();
+			let _ = message.react(ctx, *reaction).unwrap();
 		}
 	}
 }
@@ -235,9 +171,9 @@ impl EventHandler for Handler {
 	///
 	/// Event handlers are dispatched through a threadpool, and so multiple
 	/// events can be dispatched simultaneously.
-	fn message(&self, _context: Context, message: Message) {
+	fn message(&self, ctx: Context, message: Message) {
 		println!("{} says: {}", message.author.name, message.content);
-		if message.is_own() || message.content.is_empty() {
+		if message.is_own(&ctx) || message.content.is_empty() {
 			return;
 		};
 		if message.author.mention() == *ATTACKED.read() {
@@ -246,21 +182,21 @@ impl EventHandler for Handler {
 			];
 			let random1 = rand::random::<usize>() % ANNOYING.len();
 			let random2 = rand::random::<usize>() % ANNOYING.len();
-			message.react(ANNOYING[random1]).unwrap();
-			message.react(ANNOYING[random2]).unwrap();
+			message.react(&ctx, ANNOYING[random1]).unwrap();
+			message.react(&ctx, ANNOYING[random2]).unwrap();
 		}
 		if message.channel_id == CHANNEL_HERDINGCHATTE {
 			const CATS: [&str; 12] = [
 				"😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
 			];
 			let random = rand::random::<usize>() % CATS.len();
-			message.react(CATS[random]).unwrap();
+			message.react(&ctx, CATS[random]).unwrap();
 		}
 		//Check if i am tagged in the message else do the reactions
 		// check for @me first so it's considered a command
 		if message
 			.content
-			.starts_with(&*format!("<@{}>", CACHE.read().user.id.as_u64()))
+			.starts_with(&*format!("<@{}>", ctx.cache.read().user.id.as_u64()))
 		{
 			if message.author.mention() == *ATTACKED.read() {
 				const ANNOYING: [&str; 6] = [
@@ -272,7 +208,7 @@ impl EventHandler for Handler {
 					"Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
 				];
 				let random = rand::random::<usize>() % 6;
-				let _ = message.channel_id.say(ANNOYING[random]).unwrap();
+				let _ = message.channel_id.say(&ctx.http, ANNOYING[random]).unwrap();
 				return;
 			}
 
@@ -281,7 +217,7 @@ impl EventHandler for Handler {
 
 			let mut message_split = split_args(&line);
 			if message_split.len() == 1 {
-				let _ = message.channel_id.say("What do you need ?");
+				let _ = message.channel_id.say(&ctx.http, "What do you need ?");
 				return;
 			}
 			// Removing tag
@@ -292,27 +228,31 @@ impl EventHandler for Handler {
 				ATTACKED.write().push_str(message_split[1]);
 				let _ = message
 					.channel_id
-					.say(format!("Prepare yourself {} !", message_split[1]));
+					.say(&ctx.http, format!("Prepare yourself {} !", message_split[1]));
 				return;
 			}
 
-			if !process_tag_msg(&message_split, &message) && !process_command(&message_split, &message) {
-				let _ = message.channel_id.say("How about a proper request ?");
+			if !process_tag_msg(&message_split, &message, &ctx) && !process_command(&message_split, &message, &ctx) {
+				let _ = message.channel_id.say(&ctx.http, "How about a proper request ?");
 			}
 		} else {
-			process_contains(&message);
+			process_contains(&message, &ctx);
 		}
 	}
 
-	fn ready(&self, _: Context, ready: Ready) {
-		println!("{} is connected!", ready.user.name);
-		features::run();
+	fn ready(&self, ctx: Context, ready: Ready) {
+		info!("{} is connected!", ready.user.name);
+		features::run(ctx.http);
 	}
+
+	    fn resume(&self, _: Context, _: ResumedEvent) {
+        info!("Resumed");
+    }
 }
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
 pub fn bot_connect() {
-	println!("Bot Connecting");
+	info!("Bot Connecting");
 
 	let token = &CREDENTIALS_FILE.stored.token;
 
@@ -326,6 +266,6 @@ pub fn bot_connect() {
 	// Shards will automatically attempt to reconnect, and will perform
 	// exponential backoff until it reconnects.
 	if let Err(why) = client.start() {
-		println!("Client error: {:?}", why);
+		error!("Client error: {:?}", why);
 	}
 }

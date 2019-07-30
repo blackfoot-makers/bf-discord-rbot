@@ -1,6 +1,7 @@
 use chrono::prelude::*;
-use serenity::model::id::ChannelId;
+use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::{thread, time};
 use NOTIFY_EVENT_FILE;
 
@@ -134,7 +135,7 @@ impl EventVec for Vec<Event> {
     }
 }
 
-pub fn check_events() {
+pub fn check_events(http: Arc<http::raw::Http>) {
     println!("Events check thread started");
     loop {
         {
@@ -155,17 +156,17 @@ pub fn check_events() {
 
                         let _ = event
                             .channel
-                            .say(format!(
-                                "J-{} : {}",
-                                event.countdown_day as u64, &event.message
-                            ))
+                            .say(
+                                &http,
+                                format!("J-{} : {}", event.countdown_day as u64, &event.message),
+                            )
                             .unwrap();
                         if event.countdown_day > 0.0 {
                             event.countdown_day -= event.repeat.as_secs() as f64 / ONE_DAY as f64;
                         }
                         println!(" {}", event.countdown_day);
                     } else {
-                        let _ = event.channel.say(&event.message).unwrap();
+                        let _ = event.channel.say(&http, &event.message).unwrap();
                     }
                 } else {
                     println!("Not Trigered {}", event.name);
