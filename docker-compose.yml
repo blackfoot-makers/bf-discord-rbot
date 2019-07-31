@@ -2,6 +2,6 @@ version: '3.3'
 
 services:
   bot:
-    image: .
-    working_dir: /discord-bf
+    image: greefine/discord-rbot
+    working_dir: /discord-rbot
     entrypoint: sh -c "cargo build && cargo run"
