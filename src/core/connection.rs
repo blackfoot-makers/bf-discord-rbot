@@ -16,6 +16,7 @@ use CREDENTIALS_FILE;
 struct Handler;
 
 pub static CHANNEL_HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
+pub static CHANNEL_CYBERGOD: ChannelId = ChannelId(588666452849065994);
 
 struct Command {
 	exec: fn(&Vec<&str>) -> String,
@@ -192,7 +193,14 @@ impl EventHandler for Handler {
 			let random = rand::random::<usize>() % CATS.len();
 			message.react(&ctx, CATS[random]).unwrap();
 		}
-		//Check if i am tagged in the message else do the reactions
+    if message.channel_id == CHANNEL_CYBERGOD {
+       const KEYS: [&str; 11] = [
+           "🔑", "🗝", "⌨️", "⌨︎", "🔏", "🔐", "🔒", "🔓", "🖱", "👓", "🕵️‍♂️",
+		   ];
+		   let random = rand::random::<usize>() % KEYS.len();
+		   message.react(KEYS[random]).unwrap();
+		}
+		//Check if i am tagged in tsplhe message else do the reactions
 		// check for @me first so it's considered a command
 		if message
 			.content
