@@ -1,9 +1,15 @@
 use chrono::prelude::*;
 use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::{thread, time};
-use NOTIFY_EVENT_FILE;
+use std::sync::{Arc, RwLock};
+use core::files;
+
+lazy_static! {
+    static ref NOTIFY_EVENT_FILE: Arc<RwLock<files::FileReader<Vec<Event>>>> = Arc::new(
+        RwLock::new(files::build(String::from("events.json"), Vec::new()))
+    );
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
