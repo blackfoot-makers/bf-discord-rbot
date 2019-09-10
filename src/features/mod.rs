@@ -6,6 +6,7 @@
 // pub mod slackimport;
 pub mod notify;
 pub mod githooks;
+pub mod docker;
 
 use serenity::http;
 use std::sync::Arc;

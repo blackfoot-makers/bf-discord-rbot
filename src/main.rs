@@ -67,6 +67,9 @@ fn main() {
                 input.pop();
                 if input == "quit" {
                     break;
+                } else if input == "deploy" {
+                    let http = core::process::HTTP_STATIC.read().clone().unwrap();
+                    features::docker::deploy_test(String::from("GreeFine"), String::from("CI-Preview-Exemple"), String::from("master"), http);
                 } else {
                     println!("Invalid input [{}]", input);
                 }

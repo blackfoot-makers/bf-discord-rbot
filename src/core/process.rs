@@ -1,13 +1,14 @@
 //! Handle the connection with discord and it's events.
-use log::{error, info};
+use log::{debug, error, info};
 use rand;
 use serenity::{
-	model::{channel::Message, event::ResumedEvent, gateway::Ready, id::ChannelId},
+	model::channel::{Message, Reaction, ReactionType},
+	model::{event::ResumedEvent, gateway::Ready, id::ChannelId},
 	prelude::*,
 };
-
 use super::credentials::CREDENTIALS_FILE;
 use features;
+use serenity::http;
 
 use super::commands::{
 	ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -15,6 +16,11 @@ use super::commands::{
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 struct Handler;
+
+lazy_static! {
+	pub static ref HTTP_STATIC : RwLock<Option<std::sync::Arc<http::raw::Http>>> = RwLock::new(None);
+}
+
 
 fn allowed_channel(
 	command_channel: Option<ChannelId>,
@@ -24,13 +30,15 @@ fn allowed_channel(
 	return match command_channel {
 		Some(ref chan) => {
 			if chan != &message_channel {
-				let _ = message_channel.say(
-					&ctx.http,
-					format!(
-						"I am not allowed to issue this command in this channel ! Use {} instead.",
-						chan.mention()
-					),
-				);
+				message_channel
+					.say(
+						&ctx.http,
+						format!(
+							"I am not allowed to issue this command in this channel ! Use {} instead.",
+							chan.mention()
+						),
+					)
+					.unwrap();
 				return false;
 			}
 			return true;
@@ -50,9 +58,10 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 				} else {
 					command.usage.clone()
 				};
-				let _ = message
+				message
 					.channel_id
-					.send_message(&ctx.http, |m| m.content(result));
+					.send_message(&ctx.http, |m| m.content(result))
+					.unwrap();
 				return true;
 			}
 		}
@@ -63,7 +72,7 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 fn process_tag_msg(message_split: &Vec<&str>, message: &Message, ctx: &Context) -> bool {
 	for (key, reaction) in TAG_MSG_LIST.iter() {
 		if *key == message_split[0] {
-			let _ = message.channel_id.say(&ctx.http, reaction);
+			message.channel_id.say(&ctx.http, reaction).unwrap();
 			return true;
 		}
 	}
@@ -73,13 +82,13 @@ fn process_tag_msg(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 fn process_contains(message: &Message, ctx: &Context) {
 	for (key, text) in CONTAIN_MSG_LIST.iter() {
 		if message.content.contains(key) {
-			let _ = message.channel_id.say(&ctx.http, *text);
+			message.channel_id.say(&ctx.http, *text).unwrap();
 		}
 	}
 
 	for (key, reaction) in CONTAIN_REACTION_LIST.iter() {
 		if message.content.contains(key) {
-			let _ = message.react(ctx, *reaction).unwrap();
+			message.react(ctx, *reaction).unwrap();
 		}
 	}
 }
@@ -127,6 +136,15 @@ fn annoy_channel(ctx: &Context, message: &Message) {
 	}
 }
 
+const ANNOYING: [&str; 6] = [
+	"Ah oui mais y'a JPO",
+	"Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
+	"Avant, Faut laver les vitres les gars",
+	"Ah mais vous faites quoi ?",
+	"Non mais tu as vu le jeu qui est sorti ?",
+	"Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
+];
+
 fn personal_attack(ctx: &Context, message: &Message) {
 	if message.author.mention() == *ATTACKED.read() {
 		const ANNOYING: [&str; 11] = [
@@ -139,14 +157,46 @@ fn personal_attack(ctx: &Context, message: &Message) {
 	}
 }
 
-const ANNOYING: [&str; 6] = [
-	"Ah oui mais y'a JPO",
-	"Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
-	"Avant, Faut laver les vitres les gars",
-	"Ah mais vous faites quoi ?",
-	"Non mais tu as vu le jeu qui est sorti ?",
-	"Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
-];
+fn parse_githook_reaction(ctx: Context, reaction: Reaction) {
+	let channel = ChannelId(555206410619584519); //TODO : Channel register
+
+	let emoji_name = match &reaction.emoji {
+		ReactionType::Unicode(e) => e.clone(),
+		ReactionType::Custom {
+			animated: _,
+			name,
+			id: _,
+		} => name.clone().unwrap(),
+		_ => "".to_string(),
+	};
+	debug!("Reaction emoji: {}", emoji_name);
+	if reaction.channel_id == channel {
+		if emoji_name == "✅" {
+			let message = reaction.message(&ctx.http).unwrap();
+			if message.is_own(&ctx.cache) {
+				let closing_tag = message.content.find("]").unwrap_or_default();
+				if closing_tag > 0 {
+					let params = &message.content[1..closing_tag];
+					let params_split: Vec<&str> = params.split('/').collect();
+					if params_split.len() == 3 {
+						features::docker::deploy_from_reaction(
+							params_split[0].to_string(),
+							params_split[1].to_string(),
+							params_split[2].to_string(),
+							ctx.http.clone(),
+						);
+						return;
+					}
+				}
+
+				eprintln!(
+					"Reaction/githook: Invalid params parse : [{}]",
+					message.content
+				);
+			}
+		}
+	}
+}
 
 impl EventHandler for Handler {
 	/// Set a handler for the `message` event - so that whenever a new message
@@ -176,7 +226,7 @@ impl EventHandler for Handler {
 			);
 			if message.author.mention() == *ATTACKED.read() {
 				let random = rand::random::<usize>() % 6;
-				let _ = message.channel_id.say(&ctx.http, ANNOYING[random]).unwrap();
+				message.channel_id.say(&ctx.http, ANNOYING[random]).unwrap();
 				return;
 			}
 
@@ -186,7 +236,10 @@ impl EventHandler for Handler {
 
 			// Check if there is only the tag : "@bot"
 			if message_split.len() == 1 {
-				let _ = message.channel_id.say(&ctx.http, "What do you need ?");
+				message
+					.channel_id
+					.say(&ctx.http, "What do you need ?")
+					.unwrap();
 				return;
 			}
 
@@ -198,17 +251,24 @@ impl EventHandler for Handler {
 			if !process_tag_msg(&message_split, &message, &ctx)
 				&& !process_command(&message_split, &message, &ctx)
 			{
-				let _ = message
+				message
 					.channel_id
-					.say(&ctx.http, "How about a proper request ?");
+					.say(&ctx.http, "How about a proper request ?")
+					.unwrap();
 			}
 		} else {
 			process_contains(&message, &ctx);
 		}
 	}
 
+	fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+		parse_githook_reaction(ctx, reaction);
+	}
+
 	fn ready(&self, ctx: Context, ready: Ready) {
 		info!("{} is connected!", ready.user.name);
+		let mut arc = HTTP_STATIC.write();
+		*arc = Some(ctx.http.clone());
 		features::run(&ctx.http);
 	}
 
@@ -216,6 +276,7 @@ impl EventHandler for Handler {
 		info!("Resumed");
 	}
 }
+
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
 pub fn bot_connect() {

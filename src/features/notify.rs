@@ -1,9 +1,9 @@
 use chrono::prelude::*;
+use core::files;
 use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
-use std::{thread, time};
 use std::sync::{Arc, RwLock};
-use core::files;
+use std::{thread, time};
 
 lazy_static! {
     static ref NOTIFY_EVENT_FILE: Arc<RwLock<files::FileReader<Vec<Event>>>> = Arc::new(
@@ -160,7 +160,7 @@ pub fn check_events(http: Arc<http::raw::Http>) {
                         event.started = time::SystemTime::now();
                         event.duration = event.repeat;
 
-                        let _ = event
+                        event
                             .channel
                             .say(
                                 &http,
@@ -172,7 +172,7 @@ pub fn check_events(http: Arc<http::raw::Http>) {
                         }
                         println!(" {}", event.countdown_day);
                     } else {
-                        let _ = event.channel.say(&http, &event.message).unwrap();
+                        event.channel.say(&http, &event.message).unwrap();
                     }
                 } else {
                     println!("Not Trigered {}", event.name);

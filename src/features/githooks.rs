@@ -4,8 +4,25 @@ use log::info;
 use rifling::{Constructor, Delivery, Hook};
 use serenity::{http, model::id::ChannelId};
 use std::sync::Arc;
+use std::thread;
 
-const CHANNEL_BOTTEST: ChannelId = ChannelId(555206410619584519);
+pub const CHANNEL_BOTTEST: ChannelId = ChannelId(555206410619584519);
+
+pub fn notify(payload: &serde_json::Value, http: Arc<http::raw::Http>) {
+  let url = payload["head_commit"]["url"].as_str().unwrap();
+  let user: String = payload["repository"]["owner"]["name"]
+    .as_str()
+    .unwrap()
+    .to_string();
+  let repository: String = payload["repository"]["name"].as_str().unwrap().to_string();
+  let branch: String = (&payload["ref"].as_str().unwrap()["refs/heads/".len()..]).to_string();
+  CHANNEL_BOTTEST
+    .say(
+      &http,
+      format!("[{}/{}/{}]: new commit {}", user, repository, branch, url),
+    )
+    .unwrap();
+}
 
 pub fn init(http: Arc<http::raw::Http>) {
   let mut cons = Constructor::new();
@@ -15,9 +32,9 @@ pub fn init(http: Arc<http::raw::Http>) {
     move |delivery: &Delivery| {
       if delivery.event.clone().unwrap_or_default() == "push" {
         let payload = delivery.payload.clone().unwrap();
-        let url = payload.get("head_commit").unwrap().get("url").unwrap();
-        let _ = CHANNEL_BOTTEST.say(&http, format!("New commit {}", &url));
-        info!("Received new commit {}", url)
+        println!("Received payload for : {}", &payload["head_commit"]["url"]);
+        let http_clone = http.clone();
+        thread::spawn(move || notify(&payload, http_clone));
       } else {
         info!(
           "Received unmanaged event {}",
@@ -26,11 +43,12 @@ pub fn init(http: Arc<http::raw::Http>) {
       }
     },
   );
+
   cons.register(push_hook);
   let addr = "0.0.0.0:4567".parse().unwrap();
   let server = Server::bind(&addr)
     .serve(cons)
     .map_err(|e: Error| println!("Error: {:?}", e));
-  info!("Server running: {}", addr);
+  println!("Server running: {}", addr);
   run(server);
 }

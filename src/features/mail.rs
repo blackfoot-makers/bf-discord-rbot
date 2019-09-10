@@ -276,7 +276,7 @@ pub fn check_mail() {
                 "{} Email reçu le {} : {}, envoyé par {}",
                 seq, date, subject, from
             );
-            let _ = CHANNEL_MAILS.send_message(|m| m.content(message));
+            CHANNEL_MAILS.send_message(|m| m.content(message)).unwrap();
             received_emails.push((x + 1, (from, subject, date)));
         }
         mail_number = mailn_tmp;
