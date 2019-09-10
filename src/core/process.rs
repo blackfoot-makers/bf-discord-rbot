@@ -1,14 +1,14 @@
 //! Handle the connection with discord and it's events.
+use super::credentials::CREDENTIALS_FILE;
+use features;
 use log::{debug, error, info};
 use rand;
+use serenity::http;
 use serenity::{
 	model::channel::{Message, Reaction, ReactionType},
 	model::{event::ResumedEvent, gateway::Ready, id::ChannelId},
 	prelude::*,
 };
-use super::credentials::CREDENTIALS_FILE;
-use features;
-use serenity::http;
 
 use super::commands::{
 	ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -18,9 +18,8 @@ use super::commands::{
 struct Handler;
 
 lazy_static! {
-	pub static ref HTTP_STATIC : RwLock<Option<std::sync::Arc<http::raw::Http>>> = RwLock::new(None);
+	pub static ref HTTP_STATIC: RwLock<Option<std::sync::Arc<http::raw::Http>>> = RwLock::new(None);
 }
-
 
 fn allowed_channel(
 	command_channel: Option<ChannelId>,
@@ -123,16 +122,25 @@ fn annoy_channel(ctx: &Context, message: &Message) {
 	let testbot = ChannelId(555206410619584519);
 
 	if message.channel_id == herdingchatte {
-		let random = rand::random::<usize>() % CATS.len();
-		message.react(ctx, CATS[random]).unwrap();
+		let random_active = rand::random::<usize>() % 10;
+		if random_active == 0 {
+			let random_icon = rand::random::<usize>() % CATS.len();
+			message.react(ctx, CATS[random_icon]).unwrap();
+		}
 	}
 	if message.channel_id == cybergod {
-		let random = rand::random::<usize>() % KEYS.len();
-		message.react(ctx, KEYS[random]).unwrap();
+		let random_active = rand::random::<usize>() % 10;
+		if random_active == 0 {
+			let random_icon = rand::random::<usize>() % KEYS.len();
+			message.react(ctx, KEYS[random_icon]).unwrap();
+		}
 	}
 	if message.channel_id == testbot {
-		let random = rand::random::<usize>() % KEYS.len();
-		message.react(ctx, KEYS[random]).unwrap();
+		let random_active = rand::random::<usize>() % 10;
+		if random_active == 0 {
+			let random_icon = rand::random::<usize>() % KEYS.len();
+			message.react(ctx, KEYS[random_icon]).unwrap();
+		}
 	}
 }
 
@@ -276,7 +284,6 @@ impl EventHandler for Handler {
 		info!("Resumed");
 	}
 }
-
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
 pub fn bot_connect() {
