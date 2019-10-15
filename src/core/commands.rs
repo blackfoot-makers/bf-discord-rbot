@@ -22,10 +22,18 @@ macro_rules! hashmap {
     }}
 }
 
+const INTRODUCE: &str = "Hello, i am a BOT. i was designed to peek over you conversations and make very weird comments. i don't have any purpose yet, but you can ask me about the weather";
+
 lazy_static! {
   pub static ref ATTACKED: RwLock<String> = RwLock::new(String::new());
+  pub static ref MOM: RwLock<String> = RwLock::new(String::new());
   pub static ref TAG_MSG_LIST: HashMap<&'static str, &'static str> = hashmap![
     "ping" => "pong",
+    "introduce your self" => INTRODUCE,
+    "introduce" => INTRODUCE,
+    "weather" => "The fuck do i know !",
+    "what is today weather ?" => "The fuck do i know !",
+    "what is today weather" => "The fuck do i know !",
     "bad" => "😢",
     "Bonjour !" => "Bonsoir !",
     "Bonjour" => "Bonsoir !",
@@ -34,7 +42,8 @@ lazy_static! {
   pub static ref CONTAIN_MSG_LIST: HashMap<&'static str, &'static str> = hashmap![
     "keke" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
     "kéké" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
-    "bad bot" => "😎"
+    "bad bot" => "😎",
+    "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif"
   ];
   pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
     "👊" => "👊",
@@ -75,7 +84,23 @@ lazy_static! {
       argument_min: 1,
       argument_max: 1,
       channel: None	,
-      usage: String::from("Usage : @BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
+      usage: String::from("Usage : @BOT attack @user"),
+    },
+    "momchange" =>
+    Command {
+      exec: mom_change,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None	,
+      usage: String::from("Usage : @BOT momchange @user"),
+    },
+    "mom" =>
+    Command {
+      exec: witch_mom,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None	,
+      usage: String::from("Usage : @BOT mom"),
     }
   ];
 }
@@ -84,6 +109,16 @@ fn attack_lauch(args: &Vec<&str>) -> String {
   ATTACKED.write().clear();
   ATTACKED.write().push_str(args[1]);
   format!("Prepare yourself {} !", args[1])
+}
+
+fn mom_change(args: &Vec<&str>) -> String {
+  MOM.write().clear();
+  MOM.write().push_str(args[1]);
+  format!("It's your momas turn yourself {} !", args[1])
+}
+
+fn witch_mom(_args: &Vec<&str>) -> String {
+  format!("It's currently {} mom's", MOM.read())
 }
 
 fn quit(_args: &Vec<&str>) -> String {
