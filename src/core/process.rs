@@ -57,10 +57,12 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 				} else {
 					command.usage.clone()
 				};
-				message
-					.channel_id
-					.send_message(&ctx.http, |m| m.content(result))
-					.unwrap();
+				if !result.is_empty() {
+					message
+						.channel_id
+						.send_message(&ctx.http, |m| m.content(result))
+						.unwrap();
+				}
 				return true;
 			}
 		}
@@ -97,6 +99,9 @@ fn split_args(input: &String) -> Vec<&str> {
 	let message_split_quote: Vec<&str> = input.split('"').collect();
 	let mut result: Vec<&str> = Vec::new();
 	for msg in message_split_quote {
+		if msg.is_empty() {
+			continue;
+		}
 		count += 1;
 		if (count % 2) == 0 {
 			result.push(msg);
@@ -105,15 +110,14 @@ fn split_args(input: &String) -> Vec<&str> {
 			result.append(&mut message_split_space);
 		}
 	}
+	println!("result: {:?}", &result);
 	result
 }
 
 const CATS: [&str; 12] = [
 	"😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
 ];
-const KEYS: [&str; 8] = [
-	"🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓",
-];
+const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
 
 /// Anoying other channels
 fn annoy_channel(ctx: &Context, message: &Message) {
@@ -227,11 +231,6 @@ impl EventHandler for Handler {
 			.starts_with(&*format!("<@{}>", ctx.cache.read().user.id.as_u64()))
 		{
 			// Check if Attacked
-			println!(
-				"ATtacked? {}=={}",
-				message.author.mention(),
-				*ATTACKED.read()
-			);
 			if message.author.mention() == *ATTACKED.read() {
 				let random = rand::random::<usize>() % 6;
 				message.channel_id.say(&ctx.http, ANNOYING[random]).unwrap();

@@ -43,7 +43,8 @@ lazy_static! {
     "keke" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
     "kéké" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
     "bad bot" => "😎",
-    "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif"
+    "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif",
+    "ok boomer" => "Ok millennial"
   ];
   pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
     "👊" => "👊",
@@ -101,8 +102,28 @@ lazy_static! {
       argument_max: 0,
       channel: None	,
       usage: String::from("Usage : @BOT mom"),
+    },
+    "send_message" =>
+    Command {
+      exec: manual_send_message,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None	,
+      usage: String::from("Usage : @BOT send_message #channelid @who"),
     }
+
   ];
+}
+
+fn manual_send_message(args: &Vec<&str>) -> String {
+  let http = super::process::HTTP_STATIC.read().clone().unwrap();
+
+  let chan_id = args[1].parse::<u64>().unwrap();
+  ChannelId(chan_id)
+    .send_message(http, |m| m.content(args[2]))
+    .unwrap();
+
+  String::new()
 }
 
 fn attack_lauch(args: &Vec<&str>) -> String {
