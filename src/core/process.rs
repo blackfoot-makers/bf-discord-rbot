@@ -1,5 +1,4 @@
 //! Handle the connection with discord and it's events.
-use super::credentials::CREDENTIALS_FILE;
 use features;
 use log::{debug, error, info};
 use rand;
@@ -9,6 +8,7 @@ use serenity::{
 	model::{event::ResumedEvent, gateway::Ready, id::ChannelId},
 	prelude::*,
 };
+use std::env;
 
 use super::commands::{
 	ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -110,7 +110,6 @@ fn split_args(input: &String) -> Vec<&str> {
 			result.append(&mut message_split_space);
 		}
 	}
-	println!("result: {:?}", &result);
 	result
 }
 
@@ -288,7 +287,7 @@ impl EventHandler for Handler {
 pub fn bot_connect() {
 	info!("Bot Connecting");
 
-	let token = &CREDENTIALS_FILE.stored.token;
+	let token: String = env::var("token").unwrap();
 
 	// Create a new instance of the Client, logging in as a bot. This will
 	// automatically prepend your bot token with "Bot ", which is a requirement

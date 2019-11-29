@@ -23,6 +23,7 @@ reqwest = "0.9"
 failure = "0.1"
 hyper-reverse-proxy = "0.4"
 
+dotenv = "0.9.0"
 # Unused dependencies from commented code
 # imap = "0.8.1"
 # native-tls = "0.1"

@@ -26,6 +26,7 @@
 
 extern crate bollard;
 extern crate chrono;
+extern crate dotenv;
 extern crate failure;
 extern crate futures;
 extern crate hyper;
@@ -47,10 +48,12 @@ extern crate serde_derive;
 mod core;
 mod features;
 
+use dotenv::dotenv;
 use std::io;
 
 /// We run the core and we loop on a basic cmd.
 fn main() {
+    dotenv().ok();
     pretty_env_logger::init();
 
     let join_handle = core::run();
