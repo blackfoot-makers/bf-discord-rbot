@@ -7,13 +7,8 @@ and use cargo run.
 
 ## Credential.json
 
-```json
-{
-  "email": "your@email.io",
-  "password": "password",
-  "domain": "ssl0.ovh.net",
-  "token": "YOURDISCORDTOKEN"
-}
+```bash
+token=<DISCORD_TOKEN>
 ```
 
 ## Run
