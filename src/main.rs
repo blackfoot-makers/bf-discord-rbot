@@ -44,8 +44,11 @@ extern crate tokio;
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate diesel;
 
 mod core;
+mod database;
 mod features;
 
 use dotenv::dotenv;
@@ -72,7 +75,12 @@ fn main() {
                     break;
                 } else if input == "deploy" {
                     let http = core::process::HTTP_STATIC.read().clone().unwrap();
-                    features::docker::deploy_test(String::from("GreeFine"), String::from("CI-Preview-Exemple"), String::from("master"), http);
+                    features::docker::deploy_test(
+                        String::from("GreeFine"),
+                        String::from("CI-Preview-Exemple"),
+                        String::from("master"),
+                        http,
+                    );
                 } else {
                     println!("Invalid input [{}]", input);
                 }

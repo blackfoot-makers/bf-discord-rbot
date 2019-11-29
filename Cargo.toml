@@ -22,7 +22,7 @@ futures = "0.1"
 reqwest = "0.9"
 failure = "0.1"
 hyper-reverse-proxy = "0.4"
-
+diesel = { version = "1.0.0", features = ["postgres"] }
 dotenv = "0.9.0"
 # Unused dependencies from commented code
 # imap = "0.8.1"
