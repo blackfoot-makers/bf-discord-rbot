@@ -1,4 +1,6 @@
 //! Handle the connection with discord and it's events.
+use reqwest;
+use serde_json::{from_str, Value};
 use serenity::{model::id::ChannelId, prelude::*};
 use std::collections::HashMap;
 use std::process;
@@ -118,9 +120,30 @@ lazy_static! {
       argument_max: 2,
       channel: None	,
       usage: String::from("Usage : @BOT send_message #channelid @who"),
+    },
+    "cat" =>
+    Command {
+      exec: get_cat_pic,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: String::from("Usage : @BOT cat"),
     }
-
   ];
+}
+
+fn get_cat_pic(_args: &Vec<&str>) -> String {
+  let response = reqwest::get("https://api.thecatapi.com/v1/images/search?size=full")
+    .unwrap()
+    .text()
+    .unwrap();
+  let v: Value = from_str(&response).unwrap();
+  println!("{:?} | {:?}", response, v);
+
+  let url = v[0]["url"].clone();
+  let result = &mut url.to_string();
+  result.pop();
+  String::from(&result[1..])
 }
 
 fn manual_send_message(args: &Vec<&str>) -> String {
