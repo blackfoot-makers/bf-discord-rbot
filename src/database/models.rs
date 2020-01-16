@@ -1,4 +1,4 @@
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct User {
   pub id: i32,
   pub discordid: i32,

@@ -60,6 +60,7 @@ fn main() {
     pretty_env_logger::init();
 
     let join_handle = core::run();
+
     loop {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {

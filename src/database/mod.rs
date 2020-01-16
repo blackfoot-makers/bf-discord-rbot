@@ -1,19 +1,32 @@
+mod connection;
 mod models;
 pub mod queries;
 mod schema;
 
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
-use dotenv::dotenv;
-use std::env;
+use self::connection::{establish_connection, PgPool, PgPooledConnection};
+use self::models::User;
+use std::sync::RwLock;
 
-pub struct Data {
-  connection: PgConnection,
+lazy_static! {
+  pub static ref INSTANCE: RwLock<Instance> = RwLock::new(Instance::new());
 }
 
-fn establish_connection() -> PgConnection {
-  dotenv().ok();
+impl Instance {
+  pub fn new() -> Self {
+    let mut instance = Instance {
+      connection: establish_connection(),
+      users: Vec::new(),
+    };
+    instance.user_load();
+    instance
+  }
 
-  let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-  PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+  pub fn get_connection(&self) -> PgPooledConnection {
+    self.connection.get().unwrap()
+  }
+}
+
+pub struct Instance {
+  connection: PgPool,
+  pub users: Vec<User>,
 }

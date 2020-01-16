@@ -1,4 +1,5 @@
 //! Handle the connection with discord and it's events.
+use database;
 use features;
 use log::{debug, error, info};
 use rand;
@@ -217,6 +218,10 @@ impl EventHandler for Handler {
 	/// events can be dispatched simultaneously.
 	fn message(&self, ctx: Context, message: Message) {
 		println!("{} says: {}", message.author.name, message.content);
+
+		let mut db_instance = database::INSTANCE.write().unwrap();
+		db_instance.user_add(message.author.id as i32, "user");
+
 		if message.is_own(&ctx) || message.content.is_empty() {
 			return;
 		};
