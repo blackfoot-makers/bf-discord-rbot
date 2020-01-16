@@ -119,27 +119,27 @@ const CATS: [&str; 12] = [
 ];
 const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
 
+const HERDINGCHATTE : ChannelId = ChannelId(570275817804791809);
+const CYBERGOD : ChannelId = ChannelId(588666452849065994);
+const TESTBOT : ChannelId = ChannelId(555206410619584519);
 /// Anoying other channels
 fn annoy_channel(ctx: &Context, message: &Message) {
-	let herdingchatte = ChannelId(570275817804791809);
-	let cybergod = ChannelId(588666452849065994);
-	let testbot = ChannelId(555206410619584519);
 
-	if message.channel_id == herdingchatte {
+	if message.channel_id == HERDINGCHATTE {
 		let random_active = rand::random::<usize>() % 10;
 		if random_active == 0 {
 			let random_icon = rand::random::<usize>() % CATS.len();
 			message.react(ctx, CATS[random_icon]).unwrap();
 		}
 	}
-	if message.channel_id == cybergod {
+	if message.channel_id == CYBERGOD {
 		let random_active = rand::random::<usize>() % 10;
 		if random_active == 0 {
 			let random_icon = rand::random::<usize>() % KEYS.len();
 			message.react(ctx, KEYS[random_icon]).unwrap();
 		}
 	}
-	if message.channel_id == testbot {
+	if message.channel_id == TESTBOT {
 		let random_active = rand::random::<usize>() % 10;
 		if random_active == 0 {
 			let random_icon = rand::random::<usize>() % KEYS.len();
