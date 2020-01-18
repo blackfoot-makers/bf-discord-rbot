@@ -1,11 +1,11 @@
 //! Handle the connection with discord and it's events.
-use database;
-use features;
-use log::{debug, error, info};
+use super::super::database;
+use super::super::features;
+use log::{error, info};
 use rand;
-use serenity::http;
 use serenity::{
-	model::channel::{Message, Reaction, ReactionType},
+	http,
+	model::channel::{Message, Reaction},
 	model::{event::ResumedEvent, gateway::Ready, id::ChannelId},
 	prelude::*,
 };
@@ -19,7 +19,7 @@ use super::commands::{
 struct Handler;
 
 lazy_static! {
-	pub static ref HTTP_STATIC: RwLock<Option<std::sync::Arc<http::raw::Http>>> = RwLock::new(None);
+	pub static ref HTTP_STATIC: RwLock<Option<std::sync::Arc<http::Http>>> = RwLock::new(None);
 }
 
 fn allowed_channel(
@@ -53,11 +53,12 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 			if allowed_channel(command.channel, message.channel_id, ctx) {
 				// We remove default arguments: author and command name from the total
 				let arguments = message_split.len() - 2;
-				let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-					(command.exec)(message_split)
-				} else {
-					command.usage.clone()
-				};
+				let result =
+					if arguments >= command.argument_min && arguments <= command.argument_max {
+						(command.exec)(message_split)
+					} else {
+						command.usage.clone()
+					};
 				if !result.is_empty() {
 					message
 						.channel_id
@@ -119,12 +120,11 @@ const CATS: [&str; 12] = [
 ];
 const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
 
-const HERDINGCHATTE : ChannelId = ChannelId(570275817804791809);
-const CYBERGOD : ChannelId = ChannelId(588666452849065994);
-const TESTBOT : ChannelId = ChannelId(555206410619584519);
+const HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
+const CYBERGOD: ChannelId = ChannelId(588666452849065994);
+const TESTBOT: ChannelId = ChannelId(555206410619584519);
 /// Anoying other channels
 fn annoy_channel(ctx: &Context, message: &Message) {
-
 	if message.channel_id == HERDINGCHATTE {
 		let random_active = rand::random::<usize>() % 10;
 		if random_active == 0 {
@@ -169,46 +169,46 @@ fn personal_attack(ctx: &Context, message: &Message) {
 	}
 }
 
-fn parse_githook_reaction(ctx: Context, reaction: Reaction) {
-	let channel = ChannelId(555206410619584519); //TODO : Channel register
+// fn parse_githook_reaction(ctx: Context, reaction: Reaction) {
+// 	let channel = ChannelId(555206410619584519); //TODO : Channel register
 
-	let emoji_name = match &reaction.emoji {
-		ReactionType::Unicode(e) => e.clone(),
-		ReactionType::Custom {
-			animated: _,
-			name,
-			id: _,
-		} => name.clone().unwrap(),
-		_ => "".to_string(),
-	};
-	debug!("Reaction emoji: {}", emoji_name);
-	if reaction.channel_id == channel {
-		if emoji_name == "✅" {
-			let message = reaction.message(&ctx.http).unwrap();
-			if message.is_own(&ctx.cache) {
-				let closing_tag = message.content.find("]").unwrap_or_default();
-				if closing_tag > 0 {
-					let params = &message.content[1..closing_tag];
-					let params_split: Vec<&str> = params.split('/').collect();
-					if params_split.len() == 3 {
-						features::docker::deploy_from_reaction(
-							params_split[0].to_string(),
-							params_split[1].to_string(),
-							params_split[2].to_string(),
-							ctx.http.clone(),
-						);
-						return;
-					}
-				}
+// 	let emoji_name = match &reaction.emoji {
+// 		ReactionType::Unicode(e) => e.clone(),
+// 		ReactionType::Custom {
+// 			animated: _,
+// 			name,
+// 			id: _,
+// 		} => name.clone().unwrap(),
+// 		_ => "".to_string(),
+// 	};
+// 	debug!("Reaction emoji: {}", emoji_name);
+// 	if reaction.channel_id == channel {
+// 		if emoji_name == "✅" {
+// 			let message = reaction.message(&ctx.http).unwrap();
+// 			if message.is_own(&ctx.cache) {
+// 				let closing_tag = message.content.find("]").unwrap_or_default();
+// 				if closing_tag > 0 {
+// 					let params = &message.content[1..closing_tag];
+// 					let params_split: Vec<&str> = params.split('/').collect();
+// 					if params_split.len() == 3 {
+// 						// features::docker::deploy_from_reaction(
+// 						// 	params_split[0].to_string(),
+// 						// 	params_split[1].to_string(),
+// 						// 	params_split[2].to_string(),
+// 						// 	ctx.http.clone(),
+// 						// );
+// 						// return;
+// 					}
+// 				}
 
-				eprintln!(
-					"Reaction/githook: Invalid params parse : [{}]",
-					message.content
-				);
-			}
-		}
-	}
-}
+// 				eprintln!(
+// 					"Reaction/githook: Invalid params parse : [{}]",
+// 					message.content
+// 				);
+// 			}
+// 		}
+// 	}
+// }
 
 impl EventHandler for Handler {
 	/// Set a handler for the `message` event - so that whenever a new message
@@ -220,7 +220,10 @@ impl EventHandler for Handler {
 		println!("{} says: {}", message.author.name, message.content);
 
 		let mut db_instance = database::INSTANCE.write().unwrap();
-		db_instance.user_add(message.author.id as i32, "user");
+		let author_id = *message.author.id.as_u64() as i64;
+		if !db_instance.users.iter().any(|e| e.discordid == author_id) {
+			db_instance.user_add(author_id, "user");
+		}
 
 		if message.is_own(&ctx) || message.content.is_empty() {
 			return;
@@ -232,7 +235,7 @@ impl EventHandler for Handler {
 		// check for @me first so it's considered a command
 		if message
 			.content
-			.starts_with(&*format!("<@{}>", ctx.cache.read().user.id.as_u64()))
+			.starts_with(&*format!("<@!{}>", ctx.cache.read().user.id.as_u64()))
 		{
 			// Check if Attacked
 			if message.author.mention() == *ATTACKED.read() {
@@ -272,8 +275,8 @@ impl EventHandler for Handler {
 		}
 	}
 
-	fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-		parse_githook_reaction(ctx, reaction);
+	fn reaction_add(&self, _ctx: Context, _reaction: Reaction) {
+		// parse_githook_reaction(ctx, reaction);
 	}
 
 	fn ready(&self, ctx: Context, ready: Ready) {

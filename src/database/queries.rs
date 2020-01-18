@@ -14,7 +14,7 @@ impl Instance {
     self.users = results;
   }
 
-  pub fn user_add<'a>(&mut self, discordid: i32, role: &'a str) {
+  pub fn user_add<'a>(&mut self, discordid: i64, role: &'a str) {
     let new_user = NewUser {
       discordid: discordid,
       role: role,

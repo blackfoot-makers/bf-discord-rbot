@@ -1,11 +1,12 @@
 //! Handle the connection with discord and it's events.
+use futures::executor::block_on;
 use reqwest;
 use serde_json::{from_str, Value};
 use serenity::{model::id::ChannelId, prelude::*};
 use std::collections::HashMap;
 use std::process;
 
-use features::notify::Event;
+use super::super::features::notify::Event;
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 pub struct Command {
@@ -133,12 +134,14 @@ lazy_static! {
 }
 
 fn get_cat_pic(_args: &Vec<&str>) -> String {
-  let response = reqwest::get("https://api.thecatapi.com/v1/images/search?size=full")
-    .unwrap()
-    .text()
-    .unwrap();
-  let v: Value = from_str(&response).unwrap();
-  println!("{:?} | {:?}", response, v);
+  let response = block_on(reqwest::get(
+    "https://api.thecatapi.com/v1/images/search?size=full",
+  ))
+  .unwrap();
+  let text = block_on(response.text()).unwrap();
+
+  let v: Value = from_str(&text).unwrap();
+  println!("{:?} | {:?}", text, v);
 
   let url = v[0]["url"].clone();
   let result = &mut url.to_string();

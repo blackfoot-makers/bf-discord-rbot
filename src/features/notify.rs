@@ -1,5 +1,5 @@
+use super::super::core::files;
 use chrono::prelude::*;
-use core::files;
 use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -141,11 +141,11 @@ impl EventVec for Vec<Event> {
     }
 }
 
-pub fn check_events(http: Arc<http::raw::Http>) {
+pub fn check_events(http: Arc<http::Http>) {
     println!("Events check thread started");
     loop {
         {
-            //Free the lock durring sleep
+            // Free the lock durring sleep
             let events = &mut NOTIFY_EVENT_FILE.write().unwrap();
             for mut event in events.stored.iter_mut() {
                 if event.started.elapsed().unwrap().as_secs() >= event.duration.as_secs() {
