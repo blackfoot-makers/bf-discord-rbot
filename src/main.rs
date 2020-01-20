@@ -24,28 +24,15 @@
 //! [core docs]: core/index.html
 //! [features docs]: features/index.html
 
-extern crate bollard;
-extern crate chrono;
-extern crate dotenv;
-extern crate failure;
-extern crate futures;
-extern crate hyper;
-extern crate log;
-extern crate pretty_env_logger;
-extern crate rand;
-extern crate reqwest;
-extern crate rifling;
-extern crate serde;
-extern crate serde_json;
-extern crate serenity;
-extern crate time;
-extern crate tokio;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate diesel;
 
 mod core;
+mod database;
 mod features;
 
 use dotenv::dotenv;
@@ -57,6 +44,7 @@ fn main() {
     pretty_env_logger::init();
 
     let join_handle = core::run();
+
     loop {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -70,9 +58,17 @@ fn main() {
                 input.pop();
                 if input == "quit" {
                     break;
-                } else if input == "deploy" {
-                    let http = core::process::HTTP_STATIC.read().clone().unwrap();
-                    features::docker::deploy_test(String::from("GreeFine"), String::from("CI-Preview-Exemple"), String::from("master"), http);
+                } else if input == "users" {
+                    let db_instance = database::INSTANCE.write().unwrap();
+                    println!("Users: {:?}", db_instance.users);
+                // } else if input == "deploy" {
+                //     let http = core::process::HTTP_STATIC.read().clone().unwrap();
+                //     features::docker::deploy_test(
+                //         String::from("GreeFine"),
+                //         String::from("CI-Preview-Exemple"),
+                //         String::from("master"),
+                //         http,
+                //     );
                 } else {
                     println!("Invalid input [{}]", input);
                 }

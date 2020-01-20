@@ -4,9 +4,10 @@
 // pub mod mail;
 // pub mod monitor;
 // pub mod slackimport;
+// pub mod githooks;
+// pub mod docker;
+
 pub mod notify;
-pub mod githooks;
-pub mod docker;
 
 use serenity::http;
 use std::sync::Arc;
@@ -16,11 +17,11 @@ use std::thread;
 ///
 /// [`notify`]: notify/index.html
 /// [`githooks`]: githooks/index.html
-pub fn run(http: &Arc<http::raw::Http>) {
+pub fn run(http: &Arc<http::Http>) {
   println!("Running featrues");
 
   let http_for_events = http.clone();
-  let http_for_githooks = http.clone();
+  // let http_for_githooks = http.clone();
   thread::spawn(move || notify::check_events(http_for_events));
-  thread::spawn(move || githooks::init(http_for_githooks));
+  // thread::spawn(move || githooks::init(http_for_githooks));
 }

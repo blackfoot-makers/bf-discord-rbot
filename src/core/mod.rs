@@ -3,7 +3,6 @@
 pub mod commands;
 pub mod files;
 pub mod process;
-pub mod credentials;
 
 use std::thread;
 
