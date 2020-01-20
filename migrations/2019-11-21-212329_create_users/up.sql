@@ -1,5 +1,5 @@
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  discordid INTEGER NOT NULL,
+  discordid BIGINT NOT NULL,
   role VARCHAR NOT NULL
 )
