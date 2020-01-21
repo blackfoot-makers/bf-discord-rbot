@@ -26,4 +26,30 @@ impl Instance {
       .expect("Error saving new user");
     self.users.push(newuser);
   }
+
+  pub fn message_load(&mut self) {
+    use super::schema::messages::dsl::*;
+
+    let results = messages
+      .limit(5)
+      .load::<Message>(&self.get_connection())
+      .expect("Error loading messages");
+
+    self.messages = results;
+  }
+
+  pub fn message_add<'a>(&mut self, id: i64, author: i64, content: &String, channel: i64) {
+    let new_message = Message {
+      id,
+      author,
+      content: content.clone(),
+      channel,
+    };
+
+    let new_message: Message = diesel::insert_into(messages::table)
+      .values(&new_message)
+      .get_result(&self.get_connection())
+      .expect("Error saving new user");
+    self.messages.push(new_message);
+  }
 }

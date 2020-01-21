@@ -61,6 +61,9 @@ fn main() {
                 } else if input == "users" {
                     let db_instance = database::INSTANCE.write().unwrap();
                     println!("Users: {:?}", db_instance.users);
+                } else if input == "messages" {
+                    let db_instance = database::INSTANCE.write().unwrap();
+                    println!("messages: {:?}", db_instance.messages);
                 // } else if input == "deploy" {
                 //     let http = core::process::HTTP_STATIC.read().clone().unwrap();
                 //     features::docker::deploy_test(

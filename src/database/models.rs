@@ -12,4 +12,13 @@ pub struct NewUser<'a> {
   pub role: &'a str,
 }
 
-pub use super::schema::users;
+#[derive(Insertable, Queryable, Debug)]
+#[table_name = "messages"]
+pub struct Message {
+  pub id: i64,
+  pub author: i64,
+  pub content: String,
+  pub channel: i64,
+}
+
+pub use super::schema::*;
