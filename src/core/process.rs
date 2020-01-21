@@ -53,12 +53,11 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 			if allowed_channel(command.channel, message.channel_id, ctx) {
 				// We remove default arguments: author and command name from the total
 				let arguments = message_split.len() - 2;
-				let result =
-					if arguments >= command.argument_min && arguments <= command.argument_max {
-						(command.exec)(message_split)
-					} else {
-						command.usage.clone()
-					};
+				let result = if arguments >= command.argument_min && arguments <= command.argument_max {
+					(command.exec)(message_split)
+				} else {
+					command.usage.clone()
+				};
 				if !result.is_empty() {
 					message
 						.channel_id
@@ -224,6 +223,12 @@ impl EventHandler for Handler {
 		if !db_instance.users.iter().any(|e| e.discordid == author_id) {
 			db_instance.user_add(author_id, "user");
 		}
+		db_instance.message_add(
+			*message.id.as_u64() as i64,
+			author_id,
+			&message.content,
+			*message.channel_id.as_u64() as i64,
+		);
 
 		if message.is_own(&ctx) || message.content.is_empty() {
 			return;
