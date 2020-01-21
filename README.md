@@ -13,7 +13,7 @@ Run the diesel migrations and use cargo run.
 
 ```bash
 token=token=<THE_DISCORD_BOT_TOKEN>
-DATABASE_URL=postgres://<user>:<password>@localhost/discordbot   
+DATABASE_URL=postgres://<user>:<password>@localhost/discordbot
 ```
 
 ## [Diesel](https://diesel.rs/)
@@ -25,9 +25,13 @@ and run the migrations: `diesel migration run`
 
 `cargo run`
 
-
 # Deployement
 
-Build the docker image `docker build . -t greefine/discord-rbot`
-And start it as a service `docker service create greefine/discord-rbot`
+Build the docker image and start it as a service
+
+```bash
+docker build . -t greefine/discord-rbot
+docker service create --network host --name discordbot greefine/discord-rbot
+```
+
 > Note: don't forget the .env before building !
