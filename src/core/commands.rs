@@ -5,12 +5,10 @@ use serde_json::{from_str, Value};
 use serenity::{model::id::ChannelId, prelude::*};
 use std::collections::HashMap;
 use std::process;
+use std::str::FromStr;
 
-use crate::features::{
-  notify::Event,
-  calendar::google_calendar
-};
-use super::super::database::{Role, INSTANCE};
+use crate::database::{Role, INSTANCE};
+use crate::features::{calendar::google_calendar, notify::Event};
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 pub struct Command {
@@ -69,7 +67,7 @@ lazy_static! {
       argument_min: 0,
       argument_max: 0,
       channel: None,
-      usage: String::from("Usage : @BOT quit"),
+      usage: String::from("@BOT quit"),
       permission: Role::Admin,
     },
     "send_message" =>
@@ -77,17 +75,26 @@ lazy_static! {
       exec: manual_send_message,
       argument_min: 2,
       argument_max: 2,
-      channel: None	,
-      usage: String::from("Usage : @BOT send_message #channelid @who"),
+      channel: None,
+      usage: String::from("@BOT send_message #channelid @who"),
       permission: Role::Admin,
     },
     "users" =>
     Command {
       exec: |_| -> String { format!("{:?}", INSTANCE.write().unwrap().users) },
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: String::from("@BOT users"),
+      permission: Role::Admin,
+    },
+    "promote" =>
+    Command {
+      exec: promote_user,
       argument_min: 2,
       argument_max: 2,
-      channel: None	,
-      usage: String::from("Usage : @BOT send_message #channelid @who"),
+      channel: None,
+      usage: String::from("@BOT promote @user role"),
       permission: Role::Admin,
     },
     "reminder" =>
@@ -95,8 +102,8 @@ lazy_static! {
       exec: Event::add_reminder,
       argument_min: 4,
       argument_max: 5,
-      channel: None	,
-      usage: String::from("Usage : @BOT reminder NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
+      channel: None,
+      usage: String::from("@BOT reminder NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
       permission: Role::User,
     },
     "countdown" =>
@@ -104,8 +111,8 @@ lazy_static! {
       exec: Event::add_countdown,
       argument_min: 6,
       argument_max: 6,
-      channel: None	,
-      usage: String::from("Usage : @BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
+      channel: None,
+      usage: String::from("@BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
       permission: Role::User,
     },
     "attack" =>
@@ -113,8 +120,8 @@ lazy_static! {
       exec: attack_lauch,
       argument_min: 1,
       argument_max: 1,
-      channel: None	,
-      usage: String::from("Usage : @BOT attack @user"),
+      channel: None,
+      usage: String::from("@BOT attack @user"),
       permission: Role::User,
     },
     "mom change" =>
@@ -122,8 +129,8 @@ lazy_static! {
       exec: mom_change,
       argument_min: 1,
       argument_max: 1,
-      channel: None	,
-      usage: String::from("Usage : @BOT momchange @user"),
+      channel: None,
+      usage: String::from("@BOT momchange @user"),
       permission: Role::User,
     },
     "mom" =>
@@ -131,8 +138,17 @@ lazy_static! {
       exec: witch_mom,
       argument_min: 0,
       argument_max: 0,
-      channel: None	,
-      usage: String::from("Usage : @BOT mom"),
+      channel: None,
+      usage: String::from("@BOT mom"),
+      permission: Role::User,
+    },
+    "check" =>
+    Command {
+      exec: google_calendar,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None ,
+      usage: String::from("Usage : @Bot check date(daily/monthly) type(calendar/codex)"),
       permission: Role::User,
     },
     "cat" =>
@@ -141,18 +157,43 @@ lazy_static! {
       argument_min: 0,
       argument_max: 0,
       channel: None,
-      usage: String::from("Usage : @BOT cat"),
+      usage: String::from("@BOT cat"),
+      permission: Role::Guest,
     },
-    "check" => 
+    "help" =>
     Command {
-      exec: google_calendar,
-      argument_min: 2,
-      argument_max: 2,
-      channel: None ,
-      usage: String::from("Usage : @Bot check date(daily/monthly) type(calendar/codex)"),
+      exec: print_help,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: String::from("@BOT help"),
       permission: Role::Guest,
     }
   ];
+}
+
+fn print_help(_args: &Vec<&str>) -> String {
+  let mut result = String::from("Available commands: \nNAME => USAGE | PERMISSION\n");
+  for (key, command) in COMMANDS_LIST.iter() {
+    result.push_str(&*format!(
+      "{} => Usage: {} | {{{}}}\n",
+      key, command.usage, command.permission
+    ))
+  }
+  result
+}
+
+fn promote_user(args: &Vec<&str>) -> String {
+  let mut db_instance = INSTANCE.write().unwrap();
+
+  let role = match Role::from_str(args[2]) {
+    Err(_) => return String::from("Role not found"),
+    Ok(role) => role,
+  };
+
+  let userid = args[1];
+  let userid = userid[3..userid.len() - 1].parse::<u64>().unwrap();
+  db_instance.user_role_update(&userid, &role)
 }
 
 fn get_cat_pic(_args: &Vec<&str>) -> String {
@@ -163,7 +204,6 @@ fn get_cat_pic(_args: &Vec<&str>) -> String {
   let text = block_on(response.text()).unwrap();
 
   let v: Value = from_str(&text).unwrap();
-  println!("{:?} | {:?}", text, v);
 
   let url = v[0]["url"].clone();
   let result = &mut url.to_string();

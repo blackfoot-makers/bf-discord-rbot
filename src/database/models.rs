@@ -1,4 +1,4 @@
-use strum_macros::Display;
+use strum_macros::{Display, EnumString};
 
 #[derive(Queryable, Debug)]
 pub struct User {
@@ -23,7 +23,7 @@ pub struct Message {
   pub channel: i64,
 }
 
-#[derive(Display)]
+#[derive(Copy, Clone, Display, EnumString)]
 pub enum Role {
   Guest,
   User,

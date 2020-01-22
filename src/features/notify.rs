@@ -1,4 +1,4 @@
-use super::super::core::files;
+use crate::core::files;
 use chrono::prelude::*;
 use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
@@ -151,12 +151,6 @@ pub fn check_events(http: Arc<http::Http>) {
                 if event.started.elapsed().unwrap().as_secs() >= event.duration.as_secs() {
                     println!("Trigered {}", event.name);
                     if event.repeat.as_secs() > 0 {
-                        print!(
-                            "Debug ==> {} {}",
-                            event.repeat.as_secs(),
-                            event.countdown_day
-                        );
-
                         event.started = time::SystemTime::now();
                         event.duration = event.repeat;
 

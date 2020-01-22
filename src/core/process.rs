@@ -1,6 +1,6 @@
 //! Handle the connection with discord and it's events.
-use super::super::database;
-use super::super::features;
+use crate::database;
+use crate::features;
 use log::{error, info};
 use rand;
 use serenity::{
@@ -10,6 +10,7 @@ use serenity::{
 	prelude::*,
 };
 use std::env;
+use std::str::FromStr;
 
 use super::commands::{
 	ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -50,7 +51,16 @@ fn allowed_channel(
 fn allowed_user(expected: &database::Role, userid: &u64) -> bool {
 	let db_instance = database::INSTANCE.read().unwrap();
 	let user: &database::User = db_instance.user_search(userid).unwrap();
-	user.role == expected.to_string()
+
+	let role = match database::Role::from_str(&*user.role) {
+		Err(e) => {
+			println!("Error {}", e);
+			return false;
+		}
+		Ok(role) => (role),
+	};
+
+	role as u32 >= *expected as u32
 }
 
 fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) -> bool {
@@ -70,7 +80,7 @@ fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) 
 			let result = if arguments >= command.argument_min && arguments <= command.argument_max {
 				(command.exec)(message_split)
 			} else {
-				command.usage.clone()
+				format!("Usage: {}", command.usage.clone())
 			};
 
 			if !result.is_empty() {
