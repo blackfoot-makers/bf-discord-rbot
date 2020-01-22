@@ -22,14 +22,6 @@ pub struct Command {
   pub permission: Role,
 }
 
-macro_rules! hashmap {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map = ::std::collections::HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
-}
-
 const INTRODUCE: &str = "Hello, i am a BOT. i was designed to peek over you conversations and make very weird comments. i don't have any purpose yet, but you can ask me about the weather";
 const MOM_RFC: &str = "```\
 - It must be an insult or a degrading comment

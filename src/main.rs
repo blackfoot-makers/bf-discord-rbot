@@ -30,6 +30,8 @@ extern crate lazy_static;
 extern crate serde_derive;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+pub mod macros;
 
 mod core;
 mod database;
