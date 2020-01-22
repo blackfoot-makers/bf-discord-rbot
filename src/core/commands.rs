@@ -224,7 +224,9 @@ fn manual_send_message(args: &Vec<&str>) -> String {
 
 fn attack_lauch(args: &Vec<&str>) -> String {
   ATTACKED.write().clear();
-  ATTACKED.write().push_str(args[1]);
+
+  let tag = format!("<@{}", &args[1][3..]);
+  ATTACKED.write().push_str(&*tag);
   format!("Prepare yourself {} !", args[1])
 }
 
