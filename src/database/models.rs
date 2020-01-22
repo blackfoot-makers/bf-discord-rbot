@@ -1,3 +1,5 @@
+use strum_macros::Display;
+
 #[derive(Queryable, Debug)]
 pub struct User {
   pub id: i32,
@@ -19,6 +21,14 @@ pub struct Message {
   pub author: i64,
   pub content: String,
   pub channel: i64,
+}
+
+#[derive(Display)]
+pub enum Role {
+  Guest,
+  User,
+  Moderator,
+  Admin,
 }
 
 pub use super::schema::*;

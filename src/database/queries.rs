@@ -1,4 +1,4 @@
-use super::models::*;
+pub use super::models::*;
 use super::Instance;
 use diesel::prelude::*;
 
@@ -25,6 +25,15 @@ impl Instance {
       .get_result(&self.get_connection())
       .expect("Error saving new user");
     self.users.push(newuser);
+  }
+
+  pub fn user_search(&self, discordid: &u64) -> Option<&User> {
+    for user in self.users.iter() {
+      if user.discordid == *discordid as i64 {
+        return Some(user);
+      }
+    }
+    None
   }
 
   pub fn message_load(&mut self) {

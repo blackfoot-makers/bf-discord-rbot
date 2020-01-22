@@ -47,25 +47,39 @@ fn allowed_channel(
 	};
 }
 
+fn allowed_user(expected: &database::Role, userid: &u64) -> bool {
+	let db_instance = database::INSTANCE.read().unwrap();
+	let user: &database::User = db_instance.user_search(userid).unwrap();
+	user.role == expected.to_string()
+}
+
 fn process_command(message_split: &Vec<&str>, message: &Message, ctx: &Context) -> bool {
 	for (key, command) in COMMANDS_LIST.iter() {
-		if *key == message_split[0] {
-			if allowed_channel(command.channel, message.channel_id, ctx) {
-				// We remove default arguments: author and command name from the total
-				let arguments = message_split.len() - 2;
-				let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-					(command.exec)(message_split)
-				} else {
-					command.usage.clone()
-				};
-				if !result.is_empty() {
-					message
-						.channel_id
-						.send_message(&ctx.http, |m| m.content(result))
-						.unwrap();
-				}
+		if *key == message_split[0] && allowed_channel(command.channel, message.channel_id, ctx) {
+			if !allowed_user(&command.permission, message.author.id.as_u64()) {
+				message
+					.channel_id
+					.send_message(&ctx.http, |m| {
+						m.content("You are not allowed to run this command")
+					})
+					.unwrap();
 				return true;
 			}
+			// We remove default arguments: author and command name from the total
+			let arguments = message_split.len() - 2;
+			let result = if arguments >= command.argument_min && arguments <= command.argument_max {
+				(command.exec)(message_split)
+			} else {
+				command.usage.clone()
+			};
+
+			if !result.is_empty() {
+				message
+					.channel_id
+					.send_message(&ctx.http, |m| m.content(result))
+					.unwrap();
+			}
+			return true;
 		}
 	}
 	false
@@ -209,6 +223,20 @@ fn personal_attack(ctx: &Context, message: &Message) {
 // 	}
 // }
 
+fn database_update(message: &Message) {
+	let mut db_instance = database::INSTANCE.write().unwrap();
+	let author_id = *message.author.id.as_u64() as i64;
+	if !db_instance.users.iter().any(|e| e.discordid == author_id) {
+		db_instance.user_add(author_id, &*database::Role::Guest.to_string());
+	}
+	db_instance.message_add(
+		*message.id.as_u64() as i64,
+		author_id,
+		&message.content,
+		*message.channel_id.as_u64() as i64,
+	);
+}
+
 impl EventHandler for Handler {
 	/// Set a handler for the `message` event - so that whenever a new message
 	/// is received - the closure (or function) passed will be called.
@@ -218,18 +246,7 @@ impl EventHandler for Handler {
 	fn message(&self, ctx: Context, message: Message) {
 		println!("{} says: {}", message.author.name, message.content);
 
-		let mut db_instance = database::INSTANCE.write().unwrap();
-		let author_id = *message.author.id.as_u64() as i64;
-		if !db_instance.users.iter().any(|e| e.discordid == author_id) {
-			db_instance.user_add(author_id, "user");
-		}
-		db_instance.message_add(
-			*message.id.as_u64() as i64,
-			author_id,
-			&message.content,
-			*message.channel_id.as_u64() as i64,
-		);
-
+		database_update(&message);
 		if message.is_own(&ctx) || message.content.is_empty() {
 			return;
 		};
