@@ -18,7 +18,7 @@ hyper = "0.13"
 pretty_env_logger = "0.3"
 tokio = "0.2.9"
 futures = "0.3.1"
-reqwest = { version = "0.10", features = ["json", "text"] }
+reqwest = { version = "0.10", features = ["json"] }
 failure = "0.1"
 hyper-reverse-proxy = "0.4"
 diesel = { version = "1.4.3", features = ["postgres", "r2d2"] }
