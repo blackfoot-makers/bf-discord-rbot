@@ -1,11 +1,13 @@
 mod connection;
 mod models;
-pub mod queries;
+mod queries;
 mod schema;
 
 use self::connection::{establish_connection, PgPool, PgPooledConnection};
-use self::models::{Message, User};
 use std::sync::RwLock;
+
+pub use self::models::{Message, User};
+pub use queries::*;
 
 lazy_static! {
   pub static ref INSTANCE: RwLock<Instance> = RwLock::new(Instance::new());
