@@ -36,8 +36,8 @@ lazy_static! {
 
 async fn get_unfeed_calendar(name: &str) -> Result<Vec<String>, Error> {
     let url : &str = HASHLIST.get(&name).unwrap();
-    let response = reqwest::get(url).await?;
-    let users: Vec<String> = response.json().await?;
+    let response = reqwest::blocking::get(url)?;
+    let users: Vec<String> = response.json()?;
     
     Ok(users)
 }
