@@ -7,7 +7,6 @@ impl Instance {
     use super::schema::users::dsl::*;
 
     let results = users
-      .limit(5)
       .load::<User>(&self.get_connection())
       .expect("Error loading users");
 
@@ -68,7 +67,6 @@ impl Instance {
     use super::schema::messages::dsl::*;
 
     let results = messages
-      .limit(5)
       .load::<Message>(&self.get_connection())
       .expect("Error loading messages");
 
