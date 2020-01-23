@@ -65,7 +65,7 @@ pub fn google_calendar(args: &Vec<&str>) -> String {
     } else {
         on_cron(&name);
     }
-    "Ok".to_string()
+    "".to_string()
 }
 
 pub fn unfeed_calendar() -> () {
