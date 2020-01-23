@@ -1,0 +1,7 @@
+version: '3'
+
+services: 
+    discord-rbot:
+        build: .
+        ports:
+            - 4567:4567
