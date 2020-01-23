@@ -68,7 +68,7 @@ pub fn google_calendar(args: &Vec<&str>) -> String {
     "Ok".to_string()
 }
 
-pub fn unfeed_calendar(_args: &Vec<&str>) -> () {
+pub fn unfeed_calendar() -> () {
     let mut sched = JobScheduler::new();
 
     sched.add(Job::new("* 0 18 * * Mon,Tue,Wed,Thu,Fri *".parse().unwrap(), || {

@@ -25,5 +25,5 @@ pub fn run(http: &Arc<http::Http>) {
   // let http_for_githooks = http.clone();
   thread::spawn(move || notify::check_events(http_for_events));
   // thread::spawn(move || githooks::init(http_for_githooks));
-  thread::spawn(move || calendar::unfeed_calendar(&Vec::new()));
+  thread::spawn(move || calendar::unfeed_calendar());
 }
