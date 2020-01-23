@@ -5,3 +5,4 @@ services:
         build: .
         ports:
             - 4567:4567
+        network_mode: "host"
