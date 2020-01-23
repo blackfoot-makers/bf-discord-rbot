@@ -6,7 +6,10 @@ use serenity::{model::id::ChannelId, prelude::*};
 use std::collections::HashMap;
 use std::process;
 
-use super::super::features::notify::Event;
+use crate::features::{
+  notify::Event,
+  calendar::google_calendar
+};
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 pub struct Command {
@@ -129,6 +132,14 @@ lazy_static! {
       argument_max: 0,
       channel: None,
       usage: String::from("Usage : @BOT cat"),
+    },
+    "check" => 
+    Command {
+      exec: google_calendar,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None ,
+      usage: String::from("Usage : @Bot check date(daily/monthly) type(calendar/codex)"),
     }
   ];
 }

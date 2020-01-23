@@ -8,6 +8,7 @@
 // pub mod docker;
 
 pub mod notify;
+pub mod calendar;
 
 use serenity::http;
 use std::sync::Arc;

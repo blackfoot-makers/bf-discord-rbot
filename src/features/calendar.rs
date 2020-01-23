@@ -1,4 +1,5 @@
-use core::process::HTTP_STATIC;
+use crate::core::process::HTTP_STATIC;
+use futures::executor::block_on;
 use reqwest;
 use reqwest::Error;
 use serenity::model::id::ChannelId;
@@ -33,10 +34,10 @@ lazy_static! {
     ];
 }
 
-fn get_unfeed_calendar(name: &str) -> Result<Vec<String>, Error> {
+async fn get_unfeed_calendar(name: &str) -> Result<Vec<String>, Error> {
     let url : &str = HASHLIST.get(&name).unwrap();
-    let mut response = reqwest::get(url)?;
-    let users: Vec<String> = response.json()?;
+    let response = reqwest::get(url).await?;
+    let users: Vec<String> = response.json().await?;
     
     Ok(users)
 }
@@ -50,7 +51,7 @@ fn format_bot_response(name: &str, values: &Vec<String>) -> String {
 
 fn on_cron(name: &str) -> () {
     let http = HTTP_STATIC.read().clone().unwrap();
-    let unfeeds = get_unfeed_calendar(name).unwrap();
+    let unfeeds = block_on(get_unfeed_calendar(name)).unwrap();
 
     CDC_CRA.send_message(http, |m| m.content(format_bot_response(name, &unfeeds))).unwrap();
     println!("{:?}", unfeeds.join(" "));
