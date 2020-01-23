@@ -10,14 +10,6 @@ use std::time::Duration;
 
 const CDC_CRA : ChannelId = ChannelId(651436625909252129);
 
-macro_rules! hashmap {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map = ::std::collections::HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
-}
-
 lazy_static! {
     static ref HASHLIST: HashMap<&'static str, &'static str> =  hashmap![
         "daily calendar" => "http://108.128.12.212:5000/unfeedCalendar/daily",
