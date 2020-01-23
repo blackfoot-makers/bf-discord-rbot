@@ -63,7 +63,7 @@ pub fn google_calendar(args: &Vec<&str>) -> String {
 pub fn unfeed_calendar() -> () {
     let mut sched = JobScheduler::new();
 
-    sched.add(Job::new("* 0 18 * * Mon,Tue,Wed,Thu,Fri *".parse().unwrap(), || {
+    sched.add(Job::new("0 30 18 * * Mon,Tue,Wed,Thu,Fri *".parse().unwrap(), || {
         on_cron("daily calendar");
     }));
 
