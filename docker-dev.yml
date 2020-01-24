@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+    postgres:
+        image: postgres:alpine
+        environment: 
+            POSTGRES_PASSWORD: root
+            POSTGRES_DB: root
+            POSTGRES_USER: root
+        volumes: 
+            - ./migrations/:/var/lib/postgresql/data:ro
