@@ -6,7 +6,11 @@ use rand;
 use serenity::{
 	http,
 	model::channel::{Message, Reaction},
-	model::{event::ResumedEvent, gateway::Ready, id::ChannelId},
+	model::{
+		event::ResumedEvent,
+		gateway::Ready,
+		id::{ChannelId, UserId},
+	},
 	prelude::*,
 };
 use std::env;
@@ -171,6 +175,20 @@ fn annoy_channel(ctx: &Context, message: &Message) {
 	}
 }
 
+const FILTERED: [&str; 1] = ["🔥"];
+const PM: UserId = UserId(365228504817729539);
+fn filter_outannoying_messages(ctx: &Context, message: &Message) {
+	if message.author.id != PM {
+		return;
+	}
+	for annoying in FILTERED.iter() {
+		if message.content.replace(annoying, "").trim().is_empty() {
+			println!("Has been filtered !");
+			let _ = message.delete(ctx);
+		}
+	}
+}
+
 const ANNOYING: [&str; 6] = [
 	"Ah oui mais y'a JPO",
 	"Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
@@ -262,6 +280,7 @@ impl EventHandler for Handler {
 		};
 		personal_attack(&ctx, &message);
 		annoy_channel(&ctx, &message);
+		filter_outannoying_messages(&ctx, &message);
 
 		//Check if i am tagged in the message else do the reactions
 		// check for @me first so it's considered a command
