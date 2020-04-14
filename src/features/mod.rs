@@ -7,8 +7,9 @@
 // pub mod githooks;
 // pub mod docker;
 
-pub mod notify;
+pub mod airtable;
 pub mod calendar;
+pub mod notify;
 
 use serenity::http;
 use std::sync::Arc;
@@ -22,8 +23,11 @@ pub fn run(http: &Arc<http::Http>) {
   println!("Running featrues");
 
   let http_for_events = http.clone();
+  let http_for_airtable = http.clone();
+
   // let http_for_githooks = http.clone();
   thread::spawn(move || notify::check_events(http_for_events));
   // thread::spawn(move || githooks::init(http_for_githooks));
   thread::spawn(move || calendar::unfeed_calendar());
+  thread::spawn(move || airtable::check_airtable(http_for_airtable));
 }
