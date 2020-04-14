@@ -1,5 +1,4 @@
 //! Handle the connection with discord and it's events.
-use futures::executor::block_on;
 use reqwest;
 use serde_json::{from_str, Value};
 use serenity::{model::id::ChannelId, prelude::*};
@@ -197,11 +196,9 @@ fn promote_user(args: &Vec<&str>) -> String {
 }
 
 fn get_cat_pic(_args: &Vec<&str>) -> String {
-  let response = block_on(reqwest::get(
-    "https://api.thecatapi.com/v1/images/search?size=full",
-  ))
-  .unwrap();
-  let text = block_on(response.text()).unwrap();
+  let response =
+    reqwest::blocking::get("https://api.thecatapi.com/v1/images/search?size=full").unwrap();
+  let text = response.text().unwrap();
 
   let v: Value = from_str(&text).unwrap();
 
