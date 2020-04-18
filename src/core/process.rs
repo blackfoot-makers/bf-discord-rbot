@@ -1,6 +1,5 @@
 //! Handle the connection with discord and it's events.
-use crate::database;
-use crate::features;
+use crate::{database, features::Features};
 use log::{error, info};
 use rand;
 use serenity::{
@@ -334,11 +333,22 @@ impl EventHandler for Handler {
 		info!("{} is connected!", ready.user.name);
 		let mut arc = HTTP_STATIC.write();
 		*arc = Some(ctx.http.clone());
-		features::run(&ctx.http);
+
+		let data = &mut ctx.data.write();
+		let feature = data.get_mut::<Features>().unwrap();
+		if feature.running == false {
+			feature.run(&ctx.http);
+		}
+	}
+
+	fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {
+		info!("{} => {:?}", name, raw);
 	}
 
 	fn resume(&self, _: Context, _: ResumedEvent) {
 		info!("Resumed");
+		// let data = &mut ctx.data.write();
+		// data.get_mut::<Features>().unwrap().thread_control.resume();
 	}
 }
 
@@ -352,6 +362,10 @@ pub fn bot_connect() {
 	// automatically prepend your bot token with "Bot ", which is a requirement
 	// by Discord for bot users.
 	let mut client = Client::new(token, Handler).expect("Err creating client");
+	{
+		let mut data = client.data.write();
+		data.insert::<Features>(Features::new());
+	}
 
 	// Finally, start a single shard, and start listening to events.
 	// Shards will automatically attempt to reconnect, and will perform

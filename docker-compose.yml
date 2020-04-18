@@ -1,8 +1,11 @@
-version: '3'
+version: "3"
 
-services: 
-    discord-rbot:
-        build: .
-        ports:
-            - 4567:4567
-        network_mode: "host"
+services:
+  bot:
+    build: .
+    network_mode: "host"
+    environment:
+      RUST_BACKTRACE: 1
+      RUST_LOG: info
+    # ports:
+    #     - 4567:4567

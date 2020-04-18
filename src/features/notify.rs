@@ -141,9 +141,13 @@ impl EventVec for Vec<Event> {
     }
 }
 
-pub fn check_events(http: Arc<http::Http>) {
+pub fn check_events<F>(http: Arc<http::Http>, threads_check: F)
+where
+    F: for<'a> Fn(),
+{
     println!("Events check thread started");
     loop {
+        threads_check();
         {
             // Free the lock durring sleep
             let events = &mut NOTIFY_EVENT_FILE.write().unwrap();

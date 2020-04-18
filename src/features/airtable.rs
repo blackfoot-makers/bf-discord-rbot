@@ -27,14 +27,19 @@ struct Querry {
 
 fn seconds_since_now(date_param: &str) -> Result<i64, chrono::ParseError> {
   let date = Local.datetime_from_str(date_param, "%Y-%m-%dT%H:%M:%S.000Z")?;
-  let duration_chrono = (Local::now() - chrono::Duration::hours(2)) - date;
+  let duration_chrono = Local::now() - date;
   Ok(duration_chrono.num_seconds())
 }
 
-pub fn check_airtable(http: Arc<http::Http>) {
+pub fn check_airtable<F>(http: Arc<http::Http>, threads_check: F)
+where
+  F: for<'a> Fn(),
+{
   let mut ticket_trigered: Vec<String> = Vec::new();
 
   loop {
+    threads_check();
+
     let client = reqwest::blocking::Client::new();
     let mut request = client.request(
       reqwest::Method::GET,

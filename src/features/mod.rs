@@ -6,28 +6,44 @@
 // pub mod slackimport;
 // pub mod githooks;
 // pub mod docker;
+// pub mod calendar;
 
 pub mod airtable;
-pub mod calendar;
 pub mod notify;
+pub mod threadcontrol;
 
-use serenity::http;
+use serenity::{http, prelude::TypeMapKey};
 use std::sync::Arc;
 use std::thread;
+use threadcontrol::ThreadControl;
 
-/// Spawn a Thread for [`notify`] and [`githooks`] to run in background
-///
-/// [`notify`]: notify/index.html
-/// [`githooks`]: githooks/index.html
-pub fn run(http: &Arc<http::Http>) {
-  println!("Running featrues");
+pub struct Features {
+  // threads: HashMap<&'static str, JoinHandle<()>>,
+  pub thread_control: ThreadControl,
+  pub running: bool,
+}
 
-  let http_for_events = http.clone();
-  let http_for_airtable = http.clone();
+impl TypeMapKey for Features {
+  type Value = Features;
+}
 
-  // let http_for_githooks = http.clone();
-  thread::spawn(move || notify::check_events(http_for_events));
-  // thread::spawn(move || githooks::init(http_for_githooks));
-  thread::spawn(move || calendar::unfeed_calendar());
-  thread::spawn(move || airtable::check_airtable(http_for_airtable));
+impl Features {
+  pub fn new() -> Self {
+    return Features {
+      // threads: HashMap::new(),
+      running: false,
+      thread_control: ThreadControl::new(),
+    };
+  }
+
+  /// Spawn a Thread per feature to run in background
+  pub fn run(&mut self, http: &Arc<http::Http>) {
+    println!("Running featrues");
+    let http_clone = http.clone();
+    let tc_clone = self.thread_control.clone();
+    thread::spawn(move || notify::check_events(http_clone, || ThreadControl::check(&tc_clone)));
+    let http_clone = http.clone();
+    let tc_clone = self.thread_control.clone();
+    thread::spawn(move || airtable::check_airtable(http_clone, || ThreadControl::check(&tc_clone)));
+  }
 }
