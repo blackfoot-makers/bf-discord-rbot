@@ -337,6 +337,7 @@ impl EventHandler for Handler {
 		let data = &mut ctx.data.write();
 		let feature = data.get_mut::<Features>().unwrap();
 		if feature.running == false {
+			feature.running = true;
 			feature.run(&ctx.http);
 		}
 	}
