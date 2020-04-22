@@ -111,14 +111,11 @@ where
         .append(false)
         .open(name)
         .unwrap();
-    let mut filereader = FileReader {
-        file: file,
-        stored: stored,
-    };
+    let mut filereader = FileReader { file, stored };
     if existed {
         filereader.read_struct();
     } else {
         filereader.write_stored().unwrap();
     }
-    return filereader;
+    filereader
 }

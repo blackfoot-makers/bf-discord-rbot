@@ -37,7 +37,7 @@ fn visit_dirs(
     dir: &Path,
     cb: &Fn(&DirEntry, &GuildChannel),
     channel: GuildChannel,
-    ctx: &Context
+    ctx: &Context,
 ) -> io::Result<()> {
     if dir.is_dir() {
         let mut paths: Vec<_> = fs::read_dir(dir).unwrap().map(|r| r.unwrap()).collect();
@@ -45,7 +45,8 @@ fn visit_dirs(
         for path in paths {
             let file = path.path();
             if file.is_dir() {
-                let channel = GUILD.create_channel(ctx,
+                let channel = GUILD.create_channel(
+                    ctx,
                     file.file_name().unwrap().to_str().unwrap(),
                     ChannelType::Text,
                     None,
@@ -87,7 +88,7 @@ fn visit_files(entry: &DirEntry, channel: &GuildChannel) {
 
 #[allow(dead_code)]
 /// Entry point for importing Slack to discord
-pub fn import(_args: &Vec<&str>) -> String {
+pub fn import(_args: &[&str]) -> String {
     let channel = GUILD.channels().unwrap()[&ChannelId(464779119809396757)].clone();
     visit_dirs(Path::new("./SlackExport"), &visit_files, channel).unwrap();
     String::from("Started importing Slack")

@@ -8,8 +8,8 @@ use std::{thread, time};
 
 const API_TOKEN: &str = "keycdRFRdaBnZPvH8";
 const TICKET_SECONDS: i64 = 300;
-// const AIRBNB_CHAN: ChannelId = ChannelId(555206410619584519);
-const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
+const AIRBNB_CHAN: ChannelId = ChannelId(555206410619584519);
+// const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Record {

@@ -8,5 +8,5 @@ use std::thread;
 
 /// Spawn thread to run core functions.
 pub fn run() -> thread::JoinHandle<()> {
-  thread::spawn(|| process::bot_connect())
+    thread::spawn(process::bot_connect)
 }

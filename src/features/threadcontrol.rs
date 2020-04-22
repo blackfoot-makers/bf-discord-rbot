@@ -9,7 +9,7 @@ pub struct ThreadControl(Arc<AtomicBool>);
 
 impl ThreadControl {
     pub fn new() -> Self {
-        return Self(Arc::new(AtomicBool::new(false)));
+        Self(Arc::new(AtomicBool::new(false)))
     }
 
     pub fn pause(&self) {

@@ -60,57 +60,57 @@ fn save_event(new_event: Event) {
 }
 
 impl Event {
-    pub fn add_reminder(params: &Vec<&str>) -> String {
-        let duration_time = match datestr_to_timeduration(params[2]) {
+    pub fn add_reminder(args: &[&str]) -> String {
+        let duration_time = match datestr_to_timeduration(args[2]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
                 return "Invalid time format".to_string();
             }
         };
-        let chan_id = get_chan_id(params[4]);
-        let repeat = if params.len() != 6 {
-            numstr_to_duration(params[5])
+        let chan_id = get_chan_id(args[4]);
+        let repeat = if args.len() != 6 {
+            numstr_to_duration(args[5])
         } else {
             time::Duration::new(0, 0)
         };
         let new_event = Event {
-            name: String::from(params[1]),
+            name: String::from(args[1]),
             duration: duration_time,
             started: time::SystemTime::now(),
-            message: String::from(params[3]),
+            message: String::from(args[3]),
             channel: chan_id.unwrap(),
-            repeat: repeat,
+            repeat,
             countdown_day: 0.0,
         };
         save_event(new_event);
         "Ok".to_string()
     }
 
-    pub fn add_countdown(params: &Vec<&str>) -> String {
-        let duration_time = match datestr_to_timeduration(params[2]) {
+    pub fn add_countdown(args: &[&str]) -> String {
+        let duration_time = match datestr_to_timeduration(args[2]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
                 return "Invalid time format".to_string();
             }
         };
-        let countdown_day = match datestr_to_days(params[3]) {
+        let countdown_day = match datestr_to_days(args[3]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
                 return "Invalid time format".to_string();
             }
         };
-        let chan_id = get_chan_id(params[6]);
+        let chan_id = get_chan_id(args[6]);
         let new_event = Event {
-            name: String::from(params[1]),
+            name: String::from(args[1]),
             duration: duration_time,
             started: time::SystemTime::now(),
             countdown_day: countdown_day as f64,
-            message: String::from(params[5]),
+            message: String::from(args[5]),
             channel: chan_id.unwrap(),
-            repeat: numstr_to_duration(params[4]),
+            repeat: numstr_to_duration(args[4]),
         };
         save_event(new_event);
 

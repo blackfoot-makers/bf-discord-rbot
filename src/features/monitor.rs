@@ -21,7 +21,7 @@ fn get_codes() -> Value {
     codes
 }
 
-pub fn display_codes(_args: &Vec<&str>) -> String {
+pub fn display_codes(_args: &[&str]) -> String {
     get_codes().to_string()
 }
 

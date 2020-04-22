@@ -128,7 +128,7 @@ fn parse_rfc(date: &mut String, from: &mut String, subject: &mut String, message
 }
 
 /// Assign a user with given the mail number and the user
-pub fn assign(args: &Vec<&str>) -> String {
+pub fn assign(args: &[&str]) -> String {
     let mail_id = args[1].parse::<u32>().unwrap();
     let user = args[2];
 
@@ -154,7 +154,7 @@ pub fn assign(args: &Vec<&str>) -> String {
 }
 
 /// Resolve the mail with this given number
-pub fn resolve(args: &Vec<&str>) -> String {
+pub fn resolve(args: &[&str]) -> String {
     let mail_id = args[1].parse::<u32>().unwrap();
 
     let mut info = MAIL_INFO_FILE.write().unwrap();
@@ -175,15 +175,15 @@ pub fn resolve(args: &Vec<&str>) -> String {
     return format!("Mail {} Was resolved", mail_id);
 }
 
-pub fn content(_args: &Vec<&str>) -> String {
+pub fn content(_args: &[&str]) -> String {
     MAIL_LOCK.read().unwrap().clone()
 }
 
-pub fn display_unassigned(_args: &Vec<&str>) -> String {
+pub fn display_unassigned(_args: &[&str]) -> String {
     MAIL_INFO_FILE.read().unwrap().stored.display_unassigned()
 }
 
-pub fn display_assigned(args: &Vec<&str>) -> String {
+pub fn display_assigned(args: &[&str]) -> String {
     if args.len() == 2 {
         MAIL_INFO_FILE
             .read()
@@ -199,7 +199,7 @@ pub fn display_assigned(args: &Vec<&str>) -> String {
     }
 }
 
-pub fn display_resolved(args: &Vec<&str>) -> String {
+pub fn display_resolved(args: &[&str]) -> String {
     if args.len() == 2 {
         MAIL_INFO_FILE
             .read()
@@ -266,9 +266,11 @@ pub fn check_mail() {
 
             let (mut date, mut from, mut subject) = (String::new(), String::new(), String::new());
             match imap_socket.fetch(&seq, "RFC822") {
-                Ok(messages) => for message in messages.iter() {
-                    parse_rfc(&mut date, &mut from, &mut subject, message);
-                },
+                Ok(messages) => {
+                    for message in messages.iter() {
+                        parse_rfc(&mut date, &mut from, &mut subject, message);
+                    }
+                }
                 Err(e) => println!("Error Fetching email {}: {}", seq, e),
             };
 
