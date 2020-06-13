@@ -13,6 +13,7 @@ use serenity::{
     prelude::*,
 };
 use std::env;
+use std::process;
 use std::str::FromStr;
 
 use super::commands::{
@@ -351,7 +352,13 @@ impl EventHandler for Handler {
 pub fn bot_connect() {
     info!("Bot Connecting");
 
-    let token: String = env::var("token").unwrap();
+    let token: String = match env::var("token") {
+        Ok(token) => token,
+        Err(error) => {
+            error!("Token error: {}", error);
+            process::exit(0x001);
+        }
+    };
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement

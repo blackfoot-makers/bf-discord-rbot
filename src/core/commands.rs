@@ -123,7 +123,7 @@ lazy_static! {
         usage: String::from("@BOT attack @user"),
         permission: Role::User,
       },
-      "mom change" =>
+      "mom-change" =>
       Command {
         exec: mom_change,
         argument_min: 1,
