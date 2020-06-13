@@ -19,3 +19,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: greefine/discord-rbot
           tags: latest
+          tag_with_sha: true
