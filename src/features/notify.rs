@@ -21,7 +21,7 @@ pub struct Event {
     channel: ChannelId,
     repeat: time::Duration,
 }
-const ONE_DAY: i64 = (3600 * 24);
+const ONE_DAY: i64 = 3600 * 24;
 
 fn get_chan_id(chan_param: &str) -> Result<ChannelId, serenity::model::misc::ChannelIdParseError> {
     let chan = &chan_param[2..chan_param.len() - 1];

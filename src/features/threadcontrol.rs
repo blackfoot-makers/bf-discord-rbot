@@ -7,6 +7,7 @@ use std::{thread, time};
 #[derive(Clone)]
 pub struct ThreadControl(Arc<AtomicBool>);
 
+#[allow(dead_code)]
 impl ThreadControl {
     pub fn new() -> Self {
         Self(Arc::new(AtomicBool::new(false)))
