@@ -1,6 +1,6 @@
 use crate::core::files;
 use chrono::prelude::*;
-use serenity::{http, model::id::ChannelId};
+use serenity::{http, model::id::ChannelId, prelude::*};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::{thread, time};
@@ -60,7 +60,7 @@ fn save_event(new_event: Event) {
 }
 
 impl Event {
-    pub fn add_reminder(args: &[&str]) -> String {
+    pub fn add_reminder(args: &[&str], _: &Context) -> String {
         let duration_time = match datestr_to_timeduration(args[2]) {
             Ok(duration) => duration,
             Err(e) => {
@@ -87,7 +87,7 @@ impl Event {
         "Ok".to_string()
     }
 
-    pub fn add_countdown(args: &[&str]) -> String {
+    pub fn add_countdown(args: &[&str], _: &Context) -> String {
         let duration_time = match datestr_to_timeduration(args[2]) {
             Ok(duration) => duration,
             Err(e) => {

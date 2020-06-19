@@ -1,7 +1,10 @@
 //! Handle the connection with discord and it's events.
 use reqwest;
 use serde_json::{from_str, Value};
-use serenity::{model::id::ChannelId, prelude::*};
+use serenity::{
+    model::{gateway::Activity, id::ChannelId},
+    prelude::*,
+};
 use std::collections::HashMap;
 use std::process;
 use std::str::FromStr;
@@ -11,7 +14,7 @@ use crate::features::notify::Event;
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 pub struct Command {
-    pub exec: fn(&[&str]) -> String,
+    pub exec: fn(&[&str], &Context) -> String,
     pub argument_min: usize,
     pub argument_max: usize,
     pub channel: Option<ChannelId>,
@@ -62,7 +65,7 @@ lazy_static! {
     pub static ref COMMANDS_LIST: HashMap<&'static str, Command> = hashmap![
       "quit" =>
       Command {
-        exec: |_| -> String { process::exit(0x0100) },
+        exec: |_, _| -> String { process::exit(0x0100) },
         argument_min: 0,
         argument_max: 0,
         channel: None,
@@ -80,7 +83,7 @@ lazy_static! {
       },
       "users" =>
       Command {
-        exec: |_| -> String { format!("{:?}", INSTANCE.write().unwrap().users) },
+        exec: |_,_| -> String { format!("{:?}", INSTANCE.write().unwrap().users) },
         argument_min: 0,
         argument_max: 0,
         channel: None,
@@ -150,6 +153,15 @@ lazy_static! {
         usage: String::from("@BOT cat"),
         permission: Role::Guest,
       },
+      "set-activity" =>
+      Command {
+        exec: set_activity,
+        argument_min: 1,
+        argument_max: 1,
+        channel: None,
+        usage: String::from("@BOT set-activity ACTIVITY_NAME"),
+        permission: Role::Admin,
+      },
       "help" =>
       Command {
         exec: print_help,
@@ -162,7 +174,7 @@ lazy_static! {
     ];
 }
 
-fn print_help(_args: &[&str]) -> String {
+fn print_help(_args: &[&str], _: &Context) -> String {
     let mut result = String::from("Available commands: \nNAME => USAGE | PERMISSION\n");
     for (key, command) in COMMANDS_LIST.iter() {
         result.push_str(&*format!(
@@ -173,7 +185,7 @@ fn print_help(_args: &[&str]) -> String {
     result
 }
 
-fn promote_user(args: &[&str]) -> String {
+fn promote_user(args: &[&str], _: &Context) -> String {
     let mut db_instance = INSTANCE.write().unwrap();
 
     let role = match Role::from_str(args[2]) {
@@ -186,7 +198,7 @@ fn promote_user(args: &[&str]) -> String {
     db_instance.user_role_update(userid, role)
 }
 
-fn get_cat_pic(_args: &[&str]) -> String {
+fn get_cat_pic(_args: &[&str], _: &Context) -> String {
     let response =
         reqwest::blocking::get("https://api.thecatapi.com/v1/images/search?size=full").unwrap();
     let text = response.text().unwrap();
@@ -199,7 +211,13 @@ fn get_cat_pic(_args: &[&str]) -> String {
     String::from(&result[1..])
 }
 
-fn manual_send_message(args: &[&str]) -> String {
+fn set_activity(args: &[&str], ctx: &Context) -> String {
+    ctx.set_activity(Activity::playing(args[1]));
+    //FIXME: Should be taking the bot name from the ready event
+    format!("Piou is now {} !", args[1])
+}
+
+fn manual_send_message(args: &[&str], _: &Context) -> String {
     let http = super::process::HTTP_STATIC.read().clone().unwrap();
 
     let chan_id = args[1].parse::<u64>().unwrap();
@@ -210,7 +228,7 @@ fn manual_send_message(args: &[&str]) -> String {
     String::new()
 }
 
-fn attack_lauch(args: &[&str]) -> String {
+fn attack_lauch(args: &[&str], _: &Context) -> String {
     ATTACKED.write().clear();
 
     let tag = format!("<@{}", &args[1][3..]);
@@ -218,12 +236,12 @@ fn attack_lauch(args: &[&str]) -> String {
     format!("Prepare yourself {} !", args[1])
 }
 
-fn mom_change(args: &[&str]) -> String {
+fn mom_change(args: &[&str], _: &Context) -> String {
     MOM.write().clear();
     MOM.write().push_str(args[1]);
     format!("It's your momas turn yourself {} !", args[1])
 }
 
-fn witch_mom(_args: &[&str]) -> String {
+fn witch_mom(_args: &[&str], _: &Context) -> String {
     format!("It's currently {} mom's", MOM.read())
 }

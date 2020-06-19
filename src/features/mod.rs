@@ -10,6 +10,7 @@
 
 pub mod airtable;
 pub mod notify;
+pub mod ordering;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};

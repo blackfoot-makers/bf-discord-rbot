@@ -3,7 +3,7 @@ use crate::{database, features::Features};
 use log::{error, info};
 use rand;
 use serenity::{
-    http,
+    cache, http,
     model::channel::{Message, Reaction},
     model::{
         event::ResumedEvent,
@@ -12,9 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::env;
-use std::process;
-use std::str::FromStr;
+use std::{env, process, str::FromStr, sync::Arc};
 
 use super::commands::{
     ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -24,7 +22,8 @@ use super::commands::{
 struct Handler;
 
 lazy_static! {
-    pub static ref HTTP_STATIC: RwLock<Option<std::sync::Arc<http::Http>>> = RwLock::new(None);
+    pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
+    pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
 }
 
 fn allowed_channel(
@@ -45,10 +44,7 @@ fn allowed_channel(
     }
 }
 
-fn allowed_user(expected: database::Role, userid: u64) -> bool {
-    let db_instance = database::INSTANCE.read().unwrap();
-    let user: &database::User = db_instance.user_search(userid).unwrap();
-
+fn allowed_user(expected: database::Role, user: &database::User) -> bool {
     let role = match database::Role::from_str(&*user.role) {
         Err(e) => {
             println!("Error {}", e);
@@ -63,19 +59,28 @@ fn allowed_user(expected: database::Role, userid: u64) -> bool {
 fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
     for (key, command) in COMMANDS_LIST.iter() {
         if *key == message_split[0] && allowed_channel(command.channel, message.channel_id, ctx) {
-            if !allowed_user(command.permission, *message.author.id.as_u64()) {
-                message
-                    .channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.content("You are not allowed to run this command")
-                    })
+            {
+                let db_instance = database::INSTANCE.read().unwrap();
+                let user: &database::User = db_instance
+                    .user_search(*message.author.id.as_u64())
                     .unwrap();
-                return true;
+                if !allowed_user(command.permission, &user) {
+                    message
+                        .channel_id
+                        .send_message(&ctx.http, |m| {
+                            m.content(format!(
+                                "You({}) are not allowed to run this command",
+                                user.role
+                            ))
+                        })
+                        .unwrap();
+                    return true;
+                }
             }
             // We remove default arguments: author and command name from the total
             let arguments = message_split.len() - 2;
             let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-                (command.exec)(message_split)
+                (command.exec)(message_split, &ctx)
             } else {
                 format!("Usage: {}", command.usage.clone())
             };
@@ -328,6 +333,8 @@ impl EventHandler for Handler {
         info!("{} is connected!", ready.user.name);
         let mut arc = HTTP_STATIC.write();
         *arc = Some(ctx.http.clone());
+        let mut cache = CACHE.write();
+        *cache = ctx.cache;
 
         let data = &mut ctx.data.write();
         let feature = data.get_mut::<Features>().unwrap();

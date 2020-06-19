@@ -38,7 +38,8 @@ mod database;
 mod features;
 
 use dotenv::dotenv;
-use std::io;
+use std::io::{self, Write};
+use std::str::FromStr;
 
 /// We run the core and we loop on a basic cmd.
 fn main() {
@@ -74,6 +75,30 @@ fn main() {
                 //         String::from("master"),
                 //         http,
                 //     );
+                } else if input == "channels" {
+                    features::ordering::guild_chanels(serenity::model::id::GuildId(
+                        339372728366923776,
+                    ));
+                } else if input == "promote" {
+                    let mut who = String::new();
+                    let mut rolestring = String::new();
+                    print!("Who?(id) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut who).unwrap();
+                    who.pop();
+                    let userid = who.parse::<u64>().unwrap();
+
+                    print!("role?(string) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut rolestring).unwrap();
+                    rolestring.pop();
+                    let role = match database::Role::from_str(&*rolestring) {
+                        Err(_) => return println!("Role not found"),
+                        Ok(role) => role,
+                    };
+
+                    let mut db_instance = database::INSTANCE.write().unwrap();
+                    println!("Promoting =>{}", db_instance.user_role_update(userid, role));
                 } else {
                     println!("Invalid input [{}]", input);
                 }
