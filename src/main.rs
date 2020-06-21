@@ -79,6 +79,22 @@ fn main() {
                     features::ordering::guild_chanels(serenity::model::id::GuildId(
                         339372728366923776,
                     ));
+                } else if input == "chan" {
+                    let mut channel = String::new();
+                    let mut position = String::new();
+                    print!("channel?(id) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut channel).unwrap();
+                    channel.pop();
+                    let chanid = channel.parse::<u64>().unwrap();
+
+                    print!("position?(number) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut position).unwrap();
+                    position.pop();
+                    let positionnum = position.parse::<u64>().unwrap();
+
+                    features::ordering::move_channels(chanid, positionnum);
                 } else if input == "promote" {
                     let mut who = String::new();
                     let mut rolestring = String::new();
