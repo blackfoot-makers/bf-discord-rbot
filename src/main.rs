@@ -76,7 +76,7 @@ fn main() {
                 //         http,
                 //     );
                 } else if input == "channels" {
-                    features::ordering::guild_chanels(serenity::model::id::GuildId(
+                    features::ordering::guild_chanels_ordering(serenity::model::id::GuildId(
                         339372728366923776,
                     ));
                 } else if input == "chan" {

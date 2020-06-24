@@ -1,4 +1,5 @@
 //! Handle the connection with discord and it's events.
+use super::process::TO_VALIDATE;
 use reqwest;
 use serde_json::{from_str, Value};
 use serenity::{
@@ -244,4 +245,8 @@ fn mom_change(args: &[&str], _: &Context) -> String {
 
 fn witch_mom(_args: &[&str], _: &Context) -> String {
     format!("It's currently {} mom's", MOM.read())
+}
+
+pub fn validate_command<F>(context: &Context, callback: Box<dyn FnOnce<()> + Send> + Sync>>) {
+    let to_validate = TO_VALIDATE.read();
 }

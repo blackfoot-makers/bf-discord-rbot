@@ -12,7 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{env, process, str::FromStr, sync::Arc};
+use std::{collections::HashMap, env, process, str::FromStr, sync::Arc};
 
 use super::commands::{
     ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
@@ -24,6 +24,8 @@ struct Handler;
 lazy_static! {
     pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
     pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
+    pub static ref TO_VALIDATE: RwLock<HashMap<u64, Box<dyn FnOnce(()) -> () + Send + Sync>>> =
+        RwLock::new(HashMap::new());
 }
 
 fn allowed_channel(
