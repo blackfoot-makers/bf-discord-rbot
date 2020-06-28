@@ -3,8 +3,8 @@ use crate::{database, features::Features};
 use log::{error, info};
 use rand;
 use serenity::{
-    http,
-    model::channel::{Message, Reaction},
+    cache, http,
+    model::channel::{Message, Reaction, ReactionType},
     model::{
         event::ResumedEvent,
         gateway::Ready,
@@ -12,19 +12,20 @@ use serenity::{
     },
     prelude::*,
 };
-use std::env;
-use std::process;
-use std::str::FromStr;
+use std::{collections::HashMap, env, process, str::FromStr, sync::Arc};
 
 use super::commands::{
-    ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
+    CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 struct Handler;
 
 lazy_static! {
-    pub static ref HTTP_STATIC: RwLock<Option<std::sync::Arc<http::Http>>> = RwLock::new(None);
+    pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
+    pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
+    pub static ref TO_VALIDATE: RwLock<HashMap<u64, Box<dyn FnOnce() -> () + Send + Sync>>> =
+        RwLock::new(HashMap::new());
 }
 
 fn allowed_channel(
@@ -45,10 +46,7 @@ fn allowed_channel(
     }
 }
 
-fn allowed_user(expected: database::Role, userid: u64) -> bool {
-    let db_instance = database::INSTANCE.read().unwrap();
-    let user: &database::User = db_instance.user_search(userid).unwrap();
-
+fn allowed_user(expected: database::Role, user: &database::User) -> bool {
     let role = match database::Role::from_str(&*user.role) {
         Err(e) => {
             println!("Error {}", e);
@@ -63,28 +61,50 @@ fn allowed_user(expected: database::Role, userid: u64) -> bool {
 fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
     for (key, command) in COMMANDS_LIST.iter() {
         if *key == message_split[0] && allowed_channel(command.channel, message.channel_id, ctx) {
-            if !allowed_user(command.permission, *message.author.id.as_u64()) {
-                message
-                    .channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.content("You are not allowed to run this command")
-                    })
+            {
+                let db_instance = database::INSTANCE.read().unwrap();
+                let user: &database::User = db_instance
+                    .user_search(*message.author.id.as_u64())
                     .unwrap();
-                return true;
+                if !allowed_user(command.permission, &user) {
+                    message
+                        .channel_id
+                        .send_message(&ctx.http, |m| {
+                            m.content(format!(
+                                "You({}) are not allowed to run this command",
+                                user.role
+                            ))
+                        })
+                        .unwrap();
+                    return true;
+                }
             }
             // We remove default arguments: author and command name from the total
             let arguments = message_split.len() - 2;
             let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-                (command.exec)(message_split)
+                let params = CallBackParams {
+                    args: message_split,
+                    message,
+                    context: ctx,
+                };
+                (command.exec)(params)
             } else {
-                format!("Usage: {}", command.usage.clone())
+                Ok(Some(format!("Usage: {}", command.usage.clone())))
             };
 
-            if !result.is_empty() {
-                message
-                    .channel_id
-                    .send_message(&ctx.http, |m| m.content(result))
-                    .unwrap();
+            match result {
+                Ok(option) => match option {
+                    Some(reply) => {
+                        message.reply(&ctx.http, reply).unwrap();
+                    }
+                    None => {}
+                },
+                Err(err) => {
+                    message
+                        .reply(&ctx.http, "Bipboop this is broken <@173013989180178432>")
+                        .unwrap();
+                    error!("Command Error: {} => {}", key, err);
+                }
             }
             return true;
         }
@@ -244,6 +264,58 @@ fn personal_attack(ctx: &Context, message: &Message) {
 // 	}
 // }
 
+fn message_link(reaction: &Reaction) -> String {
+    format!(
+        "https://discordapp.com/channels/{}/{}/{}",
+        reaction.guild_id.unwrap(),
+        reaction.channel_id.0,
+        reaction.message_id.0
+    )
+}
+
+fn check_validation(ctx: Context, reaction: Reaction) {
+    let emoji_name = match &reaction.emoji {
+        ReactionType::Unicode(e) => e.clone(),
+        ReactionType::Custom {
+            animated: _,
+            name,
+            id: _,
+        } => name.clone().unwrap(),
+        _ => "".to_string(),
+    };
+    if ["✅", "❌"].contains(&&*emoji_name) {
+        let mut to_validate = TO_VALIDATE.write();
+        let callback = to_validate.remove(&reaction.message_id.0);
+        match callback {
+            Some(callback) => {
+                let mut message = reaction.message(&ctx.http).unwrap();
+                if emoji_name == "✅" {
+                    callback();
+                    message
+                        .channel_id
+                        .say(
+                            &ctx.http,
+                            format!(
+                                "<@{}> applied {}",
+                                reaction.user_id,
+                                message_link(&reaction),
+                            ),
+                        )
+                        .unwrap();
+                } else if emoji_name == "❌" {
+                    let prevtext = message.content.clone();
+                    message
+                        .edit(ctx.http, |message| {
+                            message.content(format!("~~{}~~", prevtext))
+                        })
+                        .unwrap();
+                }
+            }
+            None => {}
+        }
+    }
+}
+
 fn database_update(message: &Message) {
     let mut db_instance = database::INSTANCE.write().unwrap();
     let author_id = *message.author.id.as_u64() as i64;
@@ -320,14 +392,24 @@ impl EventHandler for Handler {
         }
     }
 
-    fn reaction_add(&self, _ctx: Context, _reaction: Reaction) {
-        // parse_githook_reaction(ctx, reaction);
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        let userid: u64;
+        {
+            let cache = ctx.cache.read();
+            userid = *cache.user.id.as_u64();
+        }
+        if reaction.user_id.0 != userid {
+            // parse_githook_reaction(ctx, reaction);
+            check_validation(ctx, reaction);
+        }
     }
 
     fn ready(&self, ctx: Context, ready: Ready) {
         info!("{} is connected!", ready.user.name);
         let mut arc = HTTP_STATIC.write();
         *arc = Some(ctx.http.clone());
+        let mut cache = CACHE.write();
+        *cache = ctx.cache;
 
         let data = &mut ctx.data.write();
         let feature = data.get_mut::<Features>().unwrap();

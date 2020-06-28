@@ -1,4 +1,7 @@
-use crate::core::files;
+use crate::core::{
+    commands::{CallBackParams, CallbackReturn},
+    files,
+};
 use chrono::prelude::*;
 use serenity::{http, model::id::ChannelId};
 use std::str::FromStr;
@@ -60,61 +63,61 @@ fn save_event(new_event: Event) {
 }
 
 impl Event {
-    pub fn add_reminder(args: &[&str]) -> String {
-        let duration_time = match datestr_to_timeduration(args[2]) {
+    pub fn add_reminder(params: CallBackParams) -> CallbackReturn {
+        let duration_time = match datestr_to_timeduration(params.args[2]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
-                return "Invalid time format".to_string();
+                return Ok(Some(String::from("Invalid time format")));
             }
         };
-        let chan_id = get_chan_id(args[4]);
-        let repeat = if args.len() != 6 {
-            numstr_to_duration(args[5])
+        let chan_id = get_chan_id(params.args[4]);
+        let repeat = if params.args.len() != 6 {
+            numstr_to_duration(params.args[5])
         } else {
             time::Duration::new(0, 0)
         };
         let new_event = Event {
-            name: String::from(args[1]),
+            name: String::from(params.args[1]),
             duration: duration_time,
             started: time::SystemTime::now(),
-            message: String::from(args[3]),
+            message: String::from(params.args[3]),
             channel: chan_id.unwrap(),
             repeat,
             countdown_day: 0.0,
         };
         save_event(new_event);
-        "Ok".to_string()
+        Ok(Some(String::from("Done")))
     }
 
-    pub fn add_countdown(args: &[&str]) -> String {
-        let duration_time = match datestr_to_timeduration(args[2]) {
+    pub fn add_countdown(params: CallBackParams) -> CallbackReturn {
+        let duration_time = match datestr_to_timeduration(params.args[2]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
-                return "Invalid time format".to_string();
+                return Ok(Some(String::from("Invalid time format")));
             }
         };
-        let countdown_day = match datestr_to_days(args[3]) {
+        let countdown_day = match datestr_to_days(params.args[3]) {
             Ok(duration) => duration,
             Err(e) => {
                 eprintln!("{}", e);
-                return "Invalid time format".to_string();
+                return Ok(Some(String::from("Invalid time format")));
             }
         };
-        let chan_id = get_chan_id(args[6]);
+        let chan_id = get_chan_id(params.args[6]);
         let new_event = Event {
-            name: String::from(args[1]),
+            name: String::from(params.args[1]),
             duration: duration_time,
             started: time::SystemTime::now(),
             countdown_day: countdown_day as f64,
-            message: String::from(args[5]),
+            message: String::from(params.args[5]),
             channel: chan_id.unwrap(),
-            repeat: numstr_to_duration(args[4]),
+            repeat: numstr_to_duration(params.args[4]),
         };
         save_event(new_event);
 
-        "Ok".to_string()
+        Ok(Some(String::from("Done")))
     }
 }
 

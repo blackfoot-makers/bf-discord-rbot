@@ -38,7 +38,8 @@ mod database;
 mod features;
 
 use dotenv::dotenv;
-use std::io;
+use std::io::{self, Write};
+use std::str::FromStr;
 
 /// We run the core and we loop on a basic cmd.
 fn main() {
@@ -74,6 +75,46 @@ fn main() {
                 //         String::from("master"),
                 //         http,
                 //     );
+                // } else if input == "channels" {
+                //     let _ = features::ordering::guild_chanels_ordering(
+                //         serenity::model::id::GuildId(339372728366923776),
+                //     );
+                } else if input == "chan" {
+                    let mut channel = String::new();
+                    let mut position = String::new();
+                    print!("channel?(id) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut channel).unwrap();
+                    channel.pop();
+                    let chanid = channel.parse::<u64>().unwrap();
+
+                    print!("position?(number) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut position).unwrap();
+                    position.pop();
+                    let positionnum = position.parse::<u64>().unwrap();
+
+                    features::ordering::move_channels(chanid, positionnum);
+                } else if input == "promote" {
+                    let mut who = String::new();
+                    let mut rolestring = String::new();
+                    print!("Who?(id) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut who).unwrap();
+                    who.pop();
+                    let userid = who.parse::<u64>().unwrap();
+
+                    print!("role?(string) >");
+                    io::stdout().flush().unwrap();
+                    io::stdin().read_line(&mut rolestring).unwrap();
+                    rolestring.pop();
+                    let role = match database::Role::from_str(&*rolestring) {
+                        Err(_) => return println!("Role not found"),
+                        Ok(role) => role,
+                    };
+
+                    let mut db_instance = database::INSTANCE.write().unwrap();
+                    println!("Promoting =>{}", db_instance.user_role_update(userid, role));
                 } else {
                     println!("Invalid input [{}]", input);
                 }

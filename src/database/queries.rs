@@ -48,7 +48,7 @@ impl Instance {
             .expect("Diesel: Unable to save new role");
         user.role = new_role.to_string();
 
-        String::from("Done")
+        format!("Updated {} to {}", user.discordid, user.role)
     }
 
     pub fn user_search(&self, discordid: u64) -> Option<&User> {

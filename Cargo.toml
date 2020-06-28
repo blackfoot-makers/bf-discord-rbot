@@ -26,6 +26,7 @@ dotenv = "0.15.0"
 strum = "0.17.1"
 strum_macros = "0.17.1"
 job_scheduler = "1.1.0"
+parking_lot = "0.11.0"
 
 # Unused dependencies from commented code
 # imap = "0.8.1"

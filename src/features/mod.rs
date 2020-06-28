@@ -9,7 +9,8 @@
 // pub mod calendar;
 
 pub mod airtable;
-pub mod notify;
+pub mod event;
+pub mod ordering;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};
@@ -41,7 +42,7 @@ impl Features {
         println!("Running featrues");
         let http_clone = http.clone();
         let tc_clone = self.thread_control.clone();
-        thread::spawn(move || notify::check_events(http_clone, || ThreadControl::check(&tc_clone)));
+        thread::spawn(move || event::check_events(http_clone, || ThreadControl::check(&tc_clone)));
         let http_clone = http.clone();
         let tc_clone = self.thread_control.clone();
         thread::spawn(move || {
