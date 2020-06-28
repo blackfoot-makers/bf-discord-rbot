@@ -177,7 +177,7 @@ lazy_static! {
       Command {
         exec: crate::features::ordering::ordering_channel_command,
         argument_min: 0,
-        argument_max: 0,
+        argument_max: 1,
         channel: None,
         usage: String::from("@BOT ordering"),
         permission: Role::Admin,

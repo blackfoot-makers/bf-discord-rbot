@@ -13,8 +13,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub fn ordering_channel_command(params: CallBackParams) -> CallbackReturn {
+    let category: u64 = if params.args.len() == 3 {
+        params.args[1].parse::<u64>()?
+    } else {
+        0
+    };
     let gid = params.message.guild_id.unwrap();
-    let (ordering, func) = match guild_chanels_ordering(gid) {
+    let (ordering, func) = match guild_chanels_ordering(gid, category) {
         Some(res) => res,
         None => return Ok(Some(String::from("Channels are already ordered"))),
     };
@@ -42,10 +47,18 @@ pub fn move_channels(chanid: u64, position: u64) {
 fn ordering_channels_type(
     channels: &mut HashMap<ChannelId, Arc<RwLock<GuildChannel>>>,
     chantype: ChannelType,
+    category: u64,
 ) -> (String, Vec<ChannelId>) {
     let mut vec_voice: Vec<_> = channels
         .iter()
-        .filter(|(_, chan)| chan.read().kind == chantype)
+        .filter(|(_, chan)| {
+            let chan = chan.read();
+            chan.kind == chantype
+                && match chan.category_id {
+                    Some(chan) => chan == category,
+                    None => category == 0,
+                }
+        })
         .collect();
     vec_voice.sort_by(|chan, chan2| chan.1.read().name.cmp(&chan2.1.read().name));
     let mut display = String::new();
@@ -80,15 +93,18 @@ fn ordering_channels_type_apply(new_order: Vec<ChannelId>) {
     }
 }
 
-pub fn guild_chanels_ordering(gid: GuildId) -> Option<(String, Box<dyn FnOnce() + Send + Sync>)> {
+pub fn guild_chanels_ordering(
+    gid: GuildId,
+    category: u64,
+) -> Option<(String, Box<dyn FnOnce() + Send + Sync>)> {
     let cache_lock = CACHE.write();
     let cache = cache_lock.read();
     let ordering = match cache.guild(gid) {
         Some(guild) => {
             let channels = &mut guild.write().channels;
             (
-                ordering_channels_type(channels, ChannelType::Text),
-                ordering_channels_type(channels, ChannelType::Voice),
+                ordering_channels_type(channels, ChannelType::Text, category),
+                ordering_channels_type(channels, ChannelType::Voice, category),
             )
         }
         None => panic!("Guild not found"),
