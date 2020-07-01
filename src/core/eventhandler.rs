@@ -1,12 +1,10 @@
-use super::commands::ATTACKED;
 use super::process::{
-    annoy_channel, database_update, filter_outannoying_messages, personal_attack, process_command,
-    process_contains, process_tag_msg, split_args, CACHE, HTTP_STATIC,
+    annoy_channel, attacked, database_update, filter_outannoying_messages, personal_attack,
+    process_command, process_contains, process_tag_msg, split_args, CACHE, HTTP_STATIC,
 };
 use super::validation::check_validation;
 use crate::features::Features;
 use log::{error, info};
-use rand;
 use serenity::{
     model::channel::{Message, Reaction},
     model::{event::ResumedEvent, gateway::Ready},
@@ -41,25 +39,9 @@ impl EventHandler for Handler {
         if message.content.starts_with(&*format!("<@!{}>", userid))
             || message.content.starts_with(&*format!("<@{}>", userid))
         {
-            // Check if Attacked
-            const ANNOYING_MESSAGE: [&str; 6] = [
-                "Ah oui mais y'a JPO",
-                "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
-                "Avant, Faut laver les vitres les gars",
-                "Ah mais vous faites quoi ?",
-                "Non mais tu as vu le jeu qui est sorti ?",
-                "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
-            ];
-
-            if message.author.mention() == *ATTACKED.read() {
-                let random = rand::random::<usize>() % 6;
-                message
-                    .channel_id
-                    .say(&ctx.http, ANNOYING_MESSAGE[random])
-                    .unwrap();
+            if attacked(&ctx, &message) {
                 return;
             }
-
             let line = message.content.clone();
             let author: &str = &message.author.tag();
             let mut message_split = split_args(&line);

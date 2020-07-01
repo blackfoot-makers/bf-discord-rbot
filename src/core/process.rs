@@ -205,6 +205,27 @@ pub fn personal_attack(ctx: &Context, message: &Message) {
     }
 }
 
+pub fn attacked(ctx: &Context, message: &Message) -> bool {
+    const ANNOYING_MESSAGE: [&str; 6] = [
+        "Ah oui mais y'a JPO",
+        "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
+        "Avant, Faut laver les vitres les gars",
+        "Ah mais vous faites quoi ?",
+        "Non mais tu as vu le jeu qui est sorti ?",
+        "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
+    ];
+
+    if message.author.mention() == *ATTACKED.read() {
+        let random = rand::random::<usize>() % 6;
+        message
+            .channel_id
+            .say(&ctx.http, ANNOYING_MESSAGE[random])
+            .unwrap();
+        return true;
+    }
+    false
+}
+
 pub fn database_update(message: &Message) {
     let mut db_instance = database::INSTANCE.write().unwrap();
     let author_id = *message.author.id.as_u64() as i64;
