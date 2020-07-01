@@ -245,21 +245,26 @@ const PROJECT_CATEGORY: ChannelId = ChannelId(481747896539152384);
 pub fn archive_activity(ctx: &Context, message: &Message) {
     match message.channel(&ctx.cache) {
         Some(channel) => {
-            let channel_lock = channel.category().unwrap();
-            let mut channel = channel_lock.write();
-            match channel.category_id {
-                Some(category) => {
-                    if category == ARCHIVE_CATEGORY {
-                        channel
-                            .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
-                            .expect(&*format!(
-                                "Unable to edit channel:{} to unarchive",
-                                channel.id
-                            ));
+            let channelid = channel.id().0;
+            match channel.guild() {
+                Some(channel) => {
+                    let mut channel = channel.write();
+                    match channel.category_id {
+                        Some(category) => {
+                            if category == ARCHIVE_CATEGORY {
+                                channel
+                                    .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
+                                    .expect(&*format!(
+                                        "Unable to edit channel:{} to unarchive",
+                                        channel.id
+                                    ));
+                            }
+                        }
+                        None => (),
                     }
                 }
-                None => (),
-            }
+                None => error!("Channel {} isn't in a guild", channelid),
+            };
         }
         None => error!("Channel not found in cache {}", message.channel_id),
     };
