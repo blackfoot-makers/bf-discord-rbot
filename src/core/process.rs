@@ -1,6 +1,9 @@
 //! Handle the connection with discord and it's events.
+use super::commands::{
+    CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
+};
 use crate::database;
-use log::{error, debug};
+use log::{debug, error};
 use rand;
 use serenity::{
     cache, http,
@@ -9,10 +12,6 @@ use serenity::{
     prelude::*,
 };
 use std::{str::FromStr, sync::Arc};
-
-use super::commands::{
-    CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
-};
 
 lazy_static! {
     pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
@@ -139,7 +138,9 @@ pub fn split_args(input: &str) -> Vec<&str> {
         if (count % 2) == 0 {
             result.push(msg);
         } else {
-            let mut message_split_space: Vec<&str> = msg.trim().split(' ').collect();
+            let mut message_split_space: Vec<&str> =
+                msg.split(' ').filter(|spstr| !spstr.is_empty()).collect();
+            print!("message_split_space: {:?}", message_split_space);
             result.append(&mut message_split_space);
         }
     }
