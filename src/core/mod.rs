@@ -1,12 +1,14 @@
 //! The base of the program containing the abstractions for files and connection to discord.
 
 pub mod commands;
+pub mod eventhandler;
 pub mod files;
 pub mod process;
+pub mod validation;
 
 use std::thread;
 
 /// Spawn thread to run core functions.
 pub fn run() -> thread::JoinHandle<()> {
-    thread::spawn(process::bot_connect)
+    thread::spawn(eventhandler::bot_connect)
 }

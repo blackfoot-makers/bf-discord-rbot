@@ -1,5 +1,5 @@
 //! Handle the connection with discord and it's events.
-use super::process::TO_VALIDATE;
+use super::validation::TO_VALIDATE;
 use reqwest;
 use serde_json::{from_str, Value};
 use serenity::{
@@ -7,10 +7,7 @@ use serenity::{
     model::{gateway::Activity, id::ChannelId},
     prelude::*,
 };
-use std::collections::HashMap;
-use std::error::Error;
-use std::process;
-use std::str::FromStr;
+use std::{collections::HashMap, error::Error, process, str::FromStr};
 
 use crate::database::{Role, INSTANCE};
 use crate::features::event::Event;
@@ -204,7 +201,8 @@ lazy_static! {
 }
 
 fn print_help(_: CallBackParams) -> CallbackReturn {
-    let mut result = String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
+    let mut result =
+        String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
     for (key, command) in COMMANDS_LIST.iter() {
         result.push_str(&*format!(
             "{} => Usage: {} | {{{}}}\n",
