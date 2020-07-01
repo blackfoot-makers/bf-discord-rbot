@@ -150,7 +150,6 @@ const CATS: [&str; 12] = [
     "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
 ];
 const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
-
 const HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
 const CYBERGOD: ChannelId = ChannelId(588666452849065994);
 const TESTBOT: ChannelId = ChannelId(555206410619584519);
@@ -238,4 +237,30 @@ pub fn database_update(message: &Message) {
         &message.content,
         *message.channel_id.as_u64() as i64,
     );
+}
+
+// TODO: This is only working for 1 server as channel is static
+const ARCHIVE_CATEGORY: ChannelId = ChannelId(585403527564886027);
+const PROJECT_CATEGORY: ChannelId = ChannelId(481747896539152384);
+pub fn archive_activity(ctx: &Context, message: &Message) {
+    match message.channel(&ctx.cache) {
+        Some(channel) => {
+            let channel_lock = channel.category().unwrap();
+            let mut channel = channel_lock.write();
+            match channel.category_id {
+                Some(category) => {
+                    if category == ARCHIVE_CATEGORY {
+                        channel
+                            .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
+                            .expect(&*format!(
+                                "Unable to edit channel:{} to unarchive",
+                                channel.id
+                            ));
+                    }
+                }
+                None => (),
+            }
+        }
+        None => error!("Channel not found in cache {}", message.channel_id),
+    };
 }

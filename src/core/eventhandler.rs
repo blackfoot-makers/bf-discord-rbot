@@ -1,6 +1,7 @@
 use super::process::{
-    annoy_channel, attacked, database_update, filter_outannoying_messages, personal_attack,
-    process_command, process_contains, process_tag_msg, split_args, CACHE, HTTP_STATIC,
+    annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
+    personal_attack, process_command, process_contains, process_tag_msg, split_args, CACHE,
+    HTTP_STATIC,
 };
 use super::validation::check_validation;
 use crate::features::Features;
@@ -25,6 +26,7 @@ impl EventHandler for Handler {
         println!("{} says: {}", message.author.name, message.content);
 
         database_update(&message);
+        archive_activity(&ctx, &message);
         if message.is_own(&ctx) || message.content.is_empty() {
             return;
         };
