@@ -1,5 +1,5 @@
 //! Handle the connection with discord and it's events.
-use super::process::TO_VALIDATE;
+use super::validation::TO_VALIDATE;
 use reqwest;
 use serde_json::{from_str, Value};
 use serenity::{
@@ -7,10 +7,7 @@ use serenity::{
     model::{gateway::Activity, id::ChannelId},
     prelude::*,
 };
-use std::collections::HashMap;
-use std::error::Error;
-use std::process;
-use std::str::FromStr;
+use std::{collections::HashMap, error::Error, process, str::FromStr};
 
 use crate::database::{Role, INSTANCE};
 use crate::features::event::Event;
@@ -89,7 +86,7 @@ lazy_static! {
         argument_min: 2,
         argument_max: 2,
         channel: None,
-        usage: String::from("@BOT send_message #channelid @who"),
+        usage: String::from("@BOT send_message <#channelid> <@who>"),
         permission: Role::Admin,
       },
       "users" =>
@@ -107,7 +104,7 @@ lazy_static! {
         argument_min: 2,
         argument_max: 2,
         channel: None,
-        usage: String::from("@BOT promote @user role"),
+        usage: String::from("@BOT promote <@user> <role>"),
         permission: Role::Admin,
       },
       "reminder" =>
@@ -116,7 +113,7 @@ lazy_static! {
         argument_min: 4,
         argument_max: 5,
         channel: None,
-        usage: String::from("@BOT reminder NAME DATE(MONTH-DAY:HOURS:MINUTES) MESSAGE CHANNEL REPEAT(delay in minutes)"),
+        usage: String::from("@BOT reminder <NAME> <DATE(MONTH-DAY:HOURS:MINUTES)> >MESSAGE> <CHANNEL> [<REPEAT(delay in minutes)>]"),
         permission: Role::User,
       },
       "countdown" =>
@@ -125,7 +122,7 @@ lazy_static! {
         argument_min: 6,
         argument_max: 6,
         channel: None,
-        usage: String::from("@BOT countdown NAME START_DATE(MONTH-DAY:HOURS) END_DATE(MONTH-DAY:HOURS) DELAY_OF_REPETITION(minutes) MESSAGE CHANNEL"),
+        usage: String::from("@BOT countdown <NAME> <START_DATE(MONTH-DAY:HOURS)> <END_DATE(MONTH-DAY:HOURS)> <DELAY_OF_REPETITION(minutes)> <MESSAGE CHANNEL>"),
         permission: Role::User,
       },
       "attack" =>
@@ -134,7 +131,7 @@ lazy_static! {
         argument_min: 1,
         argument_max: 1,
         channel: None,
-        usage: String::from("@BOT attack @user"),
+        usage: String::from("@BOT attack <@user>"),
         permission: Role::User,
       },
       "mom-change" =>
@@ -143,7 +140,7 @@ lazy_static! {
         argument_min: 1,
         argument_max: 1,
         channel: None,
-        usage: String::from("@BOT momchange @user"),
+        usage: String::from("@BOT momchange <@user>"),
         permission: Role::User,
       },
       "mom" =>
@@ -170,7 +167,7 @@ lazy_static! {
         argument_min: 1,
         argument_max: 1,
         channel: None,
-        usage: String::from("@BOT set-activity ACTIVITY_NAME"),
+        usage: String::from("@BOT set-activity <ACTIVITY_NAME>"),
         permission: Role::Admin,
       },
       "ordering" =>
@@ -179,7 +176,16 @@ lazy_static! {
         argument_min: 0,
         argument_max: 1,
         channel: None,
-        usage: String::from("@BOT ordering"),
+        usage: String::from("@BOT ordering [<category>]"),
+        permission: Role::Admin,
+      },
+      "archivage" =>
+      Command {
+        exec: crate::features::archivage::archive_channels_command,
+        argument_min: 0,
+        argument_max: 1,
+        channel: None,
+        usage: String::from("@BOT archivage [<category>]"),
         permission: Role::Admin,
       },
       "help" =>
@@ -195,7 +201,8 @@ lazy_static! {
 }
 
 fn print_help(_: CallBackParams) -> CallbackReturn {
-    let mut result = String::from("Available commands: \nNAME => USAGE | PERMISSION\n");
+    let mut result =
+        String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
     for (key, command) in COMMANDS_LIST.iter() {
         result.push_str(&*format!(
             "{} => Usage: {} | {{{}}}\n",

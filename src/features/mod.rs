@@ -9,6 +9,7 @@
 // pub mod calendar;
 
 pub mod airtable;
+pub mod archivage;
 pub mod event;
 pub mod ordering;
 pub mod threadcontrol;

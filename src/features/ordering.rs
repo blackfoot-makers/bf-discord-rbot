@@ -49,7 +49,7 @@ fn ordering_channels_type(
     chantype: ChannelType,
     category: u64,
 ) -> (String, Vec<ChannelId>) {
-    let mut vec_voice: Vec<_> = channels
+    let mut channels: Vec<_> = channels
         .iter()
         .filter(|(_, chan)| {
             let chan = chan.read();
@@ -60,10 +60,10 @@ fn ordering_channels_type(
                 }
         })
         .collect();
-    vec_voice.sort_by(|chan, chan2| chan.1.read().name.cmp(&chan2.1.read().name));
+    channels.sort_by(|chan, chan2| chan.1.read().name.cmp(&chan2.1.read().name));
     let mut display = String::new();
     let mut ordered_channels: Vec<ChannelId> = Vec::new();
-    for (index, (_, chan)) in vec_voice.iter().enumerate() {
+    for (index, (_, chan)) in channels.iter().enumerate() {
         let channel = chan.read();
         if channel.position != index as i64 {
             display.push_str(&*format!(
@@ -87,6 +87,7 @@ fn ordering_channels_type_apply(new_order: Vec<ChannelId>) {
         if channel_mut.position != index as i64 {
             let http = HTTP_STATIC.write().clone().unwrap();
             if let Err(why) = channel_mut.edit(&http, |chan| chan.position(index as u64)) {
+                // TODO: Should tell the user about it
                 println!("Unable to edit channel {}:\n{}", channel_mut.name, why);
             }
         }

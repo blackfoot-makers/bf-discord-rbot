@@ -55,8 +55,7 @@ pub fn deploy_from_reaction(
     thread::spawn(move || deploy(user, repository, branch, http));
 }
 
-
-pub fn deploy_test(user : String, repository :String, branch: String , http: Arc<http::raw::Http>) {
+pub fn deploy_test(user: String, repository: String, branch: String, http: Arc<http::raw::Http>) {
     thread::spawn(move || deploy(user, repository, branch, http));
 }
 
@@ -173,3 +172,45 @@ fn deploy(user: String, repository: String, branch: String, http: Arc<http::raw:
     rt_container.spawn(future);
     rt_container.shutdown_on_idle().wait().unwrap();
 }
+
+/// Previously in process.rs
+// fn parse_githook_reaction(ctx: Context, reaction: Reaction) {
+// 	let channel = ChannelId(555206410619584519); //TODO : Channel register
+
+// 	let emoji_name = match &reaction.emoji {
+// 		ReactionType::Unicode(e) => e.clone(),
+// 		ReactionType::Custom {
+// 			animated: _,
+// 			name,
+// 			id: _,
+// 		} => name.clone().unwrap(),
+// 		_ => "".to_string(),
+// 	};
+// 	debug!("Reaction emoji: {}", emoji_name);
+// 	if reaction.channel_id == channel {
+// 		if emoji_name == "✅" {
+// 			let message = reaction.message(&ctx.http).unwrap();
+// 			if message.is_own(&ctx.cache) {
+// 				let closing_tag = message.content.find("]").unwrap_or_default();
+// 				if closing_tag > 0 {
+// 					let params = &message.content[1..closing_tag];
+// 					let params_split: Vec<&str> = params.split('/').collect();
+// 					if params_split.len() == 3 {
+// 						// features::docker::deploy_from_reaction(
+// 						// 	params_split[0].to_string(),
+// 						// 	params_split[1].to_string(),
+// 						// 	params_split[2].to_string(),
+// 						// 	ctx.http.clone(),
+// 						// );
+// 						// return;
+// 					}
+// 				}
+
+// 				eprintln!(
+// 					"Reaction/githook: Invalid params parse : [{}]",
+// 					message.content
+// 				);
+// 			}
+// 		}
+// 	}
+// }
