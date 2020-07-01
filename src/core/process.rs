@@ -1,6 +1,6 @@
 //! Handle the connection with discord and it's events.
 use crate::database;
-use log::error;
+use log::{error, debug};
 use rand;
 use serenity::{
     cache, http,
@@ -263,7 +263,7 @@ pub fn archive_activity(ctx: &Context, message: &Message) {
                         None => (),
                     }
                 }
-                None => error!("Channel {} isn't in a guild", channelid),
+                None => debug!("Channel {} isn't in a guild", channelid),
             };
         }
         None => error!("Channel not found in cache {}", message.channel_id),
