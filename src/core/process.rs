@@ -140,7 +140,6 @@ pub fn split_args(input: &str) -> Vec<&str> {
         } else {
             let mut message_split_space: Vec<&str> =
                 msg.split(' ').filter(|spstr| !spstr.is_empty()).collect();
-            print!("message_split_space: {:?}", message_split_space);
             result.append(&mut message_split_space);
         }
     }
