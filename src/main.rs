@@ -24,6 +24,7 @@
 //! [core docs]: core/index.html
 //! [features docs]: features/index.html
 
+#![warn(clippy::all)]
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]

@@ -1,6 +1,6 @@
 //! Handle the connection with discord and it's events.
 use super::validation::TO_VALIDATE;
-use reqwest;
+
 use serde_json::{from_str, Value};
 use serenity::{
     model::channel::Message,
@@ -278,10 +278,10 @@ fn witch_mom(_: CallBackParams) -> CallbackReturn {
 }
 
 pub fn validate_command(
-    responsse: &String,
+    responsse: &str,
     message: &Message,
     context: &Context,
-    callback: Box<dyn FnOnce() -> () + Send + Sync>,
+    callback: Box<dyn FnOnce() + Send + Sync>,
 ) {
     let mut to_validate = TO_VALIDATE.write();
     let message = message.reply(&context.http, responsse).unwrap();

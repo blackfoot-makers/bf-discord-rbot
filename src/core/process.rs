@@ -4,7 +4,7 @@ use super::commands::{
 };
 use crate::database;
 use log::{debug, error};
-use rand;
+
 use serenity::{
     cache, http,
     model::channel::Message,
@@ -83,12 +83,11 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
             };
 
             match result {
-                Ok(option) => match option {
-                    Some(reply) => {
+                Ok(option) => {
+                    if let Some(reply) = option {
                         message.reply(&ctx.http, reply).unwrap();
                     }
-                    None => {}
-                },
+                }
                 Err(err) => {
                     message
                         .reply(&ctx.http, "Bipboop this is broken <@173013989180178432>")
@@ -140,7 +139,6 @@ pub fn split_args(input: &str) -> Vec<&str> {
         } else {
             let mut message_split_space: Vec<&str> =
                 msg.split(' ').filter(|spstr| !spstr.is_empty()).collect();
-            print!("message_split_space: {:?}", message_split_space);
             result.append(&mut message_split_space);
         }
     }
@@ -250,18 +248,15 @@ pub fn archive_activity(ctx: &Context, message: &Message) {
             match channel.guild() {
                 Some(channel) => {
                     let mut channel = channel.write();
-                    match channel.category_id {
-                        Some(category) => {
-                            if category == ARCHIVE_CATEGORY {
-                                channel
-                                    .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
-                                    .expect(&*format!(
-                                        "Unable to edit channel:{} to unarchive",
-                                        channel.id
-                                    ));
-                            }
+                    if let Some(category) = channel.category_id {
+                        if category == ARCHIVE_CATEGORY {
+                            channel
+                                .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
+                                .expect(&*format!(
+                                    "Unable to edit channel:{} to unarchive",
+                                    channel.id
+                                ));
                         }
-                        None => (),
                     }
                 }
                 None => debug!("Channel {} isn't in a guild", channelid),
