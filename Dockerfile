@@ -5,7 +5,6 @@ RUN chmod +x /usr/local/bin/wait-for-it
 WORKDIR /discord-rbot
 COPY . .
 RUN cargo install diesel_cli --no-default-features --features "postgres"
-RUN cargo build
+RUN cargo build --release
 
-
-CMD /bin/bash -c "wait-for-it localhost:5432 && diesel migration run && cargo run"
+CMD /bin/bash -c "wait-for-it localhost:5432 && diesel migration run && cargo run --release"
