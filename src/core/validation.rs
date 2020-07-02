@@ -5,7 +5,7 @@ use serenity::{
 use std::collections::HashMap;
 
 lazy_static! {
-    pub static ref TO_VALIDATE: RwLock<HashMap<u64, Box<dyn FnOnce() -> () + Send + Sync>>> =
+    pub static ref TO_VALIDATE: RwLock<HashMap<u64, Box<dyn FnOnce() + Send + Sync>>> =
         RwLock::new(HashMap::new());
 }
 
@@ -31,32 +31,29 @@ pub fn check_validation(ctx: Context, reaction: Reaction) {
     if ["✅", "❌"].contains(&&*emoji_name) {
         let mut to_validate = TO_VALIDATE.write();
         let callback = to_validate.remove(&reaction.message_id.0);
-        match callback {
-            Some(callback) => {
-                let mut message = reaction.message(&ctx.http).unwrap();
-                if emoji_name == "✅" {
-                    callback();
-                    message
-                        .channel_id
-                        .say(
-                            &ctx.http,
-                            format!(
-                                "<@{}> applied {}",
-                                reaction.user_id,
-                                message_link(&reaction),
-                            ),
-                        )
-                        .unwrap();
-                } else if emoji_name == "❌" {
-                    let prevtext = message.content.clone();
-                    message
-                        .edit(ctx.http, |message| {
-                            message.content(format!("~~{}~~", prevtext))
-                        })
-                        .unwrap();
-                }
+        if let Some(callback) = callback {
+            let mut message = reaction.message(&ctx.http).unwrap();
+            if emoji_name == "✅" {
+                callback();
+                message
+                    .channel_id
+                    .say(
+                        &ctx.http,
+                        format!(
+                            "<@{}> applied {}",
+                            reaction.user_id,
+                            message_link(&reaction),
+                        ),
+                    )
+                    .unwrap();
+            } else if emoji_name == "❌" {
+                let prevtext = message.content.clone();
+                message
+                    .edit(ctx.http, |message| {
+                        message.content(format!("~~{}~~", prevtext))
+                    })
+                    .unwrap();
             }
-            None => {}
         }
     }
 }

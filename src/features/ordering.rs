@@ -115,10 +115,10 @@ pub fn guild_chanels_ordering(
     if texts_chans.0.is_empty() && voices_chans.0.is_empty() {
         return None;
     }
-    let preview_reply = String::from(format!(
+    let preview_reply = format!(
         "Order prevision:\nTexts:\n{}\nVoices:\n{}",
         texts_chans.0, voices_chans.0
-    ));
+    );
     let func = move || {
         ordering_channels_type_apply(texts_chans.1);
         ordering_channels_type_apply(voices_chans.1);

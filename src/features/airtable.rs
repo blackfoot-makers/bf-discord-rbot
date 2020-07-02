@@ -1,6 +1,6 @@
 use chrono::prelude::*;
 use log::{debug, info};
-use reqwest;
+
 use serenity::{http, model::id::ChannelId};
 use std::collections::HashMap;
 use std::sync::Arc;

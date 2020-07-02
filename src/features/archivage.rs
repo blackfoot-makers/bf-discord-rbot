@@ -70,8 +70,8 @@ fn check_channels_activity(
         let channel = channel.read();
         let http = HTTP_STATIC.write().clone().unwrap();
         match channel.messages(http, |retriever| retriever.limit(1)) {
-            Ok(messages) => match messages.first() {
-                Some(message) => {
+            Ok(messages) => {
+                if let Some(message) = messages.first() {
                     let now = Local::now();
                     if now.num_days_from_ce() - message.timestamp.num_days_from_ce() > 30 {
                         display.push_str(&*format!(
@@ -82,8 +82,7 @@ fn check_channels_activity(
                         unactive_channels.push(channel.id.0);
                     }
                 }
-                None => {}
-            },
+            }
             // TODO: Should tell the user about it
             Err(_) => error!("Unable to read message of {}", channel.id),
         };
@@ -110,10 +109,10 @@ pub fn guild_chanels_archivage(
     if unactive_channels.1.is_empty() {
         return None;
     }
-    let preview_reply = String::from(format!(
+    let preview_reply = format!(
         "Unactive channels to move to archives:\n{}",
         unactive_channels.0
-    ));
+    );
     let func = move || {
         move_channels_to_archive(unactive_channels.1);
     };
