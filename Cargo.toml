@@ -4,6 +4,10 @@ version = "0.3.0"
 authors = ["Raphael <greefine@hotmail.fr>"]
 edition = "2018"
 
+[[bin]]
+name = "rbot-discord"
+path = "src/main.rs"
+
 [dependencies]
 serenity = "0.8.6"
 serde_json = "1.0"
