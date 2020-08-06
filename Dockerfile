@@ -32,6 +32,7 @@ RUN chmod +x /usr/local/bin/wait-for-it
 FROM debian:stable-slim
 
 COPY --from=cargo-build /usr/local/cargo/bin/rbot-discord /bin
+COPY --from=cargo-build /usr/local/cargo/bin/diesel /bin
 COPY --from=cargo-build /usr/local/bin/wait-for-it /bin/wait-for-it
 
 CMD /bin/bash -c "wait-for-it localhost:5432 && diesel migration run && rbot-discord"
