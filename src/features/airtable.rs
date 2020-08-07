@@ -1,13 +1,12 @@
 use chrono::prelude::*;
 use log::{debug, error, info};
-use std::error::Error;
-
 use serenity::{http, model::id::ChannelId};
 use std::collections::HashMap;
+use std::env;
+use std::error::Error;
 use std::sync::Arc;
 use std::{thread, time};
 
-const API_TOKEN: &str = "keycdRFRdaBnZPvH8";
 const TICKET_SECONDS: i64 = 300;
 // const TESTBOT_CHAN: ChannelId = ChannelId(555206410619584519);
 const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
@@ -32,10 +31,10 @@ fn seconds_since_now(date_param: &str) -> Result<i64, chrono::ParseError> {
     Ok(duration_chrono.num_seconds())
 }
 
-fn query(client: &reqwest::blocking::Client) -> Result<Querry, Box<dyn Error>> {
+fn query(client: &reqwest::blocking::Client, api_token: &String) -> Result<Querry, Box<dyn Error>> {
     let mut request = client.request(reqwest::Method::GET,
         "https://api.airtable.com/v0/appA8HEheXt1LwX6t/Actions?fields%5B%5D=Requete&filterByFormula=%7BState%7D%20%3D%20%27%27");
-    request = request.bearer_auth(API_TOKEN);
+    request = request.bearer_auth(api_token);
     let text = request.send()?.text();
     let result = text?;
     Ok(serde_json::from_str(&result)?)
@@ -45,12 +44,20 @@ pub fn check_airtable<F>(http: Arc<http::Http>, threads_check: F)
 where
     F: for<'a> Fn(),
 {
-    let mut ticket_trigered: Vec<String> = Vec::new();
-    let client = reqwest::blocking::Client::new();
+    let api_token: String = match env::var("AIRTABLE_TOKEN") {
+        Ok(token) => token,
+        Err(_) => {
+            error!("Airtable token wasn't set, skiping feature");
+            return;
+        }
+    };
 
+    let mut ticket_trigered: Vec<String> = Vec::new();
+
+    let client = reqwest::blocking::Client::new();
     loop {
         threads_check();
-        match query(&client) {
+        match query(&client, &api_token) {
             Ok(result_parsed) => {
                 for record in result_parsed.records {
                     if record.fields.contains_key("Requete") {
