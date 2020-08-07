@@ -17,10 +17,8 @@ RUN sed -i 's#src/main.rs#caching.rs#' Cargo.toml
 RUN cargo build --release
 RUN cargo vendor > .cargo/config
 
-
 RUN sed -i 's#caching.rs#src/main.rs#' Cargo.toml
 COPY ./src src
-COPY ./migrations migrations
 RUN cargo build --release
 RUN cargo install --path . --verbose
 
@@ -35,5 +33,7 @@ RUN apt update && apt install -y libpq-dev
 COPY --from=cargo-build /usr/local/cargo/bin/rbot-discord /bin
 COPY --from=cargo-build /usr/local/cargo/bin/diesel /bin
 COPY --from=cargo-build /usr/local/bin/wait-for-it /bin/wait-for-it
+
+COPY ./migrations migrations
 
 CMD /bin/bash -c "wait-for-it localhost:5432 && diesel migration run && rbot-discord"
