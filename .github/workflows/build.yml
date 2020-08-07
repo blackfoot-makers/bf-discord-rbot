@@ -16,3 +16,4 @@ jobs:
           repository: greefine/discord-rbot
           tags: latest
           tag_with_sha: true
+          cache_froms: greefine/discord-rbot:latest
