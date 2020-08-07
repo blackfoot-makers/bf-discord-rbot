@@ -28,7 +28,7 @@ RUN cargo install --path . --verbose
 
 FROM debian:stable-slim
 
-RUN apt update && apt install -y libpq-dev 
+RUN apt-get update && apt-get -y install ca-certificates libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
 
 COPY --from=cargo-build /usr/local/cargo/bin/rbot-discord /bin
 COPY --from=cargo-build /usr/local/cargo/bin/diesel /bin
