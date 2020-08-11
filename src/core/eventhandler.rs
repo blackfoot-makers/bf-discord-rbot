@@ -23,7 +23,16 @@ impl EventHandler for Handler {
     /// Event handlers are dispatched through a threadpool, and so multiple
     /// events can be dispatched simultaneously.
     fn message(&self, ctx: Context, message: Message) {
-        println!("{} says: {}", message.author.name, message.content);
+        let chan = message.channel(&ctx.cache).unwrap();
+        let chanid = chan.id().to_string();
+        let chan_name = match &chan.guild() {
+            Some(guildchan) => String::from(guildchan.read().name()),
+            None => chanid,
+        };
+        info!(
+            "[{}]({}) > {} says: {}",
+            message.timestamp, chan_name, message.author.name, message.content
+        );
 
         database_update(&message);
         archive_activity(&ctx, &message);
