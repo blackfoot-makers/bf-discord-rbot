@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-use log::{debug, error, info};
+use log::{debug, error};
 use serenity::{http, model::id::ChannelId};
 use std::collections::HashMap;
 use std::env;
@@ -79,7 +79,7 @@ where
                 error!("Error querying airtable: {}", err);
             }
         }
-        info!("ticket_trigered : {:?}", ticket_trigered);
+        debug!("ticket_trigered : {:?}", ticket_trigered);
         thread::sleep(time::Duration::from_secs(120));
     }
 }
