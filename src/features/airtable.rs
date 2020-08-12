@@ -7,6 +7,8 @@ use std::error::Error;
 use std::sync::Arc;
 use std::{thread, time};
 
+use crate::database;
+
 const TICKET_SECONDS: i64 = 300;
 // const TESTBOT_CHAN: ChannelId = ChannelId(555206410619584519);
 const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
@@ -25,13 +27,18 @@ struct Querry {
     // offset: String,
 }
 
+fn database_record_add(record: &Record) {
+    let mut db_instance = database::INSTANCE.write().unwrap();
+    db_instance.airtable_row_add(&record.id, 0, &record.fields["Requete"], true);
+}
+
 fn seconds_since_now(date_param: &str) -> Result<i64, chrono::ParseError> {
     let date = Local.datetime_from_str(date_param, "%Y-%m-%dT%H:%M:%S.000Z")?;
     let duration_chrono = Local::now() - date;
     Ok(duration_chrono.num_seconds())
 }
 
-fn query(client: &reqwest::blocking::Client, api_token: &String) -> Result<Querry, Box<dyn Error>> {
+fn query(client: &reqwest::blocking::Client, api_token: &str) -> Result<Querry, Box<dyn Error>> {
     let mut request = client.request(reqwest::Method::GET,
         "https://api.airtable.com/v0/appA8HEheXt1LwX6t/Actions?fields%5B%5D=Requete&filterByFormula=%7BState%7D%20%3D%20%27%27");
     request = request.bearer_auth(api_token);
@@ -67,6 +74,7 @@ where
                             seconds, record.id, record.fields["Requete"]
                         );
                         if seconds < TICKET_SECONDS && !ticket_trigered.contains(&record.id) {
+                            database_record_add(&record);
                             ticket_trigered.push(record.id);
                             AIRBNB_CHAN
                                 .say(&http, format!("New ticket: {}", record.fields["Requete"]))

@@ -84,4 +84,25 @@ impl Instance {
             .expect("Error saving new user");
         self.messages.push(new_message);
     }
+
+    pub fn airtable_row_add(
+        &mut self,
+        aid: &str,
+        created_time: i64,
+        content: &str,
+        triggered: bool,
+    ) {
+        let new_row = NewAirtableRow {
+            aid: aid.to_string(),
+            created_time,
+            content: content.to_string(),
+            triggered,
+        };
+
+        let new_row: AirtableRow = diesel::insert_into(airtable::table)
+            .values(&new_row)
+            .get_result(&self.get_connection())
+            .expect("Error saving new airtable_row");
+        self.airtable.push(new_row);
+    }
 }
