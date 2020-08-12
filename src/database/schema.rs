@@ -14,6 +14,7 @@ table! {
         author -> Int8,
         content -> Varchar,
         channel -> Int8,
+        date -> Nullable<Timestamp>,
     }
 }
 

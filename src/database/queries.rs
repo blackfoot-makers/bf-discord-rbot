@@ -70,12 +70,20 @@ impl Instance {
         self.messages = results;
     }
 
-    pub fn message_add(&mut self, id: i64, author: i64, content: &str, channel: i64) {
+    pub fn message_add(
+        &mut self,
+        id: i64,
+        author: i64,
+        content: &str,
+        channel: i64,
+        date: Option<std::time::SystemTime>,
+    ) {
         let new_message = Message {
             id,
             author,
             content: content.to_string(),
             channel,
+            date,
         };
 
         let new_message: Message = diesel::insert_into(messages::table)

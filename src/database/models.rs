@@ -21,6 +21,7 @@ pub struct Message {
     pub author: i64,
     pub content: String,
     pub channel: i64,
+    pub date: Option<std::time::SystemTime>,
 }
 
 #[derive(Copy, Clone, Display, EnumString)]

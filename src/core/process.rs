@@ -4,14 +4,13 @@ use super::commands::{
 };
 use crate::database;
 use log::{debug, error};
-
 use serenity::{
     cache, http,
     model::channel::Message,
     model::id::{ChannelId, UserId},
     prelude::*,
 };
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::SystemTime};
 
 lazy_static! {
     pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
@@ -230,11 +229,13 @@ pub fn database_update(message: &Message) {
     if !db_instance.users.iter().any(|e| e.discordid == author_id) {
         db_instance.user_add(author_id, &*database::Role::Guest.to_string());
     }
+    let time: SystemTime = SystemTime::from(message.timestamp);
     db_instance.message_add(
         *message.id.as_u64() as i64,
         author_id,
         &message.content,
         *message.channel_id.as_u64() as i64,
+        Some(time),
     );
 }
 
