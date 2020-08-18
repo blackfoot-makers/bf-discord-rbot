@@ -36,18 +36,16 @@ pub enum Role {
 pub struct AirtableRow {
     pub id: i32,
     pub aid: String,
-    pub created_time: i64,
     pub content: String,
-    pub triggered: bool,
+    pub created_time: Option<std::time::SystemTime>,
 }
 
 #[derive(Insertable, Debug)]
 #[table_name = "airtable"]
 pub struct NewAirtableRow {
     pub aid: String,
-    pub created_time: i64,
     pub content: String,
-    pub triggered: bool,
+    pub created_time: Option<std::time::SystemTime>,
 }
 
 pub use super::schema::*;

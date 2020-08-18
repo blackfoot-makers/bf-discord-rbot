@@ -86,7 +86,7 @@ impl Instance {
             date,
         };
 
-        let new_message: Message = diesel::insert_into(messages::table)
+        let new_message = diesel::insert_into(messages::table)
             .values(&new_message)
             .get_result(&self.get_connection())
             .expect("Error saving new user");
@@ -96,21 +96,44 @@ impl Instance {
     pub fn airtable_row_add(
         &mut self,
         aid: &str,
-        created_time: i64,
+        created_time: Option<std::time::SystemTime>,
         content: &str,
-        triggered: bool,
-    ) {
-        let new_row = NewAirtableRow {
-            aid: aid.to_string(),
-            created_time,
-            content: content.to_string(),
-            triggered,
-        };
+    ) -> bool {
+        match self.airtable_row_search(aid.to_string()) {
+            Some(_) => false,
+            None => {
+                let new_row = NewAirtableRow {
+                    aid: aid.to_string(),
+                    content: content.to_string(),
+                    created_time,
+                };
 
-        let new_row: AirtableRow = diesel::insert_into(airtable::table)
-            .values(&new_row)
-            .get_result(&self.get_connection())
-            .expect("Error saving new airtable_row");
-        self.airtable.push(new_row);
+                let new_row: AirtableRow = diesel::insert_into(airtable::table)
+                    .values(&new_row)
+                    .get_result(&self.get_connection())
+                    .expect("Error saving new airtable_row");
+                self.airtable.push(new_row);
+                true
+            }
+        }
+    }
+
+    pub fn airtable_row_search(&self, aid: String) -> Option<&AirtableRow> {
+        for row in self.airtable.iter() {
+            if row.aid == aid {
+                return Some(row);
+            }
+        }
+        None
+    }
+
+    pub fn airtable_load(&mut self) {
+        use super::schema::airtable::dsl::*;
+
+        let results = airtable
+            .load::<AirtableRow>(&self.get_connection())
+            .expect("Error loading airtable_rows");
+
+        self.airtable = results;
     }
 }

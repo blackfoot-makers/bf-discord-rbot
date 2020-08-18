@@ -1,5 +1,5 @@
-use chrono::prelude::*;
-use log::{debug, error};
+use chrono::DateTime;
+use log::error;
 use serenity::{http, model::id::ChannelId};
 use std::collections::HashMap;
 use std::env;
@@ -9,7 +9,6 @@ use std::{thread, time};
 
 use crate::database;
 
-const TICKET_SECONDS: i64 = 300;
 // const TESTBOT_CHAN: ChannelId = ChannelId(555206410619584519);
 const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
 
@@ -27,15 +26,20 @@ struct Querry {
     // offset: String,
 }
 
-fn database_record_add(record: &Record) {
+fn database_record_add(record: &Record) -> bool {
     let mut db_instance = database::INSTANCE.write().unwrap();
-    db_instance.airtable_row_add(&record.id, 0, &record.fields["Requete"], true);
-}
-
-fn seconds_since_now(date_param: &str) -> Result<i64, chrono::ParseError> {
-    let date = Local.datetime_from_str(date_param, "%Y-%m-%dT%H:%M:%S.000Z")?;
-    let duration_chrono = Local::now() - date;
-    Ok(duration_chrono.num_seconds())
+    let time = match DateTime::parse_from_rfc3339(&*record.created_time) {
+        // 2020-06-16T10:13:43.000Z
+        Ok(time) => Some(time::SystemTime::from(time)),
+        Err(error) => {
+            error!(
+                "Unable to parse time: {} for airtable row {}\n{}",
+                record.id, record.created_time, error
+            );
+            None
+        }
+    };
+    db_instance.airtable_row_add(&record.id, time, &record.fields["Requete"])
 }
 
 fn query(client: &reqwest::blocking::Client, api_token: &str) -> Result<Querry, Box<dyn Error>> {
@@ -58,8 +62,10 @@ where
             return;
         }
     };
-
-    let mut ticket_trigered: Vec<String> = Vec::new();
+    {
+        let mut db_instance = database::INSTANCE.write().unwrap();
+        db_instance.airtable_load();
+    }
 
     let client = reqwest::blocking::Client::new();
     loop {
@@ -68,17 +74,14 @@ where
             Ok(result_parsed) => {
                 for record in result_parsed.records {
                     if record.fields.contains_key("Requete") {
-                        let seconds = seconds_since_now(&record.created_time).unwrap();
-                        debug!(
-                            "Secs: {} | [{}]{}",
-                            seconds, record.id, record.fields["Requete"]
-                        );
-                        if seconds < TICKET_SECONDS && !ticket_trigered.contains(&record.id) {
-                            database_record_add(&record);
-                            ticket_trigered.push(record.id);
+                        let inserted = database_record_add(&record);
+                        if inserted {
                             AIRBNB_CHAN
                                 .say(&http, format!("New ticket: {}", record.fields["Requete"]))
-                                .unwrap();
+                                .expect(&*format!(
+                                    "Unable to send new message ticket: {}",
+                                    record.fields["Requete"]
+                                ));
                         }
                     }
                 }
@@ -87,7 +90,6 @@ where
                 error!("Error querying airtable: {}", err);
             }
         }
-        debug!("ticket_trigered : {:?}", ticket_trigered);
         thread::sleep(time::Duration::from_secs(120));
     }
 }
