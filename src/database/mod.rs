@@ -10,28 +10,30 @@ pub use self::models::{Message, User};
 pub use queries::*;
 
 lazy_static! {
-  pub static ref INSTANCE: RwLock<Instance> = RwLock::new(Instance::new());
+    pub static ref INSTANCE: RwLock<Instance> = RwLock::new(Instance::new());
 }
 
 impl Instance {
-  pub fn new() -> Self {
-    let mut instance = Instance {
-      connection: establish_connection(),
-      users: Vec::new(),
-      messages: Vec::new(),
-    };
-    instance.user_load();
-    instance.message_load();
-    instance
-  }
+    pub fn new() -> Self {
+        let mut instance = Instance {
+            connection: establish_connection(),
+            users: Vec::new(),
+            messages: Vec::new(),
+            airtable: Vec::new(),
+        };
+        instance.user_load();
+        instance.message_load();
+        instance
+    }
 
-  pub fn get_connection(&self) -> PgPooledConnection {
-    self.connection.get().unwrap()
-  }
+    pub fn get_connection(&self) -> PgPooledConnection {
+        self.connection.get().unwrap()
+    }
 }
 
 pub struct Instance {
-  connection: PgPool,
-  pub users: Vec<User>,
-  pub messages: Vec<Message>,
+    connection: PgPool,
+    pub users: Vec<User>,
+    pub messages: Vec<Message>,
+    pub airtable: Vec<AirtableRow>,
 }
