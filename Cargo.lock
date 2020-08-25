@@ -1356,7 +1356,6 @@ dependencies = [
  "hyper-reverse-proxy",
  "job_scheduler",
  "lazy_static",
- "lock_api 0.4.0",
  "log",
  "pretty_env_logger",
  "rand",

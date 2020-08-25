@@ -3,6 +3,7 @@
 pub mod commands;
 pub mod eventhandler;
 pub mod files;
+pub mod parse;
 pub mod process;
 pub mod validation;
 
@@ -10,5 +11,5 @@ use std::thread;
 
 /// Spawn thread to run core functions.
 pub fn run() -> thread::JoinHandle<()> {
-    thread::spawn(eventhandler::bot_connect)
+  thread::spawn(eventhandler::bot_connect)
 }
