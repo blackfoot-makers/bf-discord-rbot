@@ -1,4 +1,5 @@
 //! Handle the connection with discord and it's events.
+use super::parse;
 use super::validation::TO_VALIDATE;
 use crate::database::{Role, INSTANCE};
 use crate::features::event::Event;
@@ -170,7 +171,7 @@ lazy_static! {
       argument_max: 1,
       channel: None,
       usage: String::from("@BOT set-activity <ACTIVITY_NAME>"),
-      permission: Role::Admin,
+      permission: Role::User,
     },
     "ordering" =>
     Command {
@@ -197,7 +198,7 @@ lazy_static! {
       argument_max: 3,
       channel: None,
       usage: String::from("@BOT rename <@user> <new nickname> [<guild>]"),
-      permission: Role::Admin,
+      permission: Role::User,
     },
     "help" =>
     Command {
@@ -288,34 +289,33 @@ fn witch_mom(_: CallBackParams) -> CallbackReturn {
   Ok(Some(format!("It's currently {} mom's", MOM.read())))
 }
 
-const BLACKFOOT_ID: u64 = 464779118857420811;
 fn rename(params: CallBackParams) -> CallbackReturn {
-  match params.context.cache.read().guild(BLACKFOOT_ID) {
-    Some(guild) => {
-      let target = params.args[1];
-      let targeted_user_id = target[2..target.len() - 1].parse::<u64>().unwrap();
-      let member = guild
-        .read()
-        .member(&params.context.http, UserId(targeted_user_id));
-      match member {
-        Ok(member) => {
-          member.edit(&params.context.http, |member| {
-            member.nickname(params.args[2])
-          })?;
-          Ok(Some(format!(
-            "Renamed {} to {}",
-            params.args[1], params.args[2]
-          )))
-        }
-        Err(error) => {
-          error!("Rename: Guild blackfoot not found:\n{}", error);
-          Ok(None)
-        }
-      }
+  let cache = &params.context.cache;
+  let http = &params.context.http;
+  let channel = params.message.channel(&cache).unwrap();
+  let guild = match parse::get_guild(channel, params.context, Some(params.args[3])) {
+    Ok(guild) => guild,
+    Err(error) => return Ok(Some(error)),
+  };
+  let target = params.args[1];
+  let targeted_user_id = if target.len() == 18 {
+    target.parse::<u64>()?
+  } else {
+    target[3..target.len() - 1].parse::<u64>()?
+  };
+  let member = guild.read().member(http, UserId(targeted_user_id));
+  match member {
+    Ok(member) => {
+      member.edit(http, |member| member.nickname(params.args[2]))?;
+      Ok(Some(String::from("Rename done :)")))
     }
-    None => {
-      error!("Rename: Guild blackfoot not found");
-      Ok(None)
+    Err(error) => {
+      error!("Rename: member not found: {}", error);
+      Ok(Some(format!(
+        "User {} not found in guild: {}",
+        targeted_user_id,
+        guild.read().name,
+      )))
     }
   }
 }
