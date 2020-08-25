@@ -277,6 +277,37 @@ fn witch_mom(_: CallBackParams) -> CallbackReturn {
     Ok(Some(format!("It's currently {} mom's", MOM.read())))
 }
 
+fn rename(params: CallBackParams) -> CallbackReturn {
+    match params.context.cache.read().guild(464779118857420811) {
+        Some(guild) => {
+            let target = params.args[1];
+            let targeted_user_id = target[2..target.len() - 1].parse::<u64>().unwrap();
+            let member = guild
+                .read()
+                .member(&params.context.http, UserId(targeted_user_id));
+            match member {
+                Ok(member) => {
+                    member.edit(&params.context.http, |member| {
+                        member.nickname(params.args[2])
+                    })?;
+                    Ok(Some(format!(
+                        "Renamed {} to {}",
+                        params.args[1], params.args[2]
+                    )))
+                }
+                Err(error) => {
+                    error!("Rename: Guild blackfoot not found:\n{}", error);
+                    Ok(None)
+                }
+            }
+        }
+        None => {
+            error!("Rename: Guild blackfoot not found");
+            Ok(None)
+        }
+    }
+}
+
 pub fn validate_command(
     responsse: &str,
     message: &Message,
