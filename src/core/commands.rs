@@ -1,16 +1,18 @@
 //! Handle the connection with discord and it's events.
 use super::validation::TO_VALIDATE;
-
+use crate::database::{Role, INSTANCE};
+use crate::features::event::Event;
+use log::error;
 use serde_json::{from_str, Value};
 use serenity::{
     model::channel::Message,
-    model::{gateway::Activity, id::ChannelId},
+    model::{
+        gateway::Activity,
+        id::{ChannelId, UserId},
+    },
     prelude::*,
 };
 use std::{collections::HashMap, error::Error, process, str::FromStr};
-
-use crate::database::{Role, INSTANCE};
-use crate::features::event::Event;
 
 pub struct CallBackParams<'a> {
     pub args: &'a [&'a str],
@@ -188,6 +190,15 @@ lazy_static! {
         usage: String::from("@BOT archivage [<category>]"),
         permission: Role::Admin,
       },
+      "rename" =>
+      Command {
+        exec: rename,
+        argument_min: 2,
+        argument_max: 3,
+        channel: None,
+        usage: String::from("@BOT rename <@user> <new nickname> [<guild>]"),
+        permission: Role::Admin,
+      },
       "help" =>
       Command {
         exec: print_help,
@@ -277,8 +288,9 @@ fn witch_mom(_: CallBackParams) -> CallbackReturn {
     Ok(Some(format!("It's currently {} mom's", MOM.read())))
 }
 
+const BLACKFOOT_ID: u64 = 464779118857420811;
 fn rename(params: CallBackParams) -> CallbackReturn {
-    match params.context.cache.read().guild(464779118857420811) {
+    match params.context.cache.read().guild(BLACKFOOT_ID) {
         Some(guild) => {
             let target = params.args[1];
             let targeted_user_id = target[2..target.len() - 1].parse::<u64>().unwrap();
