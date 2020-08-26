@@ -56,7 +56,10 @@ fn allowed_user(expected: database::Role, user: &database::User) -> bool {
 
 pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
-    if *key == message_split[0] && allowed_channel(command.channel, message.channel_id, ctx) {
+    if *key == message_split[0] {
+      if !allowed_channel(command.channel, message.channel_id, ctx) {
+        return true;
+      };
       {
         let db_instance = database::INSTANCE.read().unwrap();
         let user: &database::User = db_instance

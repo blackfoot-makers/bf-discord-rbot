@@ -96,7 +96,7 @@ impl EventHandler for Handler {
     }
   }
 
-  fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+  fn reaction_remove(&self, _: Context, reaction: Reaction) {
     println!("reaction_removed: userid: {}", reaction.user_id.0)
   }
 

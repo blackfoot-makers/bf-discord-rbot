@@ -1,16 +1,11 @@
 //! Handle the connection with discord and it's events.
-use super::parse;
 use super::validation::TO_VALIDATE;
 use crate::database::{Role, INSTANCE};
-use crate::features::event::Event;
-use log::error;
+use crate::features::{event::Event, project_manager, renaming};
 use serde_json::{from_str, Value};
 use serenity::{
-  model::channel::{ChannelType, Message},
-  model::{
-    gateway::Activity,
-    id::{ChannelId, UserId},
-  },
+  model::channel::Message,
+  model::{gateway::Activity, id::ChannelId},
   prelude::*,
 };
 use std::{collections::HashMap, error::Error, process, str::FromStr};
@@ -40,6 +35,8 @@ const MOM_RFC: &str = "```\
 - The insult toward a mom must be dirrect\
 - The mom is reseted after 1 week, and can also be reseted by insulting someone else mom with another computer that was left unlocked or by buing pastries\
 ```";
+// const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(747066293135605791);
+const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(555206410619584519); //FIXME:
 
 lazy_static! {
   pub static ref ATTACKED: RwLock<String> = RwLock::new(String::new());
@@ -193,11 +190,20 @@ lazy_static! {
     },
     "rename" =>
     Command {
-      exec: rename,
+      exec: renaming::rename,
       argument_min: 2,
       argument_max: 3,
       channel: None,
       usage: String::from("@BOT rename <@user> <new nickname> [<guild>]"),
+      permission: Role::User,
+    },
+    "create-project" =>
+    Command {
+      exec: project_manager::create_project,
+      argument_min: 1,
+      argument_max: 5,
+      channel: Some(PROJECT_ANOUNCEMENT),
+      usage: String::from("@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]"),
       permission: Role::User,
     },
     "help" =>
@@ -287,62 +293,6 @@ fn mom_change(params: CallBackParams) -> CallbackReturn {
 
 fn witch_mom(_: CallBackParams) -> CallbackReturn {
   Ok(Some(format!("It's currently {} mom's", MOM.read())))
-}
-
-fn rename(params: CallBackParams) -> CallbackReturn {
-  let cache = &params.context.cache;
-  let http = &params.context.http;
-  let channel = params.message.channel(&cache).unwrap();
-  let guild = match parse::get_guild(channel, params.context, Some(params.args[3])) {
-    Ok(guild) => guild,
-    Err(error) => return Ok(Some(error)),
-  };
-  let target = params.args[1];
-  let targeted_user_id = if target.len() == 18 {
-    target.parse::<u64>()?
-  } else {
-    target[3..target.len() - 1].parse::<u64>()?
-  };
-  let member = guild.read().member(http, UserId(targeted_user_id));
-  match member {
-    Ok(member) => {
-      member.edit(http, |member| member.nickname(params.args[2]))?;
-      Ok(Some(String::from("Rename done :)")))
-    }
-    Err(error) => {
-      error!("Rename: member not found: {}", error);
-      Ok(Some(format!(
-        "User {} not found in guild: {}",
-        targeted_user_id,
-        guild.read().name,
-      )))
-    }
-  }
-}
-const PROJECT_CATEGORY: u64 = 481747896539152384;
-fn create_project(params: CallBackParams) -> CallbackReturn {
-  let blackfoot = parse::get_blackfoot(&params.context);
-
-  blackfoot
-    .write()
-    .create_channel(&params.context.http, |channel| {
-      channel
-        .kind(ChannelType::Text)
-        .category(PROJECT_CATEGORY)
-        .name(params.args[1])
-    });
-  Ok(Some(String::from("Création de projet-a.
-
-**Fiche de projet**
----
-**Date de création** : 23/08/2020
-**Client** : Axa
-**Codex** : #PXXX
-**Lead projet** : Nico
-**Deadline (si applicable)** : N/A
-**Brief projet** : L'objectif est de développer un software CRA de gestion RH avec la participation des SI, des métiers et du service RH. Le software sera accessible à tous les employés.
-**Contexte projet** : Fortes tensions entre les SI et les métiers. Notre client direct sur place est le DSI.
-    ")))
 }
 
 pub fn validate_command(

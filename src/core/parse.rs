@@ -5,7 +5,8 @@ use serenity::{
 };
 use std::sync::Arc;
 
-const BLACKFOOT_ID: u64 = 464779118857420811;
+// FIXME: const BLACKFOOT_ID: u64 = 464779118857420811;
+const BLACKFOOT_ID: u64 = 339372728366923776;
 pub fn get_blackfoot(context: &Context) -> Arc<RwLock<Guild>> {
   context.cache.read().guild(BLACKFOOT_ID).unwrap()
 }
