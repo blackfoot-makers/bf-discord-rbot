@@ -6,7 +6,7 @@ use crate::features::event::Event;
 use log::error;
 use serde_json::{from_str, Value};
 use serenity::{
-  model::channel::Message,
+  model::channel::{ChannelType, Message},
   model::{
     gateway::Activity,
     id::{ChannelId, UserId},
@@ -318,6 +318,31 @@ fn rename(params: CallBackParams) -> CallbackReturn {
       )))
     }
   }
+}
+const PROJECT_CATEGORY: u64 = 481747896539152384;
+fn create_project(params: CallBackParams) -> CallbackReturn {
+  let blackfoot = parse::get_blackfoot(&params.context);
+
+  blackfoot
+    .write()
+    .create_channel(&params.context.http, |channel| {
+      channel
+        .kind(ChannelType::Text)
+        .category(PROJECT_CATEGORY)
+        .name(params.args[1])
+    });
+  Ok(Some(String::from("Création de projet-a.
+
+**Fiche de projet**
+---
+**Date de création** : 23/08/2020
+**Client** : Axa
+**Codex** : #PXXX
+**Lead projet** : Nico
+**Deadline (si applicable)** : N/A
+**Brief projet** : L'objectif est de développer un software CRA de gestion RH avec la participation des SI, des métiers et du service RH. Le software sera accessible à tous les employés.
+**Contexte projet** : Fortes tensions entre les SI et les métiers. Notre client direct sur place est le DSI.
+    ")))
 }
 
 pub fn validate_command(

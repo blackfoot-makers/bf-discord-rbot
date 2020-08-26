@@ -85,15 +85,19 @@ impl EventHandler for Handler {
   }
 
   fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-    let userid: u64;
+    let botid: u64;
     {
       let cache = ctx.cache.read();
-      userid = *cache.user.id.as_u64();
+      botid = *cache.user.id.as_u64();
     }
-    if reaction.user_id.0 != userid {
+    if reaction.user_id.0 != botid {
       // parse_githook_reaction(ctx, reaction);
       check_validation(ctx, reaction);
     }
+  }
+
+  fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+    println!("reaction_removed: userid: {}", reaction.user_id.0)
   }
 
   fn ready(&self, ctx: Context, ready: Ready) {
