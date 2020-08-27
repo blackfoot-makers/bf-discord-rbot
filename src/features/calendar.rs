@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use job_scheduler::{Job, JobScheduler};
 use std::time::Duration;
 
-const CDC_CRA: ChannelId = ChannelId(651436625909252129);
+use crate::constants::discordids::CDC_CRA_CHANNEL;
 
 lazy_static! {
     static ref HASHLIST: HashMap<&'static str, &'static str> = hashmap![

@@ -34,6 +34,7 @@ extern crate diesel;
 #[macro_use]
 pub mod macros;
 
+mod constants;
 mod core;
 mod database;
 mod features;

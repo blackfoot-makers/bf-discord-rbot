@@ -4,6 +4,7 @@ pub mod commands;
 pub mod eventhandler;
 pub mod files;
 pub mod parse;
+pub mod permissions;
 pub mod process;
 pub mod validation;
 

@@ -1,3 +1,4 @@
+use crate::constants::discordids;
 use log::error;
 use serenity::{
   model::{channel::Channel, guild::Guild},
@@ -5,7 +6,10 @@ use serenity::{
 };
 use std::sync::Arc;
 
-const BLACKFOOT_ID: u64 = 464779118857420811;
+pub fn get_blackfoot(context: &Context) -> Arc<RwLock<Guild>> {
+  context.cache.read().guild(discordids::GUILD_ID).unwrap()
+}
+
 pub fn get_guild(
   channel: Channel,
   context: &Context,
@@ -26,7 +30,7 @@ pub fn get_guild(
           None => Err(format!("Guild: {} not found", gid)),
         }
       }
-      None => Ok(context.cache.read().guild(BLACKFOOT_ID).unwrap()),
+      None => Ok(get_blackfoot(context)),
     },
     Channel::Guild(guildchan) => Ok(guildchan.read().guild(&context.cache).unwrap()),
     _ => Err(String::from("This doesn't work in this channel")),

@@ -1,16 +1,11 @@
 //! Handle the connection with discord and it's events.
-use super::parse;
 use super::validation::TO_VALIDATE;
 use crate::database::{Role, INSTANCE};
-use crate::features::event::Event;
-use log::error;
+use crate::features::{event::Event, project_manager, renaming};
 use serde_json::{from_str, Value};
 use serenity::{
   model::channel::Message,
-  model::{
-    gateway::Activity,
-    id::{ChannelId, UserId},
-  },
+  model::{gateway::Activity, id::ChannelId},
   prelude::*,
 };
 use std::{collections::HashMap, error::Error, process, str::FromStr};
@@ -193,11 +188,20 @@ lazy_static! {
     },
     "rename" =>
     Command {
-      exec: rename,
+      exec: renaming::rename,
       argument_min: 2,
       argument_max: 3,
       channel: None,
       usage: String::from("@BOT rename <@user> <new nickname> [<guild>]"),
+      permission: Role::User,
+    },
+    "create-project" =>
+    Command {
+      exec: project_manager::create_project,
+      argument_min: 1,
+      argument_max: 7,
+      channel: None,
+      usage: String::from("@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]"),
       permission: Role::User,
     },
     "help" =>
@@ -254,8 +258,8 @@ fn set_activity(params: CallBackParams) -> CallbackReturn {
   params
     .context
     .set_activity(Activity::playing(params.args[1]));
-  //FIXME: Should be taking the bot name from the ready event
-  Ok(Some(format!("Piou is now {} !", params.args[1])))
+  let myname = &params.context.cache.read().user.name;
+  Ok(Some(format!("{} is now {} !", myname, params.args[1])))
 }
 
 fn manual_send_message(params: CallBackParams) -> CallbackReturn {
@@ -287,37 +291,6 @@ fn mom_change(params: CallBackParams) -> CallbackReturn {
 
 fn witch_mom(_: CallBackParams) -> CallbackReturn {
   Ok(Some(format!("It's currently {} mom's", MOM.read())))
-}
-
-fn rename(params: CallBackParams) -> CallbackReturn {
-  let cache = &params.context.cache;
-  let http = &params.context.http;
-  let channel = params.message.channel(&cache).unwrap();
-  let guild = match parse::get_guild(channel, params.context, Some(params.args[3])) {
-    Ok(guild) => guild,
-    Err(error) => return Ok(Some(error)),
-  };
-  let target = params.args[1];
-  let targeted_user_id = if target.len() == 18 {
-    target.parse::<u64>()?
-  } else {
-    target[3..target.len() - 1].parse::<u64>()?
-  };
-  let member = guild.read().member(http, UserId(targeted_user_id));
-  match member {
-    Ok(member) => {
-      member.edit(http, |member| member.nickname(params.args[2]))?;
-      Ok(Some(String::from("Rename done :)")))
-    }
-    Err(error) => {
-      error!("Rename: member not found: {}", error);
-      Ok(Some(format!(
-        "User {} not found in guild: {}",
-        targeted_user_id,
-        guild.read().name,
-      )))
-    }
-  }
 }
 
 pub fn validate_command(

@@ -136,4 +136,31 @@ impl Instance {
 
     self.airtable = results;
   }
+
+  pub fn project_add(&mut self, project: NewProject) {
+    let new_project: Project = diesel::insert_into(projects::table)
+      .values(&project)
+      .get_result(&self.get_connection())
+      .expect("Error saving new airtable_row");
+    self.projects.push(new_project);
+  }
+
+  pub fn projects_load(&mut self) {
+    use super::schema::projects::dsl::*;
+
+    let results = projects
+      .load::<Project>(&self.get_connection())
+      .expect("Error loading airtable_rows");
+
+    self.projects = results;
+  }
+
+  pub fn projects_search(&self, message_id: i64) -> Option<&Project> {
+    for project in self.projects.iter() {
+      if project.message_id == message_id {
+        return Some(project);
+      }
+    }
+    None
+  }
 }

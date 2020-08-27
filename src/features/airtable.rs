@@ -1,3 +1,5 @@
+use crate::constants::discordids::AITABLE_NOTIFY_CHAN;
+use crate::database;
 use chrono::DateTime;
 use log::error;
 use serenity::{http, model::id::ChannelId};
@@ -6,11 +8,6 @@ use std::env;
 use std::error::Error;
 use std::sync::Arc;
 use std::{thread, time};
-
-use crate::database;
-
-// const TESTBOT_CHAN: ChannelId = ChannelId(555206410619584519);
-const AIRBNB_CHAN: ChannelId = ChannelId(501406998085238784);
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Record {
@@ -76,7 +73,7 @@ where
           if record.fields.contains_key("Requete") {
             let inserted = database_record_add(&record);
             if inserted {
-              AIRBNB_CHAN
+              ChannelId(AITABLE_NOTIFY_CHAN)
                 .say(&http, format!("New ticket: {}", record.fields["Requete"]))
                 .expect(&*format!(
                   "Unable to send new message ticket: {}",

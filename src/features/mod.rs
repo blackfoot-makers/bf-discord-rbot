@@ -12,6 +12,8 @@ pub mod airtable;
 pub mod archivage;
 pub mod event;
 pub mod ordering;
+pub mod project_manager;
+pub mod renaming;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};

@@ -2,6 +2,7 @@
 use super::commands::{
   CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
+use super::permissions;
 use crate::database;
 use log::{debug, error};
 use serenity::{
@@ -10,7 +11,7 @@ use serenity::{
   model::id::{ChannelId, UserId},
   prelude::*,
 };
-use std::{str::FromStr, sync::Arc, time::SystemTime};
+use std::{sync::Arc, time::SystemTime};
 
 lazy_static! {
   pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
@@ -42,51 +43,40 @@ fn allowed_channel(
   }
 }
 
-fn allowed_user(expected: database::Role, user: &database::User) -> bool {
-  let role = match database::Role::from_str(&*user.role) {
-    Err(e) => {
-      println!("Error {}", e);
-      return false;
-    }
-    Ok(role) => (role),
-  };
-
-  role as u32 >= expected as u32
-}
-
 pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
-    if *key == message_split[0] && allowed_channel(command.channel, message.channel_id, ctx) {
-      {
-        let db_instance = database::INSTANCE.read().unwrap();
-        let user: &database::User = db_instance
-          .user_search(*message.author.id.as_u64())
+    if *key == message_split[0] {
+      if !allowed_channel(command.channel, message.channel_id, ctx) {
+        return true;
+      };
+      let (allowed, role) = permissions::is_user_allowed(ctx, command.permission, message);
+      if !allowed {
+        message
+          .channel_id
+          .send_message(&ctx.http, |m| {
+            m.content(format!("You({}) are not allowed to run this command", role))
+          })
           .unwrap();
-        if !allowed_user(command.permission, &user) {
-          message
-            .channel_id
-            .send_message(&ctx.http, |m| {
-              m.content(format!(
-                "You({}) are not allowed to run this command",
-                user.role
-              ))
-            })
-            .unwrap();
-          return true;
-        }
+        return true;
       }
       // We remove default arguments: author and command name from the total
-      let arguments = message_split.len() - 2;
-      let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-        let params = CallBackParams {
-          args: message_split,
-          message,
-          context: ctx,
+      let arguments_length = message_split.len() - 1;
+      let result =
+        if arguments_length >= command.argument_min && arguments_length <= command.argument_max {
+          let params = CallBackParams {
+            args: message_split,
+            message,
+            context: ctx,
+          };
+          (command.exec)(params)
+        } else {
+          let why = if arguments_length >= command.argument_min {
+            "Too many arguments"
+          } else {
+            "No enough arguments"
+          };
+          Ok(Some(format!("{}\nUsage: {}", why, command.usage.clone())))
         };
-        (command.exec)(params)
-      } else {
-        Ok(Some(format!("Usage: {}", command.usage.clone())))
-      };
 
       match result {
         Ok(option) => {
@@ -155,26 +145,26 @@ const CATS: [&str; 12] = [
   "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
 ];
 const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
-const HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
-const CYBERGOD: ChannelId = ChannelId(588666452849065994);
-const TESTBOT: ChannelId = ChannelId(555206410619584519);
+use crate::constants::discordids::{
+  ANNOYED_CHAN_CYBERGOD, ANNOYED_CHAN_HERDINGCHATTE, ANNOYED_CHAN_TESTBOT,
+};
 /// Anoying other channels
 pub fn annoy_channel(ctx: &Context, message: &Message) {
-  if message.channel_id == HERDINGCHATTE {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_HERDINGCHATTE) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % CATS.len();
       message.react(ctx, CATS[random_icon]).unwrap();
     }
   }
-  if message.channel_id == CYBERGOD {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_CYBERGOD) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
       message.react(ctx, KEYS[random_icon]).unwrap();
     }
   }
-  if message.channel_id == TESTBOT {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_TESTBOT) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
@@ -247,8 +237,7 @@ pub fn database_update(message: &Message) {
 }
 
 // TODO: This is only working for 1 server as channel is static
-const ARCHIVE_CATEGORY: ChannelId = ChannelId(585403527564886027);
-const PROJECT_CATEGORY: ChannelId = ChannelId(481747896539152384);
+use crate::constants::discordids::{ARCHIVE_CATEGORY, PROJECT_CATEGORY};
 pub fn archive_activity(ctx: &Context, message: &Message) {
   match message.channel(&ctx.cache) {
     Some(channel) => {
@@ -259,7 +248,7 @@ pub fn archive_activity(ctx: &Context, message: &Message) {
           if let Some(category) = channel.category_id {
             if category == ARCHIVE_CATEGORY {
               channel
-                .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
+                .edit(&ctx.http, |edit| edit.category(ChannelId(PROJECT_CATEGORY)))
                 .expect(&*format!(
                   "Unable to edit channel:{} to unarchive",
                   channel.id

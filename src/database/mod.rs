@@ -20,9 +20,11 @@ impl Instance {
       users: Vec::new(),
       messages: Vec::new(),
       airtable: Vec::new(),
+      projects: Vec::new(),
     };
     instance.user_load();
     instance.message_load();
+    instance.projects_load();
     instance
   }
 
@@ -36,4 +38,5 @@ pub struct Instance {
   pub users: Vec<User>,
   pub messages: Vec<Message>,
   pub airtable: Vec<AirtableRow>,
+  pub projects: Vec<Project>,
 }
