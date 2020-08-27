@@ -2,14 +2,19 @@ use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
 };
+use crate::database::{NewProject, INSTANCE};
 use chrono::offset::Utc;
 use chrono::DateTime;
+use log::error;
 use serenity::{
-  model::channel::{ChannelType, PermissionOverwrite, PermissionOverwriteType},
-  model::Permissions,
+  model::{
+    channel::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Reaction, ReactionType},
+    id::{ChannelId, UserId},
+    Permissions,
+  },
+  prelude::*,
 };
-use std::collections::HashMap;
-use std::time::SystemTime;
+use std::{collections::HashMap, time::SystemTime};
 
 const ARGUMENT_LIST: [&str; 6] = [
   "codex",
@@ -27,7 +32,7 @@ pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'
     if let Some(index) = find {
       let left = &arg[..index];
       if ARGUMENT_LIST.contains(&left) {
-        let right = &arg[index..];
+        let right = &arg[index + 1..];
         project_args.insert(left, right);
       } else {
         return Err(format!("Invalid argument {}", arg));
@@ -45,36 +50,49 @@ pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'
   Err(String::from("Missing name."))
 }
 
-const PROJECT_CATEGORY: u64 = 748316927780323409;
+fn user_add_permission(user: UserId) -> PermissionOverwrite {
+  let allow = Permissions::SEND_MESSAGES;
+  let deny = Permissions::empty();
+  PermissionOverwrite {
+    deny,
+    allow,
+    kind: PermissionOverwriteType::Member(user),
+  }
+}
+
+const PROJECT_CATEGORY: u64 = 481747896539152384;
+const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(747066293135605791);
 pub fn create_project(params: CallBackParams) -> CallbackReturn {
-  let project_args = match project_creation_args(&params.args[1..params.args.len() - 1]) {
+  let project_args = match project_creation_args(&params.args[1..]) {
     Ok(result) => result,
     Err(error) => return Ok(Some(error)),
   };
   let blackfoot = parse::get_blackfoot(&params.context);
+  let http = &params.context.http;
+  let newchan = blackfoot.write().create_channel(http, |channel| {
+    channel
+      .kind(ChannelType::Text)
+      .category(PROJECT_CATEGORY)
+      .name(project_args["name"])
+  })?;
 
-  let newchan = blackfoot
-    .write()
-    .create_channel(&params.context.http, |channel| {
-      channel
-        .kind(ChannelType::Text)
-        .category(PROJECT_CATEGORY)
-        .name(project_args["name"])
-    })?;
-
-  let allow = Permissions::SEND_MESSAGES;
-  let deny = Permissions::empty();
-  let overwrite = PermissionOverwrite {
-    deny,
-    allow,
-    kind: PermissionOverwriteType::Member(params.message.author.id),
-  };
   let system_time = SystemTime::now();
   let datetime: DateTime<Utc> = system_time.into();
 
-  newchan.create_permission(&params.context.http, &overwrite)?;
-  Ok(Some(format!(
-    "Création de <#{}>.
+  let overwrite = user_add_permission(params.message.author.id);
+  newchan.create_permission(http, &overwrite)?;
+
+  let client = project_args.get("client").unwrap_or(&"");
+  let codex = project_args.get("codex").unwrap_or(&"#PXXX");
+  let author_name = &*params.message.author.name;
+  let lead = project_args.get("lead").unwrap_or(&author_name);
+  let deadline = project_args.get("deadline").unwrap_or(&"N/A");
+  let description = project_args.get("description").unwrap_or(&"N/A");
+  let contexte = project_args.get("contexte").unwrap_or(&"N/A");
+  let message = PROJECT_ANOUNCEMENT.say(
+    http,
+    format!(
+      "Création de <#{}>.
 
 **Fiche de projet**
 ---
@@ -86,8 +104,33 @@ pub fn create_project(params: CallBackParams) -> CallbackReturn {
 **Brief projet** : {}
 **Contexte projet** : {}
     ",
-    newchan.id,
-    datetime.format("%d/%m/%Y"),
+      newchan.id,
+      datetime.format("%d/%m/%Y"),
+      client,
+      codex,
+      lead,
+      deadline,
+      description,
+      contexte,
+    ),
+  )?;
+  {
+    let mut db_instance = INSTANCE.write().unwrap();
+    db_instance.project_add(NewProject {
+      message_id: message.id.0 as i64,
+      channel_id: newchan.id.0 as i64,
+      codex: Some(codex),
+      client: Some(client),
+      lead: Some(lead),
+      deadline: Some(deadline),
+      description: Some(description),
+      contexte: Some(contexte),
+    });
+  }
+  message.react(http, "✅")?;
+  Ok(Some(String::from("Done")))
+}
+
     project_args.get("client").unwrap_or(&""),
     project_args.get("codex").unwrap_or(&"#PXXX"),
     project_args
@@ -97,4 +140,35 @@ pub fn create_project(params: CallBackParams) -> CallbackReturn {
     project_args.get("description").unwrap_or(&"TBD"),
     project_args.get("contexte").unwrap_or(&"TBD"),
   )))
+pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
+  let emoji_name = match &reaction.emoji {
+    ReactionType::Unicode(e) => e.clone(),
+    ReactionType::Custom {
+      animated: _,
+      name,
+      id: _,
+    } => name.clone().unwrap(),
+    _ => "".to_string(),
+  };
+  if ["✅"].contains(&&*emoji_name) {
+    let db_instance = INSTANCE.read().unwrap();
+    if let Some(project) = db_instance.projects_search(reaction.message_id.0 as i64) {
+      if let Some(channel) = ctx.cache.read().guild_channel(project.channel_id as u64) {
+        if removed {
+          channel
+            .read()
+            .delete_permission(&ctx.http, PermissionOverwriteType::Member(reaction.user_id))
+            .unwrap();
+        } else {
+          let overwrite = user_add_permission(reaction.user_id);
+          channel
+            .read()
+            .create_permission(&ctx.http, &overwrite)
+            .unwrap();
+        }
+      } else {
+        error!("Unable to find project channel in cache");
+      }
+    }
+  }
 }

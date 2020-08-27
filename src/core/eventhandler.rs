@@ -4,7 +4,7 @@ use super::process::{
   HTTP_STATIC,
 };
 use super::validation::check_validation;
-use crate::features::Features;
+use crate::features::{project_manager, Features};
 use log::{error, info};
 use serenity::{
   model::channel::{Message, Reaction},
@@ -13,6 +13,10 @@ use serenity::{
 };
 use std::{env, process};
 
+fn getbotid(ctx: &Context) -> u64 {
+  let cache = ctx.cache.read();
+  *cache.user.id.as_u64()
+}
 /// Struct that old Traits Implementations to Handle the different events send by discord.
 struct Handler;
 
@@ -54,7 +58,6 @@ impl EventHandler for Handler {
         return;
       }
       let line = message.content.clone();
-      let author: &str = &message.author.tag();
       let mut message_split = split_args(&line);
 
       // Check if there is only the tag : "@bot"
@@ -68,7 +71,6 @@ impl EventHandler for Handler {
 
       // Removing tag
       message_split.remove(0);
-      message_split.push(author);
 
       // will go through commands.rs definitions to try and execute the request
       if !process_tag_msg(&message_split, &message, &ctx)
@@ -85,19 +87,19 @@ impl EventHandler for Handler {
   }
 
   fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-    let botid: u64;
-    {
-      let cache = ctx.cache.read();
-      botid = *cache.user.id.as_u64();
-    }
+    let botid = getbotid(&ctx);
     if reaction.user_id.0 != botid {
       // parse_githook_reaction(ctx, reaction);
-      check_validation(ctx, reaction);
+      check_validation(&ctx, &reaction);
+      project_manager::check_subscribe(&ctx, &reaction, false);
     }
   }
 
-  fn reaction_remove(&self, _: Context, reaction: Reaction) {
-    println!("reaction_removed: userid: {}", reaction.user_id.0)
+  fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+    let botid = getbotid(&ctx);
+    if reaction.user_id.0 != botid {
+      project_manager::check_subscribe(&ctx, &reaction, true);
+    }
   }
 
   fn ready(&self, ctx: Context, ready: Ready) {

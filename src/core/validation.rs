@@ -18,7 +18,7 @@ fn message_link(reaction: &Reaction) -> String {
   )
 }
 
-pub fn check_validation(ctx: Context, reaction: Reaction) {
+pub fn check_validation(ctx: &Context, reaction: &Reaction) {
   let emoji_name = match &reaction.emoji {
     ReactionType::Unicode(e) => e.clone(),
     ReactionType::Custom {
@@ -49,7 +49,7 @@ pub fn check_validation(ctx: Context, reaction: Reaction) {
       } else if emoji_name == "❌" {
         let prevtext = message.content.clone();
         message
-          .edit(ctx.http, |message| {
+          .edit(&ctx.http, |message| {
             message.content(format!("~~{}~~", prevtext))
           })
           .unwrap();

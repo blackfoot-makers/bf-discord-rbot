@@ -35,8 +35,6 @@ const MOM_RFC: &str = "```\
 - The insult toward a mom must be dirrect\
 - The mom is reseted after 1 week, and can also be reseted by insulting someone else mom with another computer that was left unlocked or by buing pastries\
 ```";
-// const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(747066293135605791);
-const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(555206410619584519); //FIXME:
 
 lazy_static! {
   pub static ref ATTACKED: RwLock<String> = RwLock::new(String::new());
@@ -201,8 +199,8 @@ lazy_static! {
     Command {
       exec: project_manager::create_project,
       argument_min: 1,
-      argument_max: 5,
-      channel: Some(PROJECT_ANOUNCEMENT),
+      argument_max: 7,
+      channel: None,
       usage: String::from("@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]"),
       permission: Role::User,
     },
@@ -260,8 +258,8 @@ fn set_activity(params: CallBackParams) -> CallbackReturn {
   params
     .context
     .set_activity(Activity::playing(params.args[1]));
-  //FIXME: Should be taking the bot name from the ready event
-  Ok(Some(format!("Piou is now {} !", params.args[1])))
+  let myname = &params.context.cache.read().user.name;
+  Ok(Some(format!("{} is now {} !", myname, params.args[1])))
 }
 
 fn manual_send_message(params: CallBackParams) -> CallbackReturn {

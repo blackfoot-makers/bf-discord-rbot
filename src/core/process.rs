@@ -79,17 +79,23 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
         }
       }
       // We remove default arguments: author and command name from the total
-      let arguments = message_split.len() - 2;
-      let result = if arguments >= command.argument_min && arguments <= command.argument_max {
-        let params = CallBackParams {
-          args: message_split,
-          message,
-          context: ctx,
+      let arguments_length = message_split.len() - 1;
+      let result =
+        if arguments_length >= command.argument_min && arguments_length <= command.argument_max {
+          let params = CallBackParams {
+            args: message_split,
+            message,
+            context: ctx,
+          };
+          (command.exec)(params)
+        } else {
+          let why = if arguments_length >= command.argument_min {
+            "Too many arguments"
+          } else {
+            "No enough arguments"
+          };
+          Ok(Some(format!("{}\nUsage: {}", why, command.usage.clone())))
         };
-        (command.exec)(params)
-      } else {
-        Ok(Some(format!("Usage: {}", command.usage.clone())))
-      };
 
       match result {
         Ok(option) => {
