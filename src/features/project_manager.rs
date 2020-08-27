@@ -51,7 +51,7 @@ pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'
 }
 
 fn user_add_permission(user: UserId) -> PermissionOverwrite {
-  let allow = Permissions::SEND_MESSAGES;
+  let allow = Permissions::READ_MESSAGES;
   let deny = Permissions::empty();
   PermissionOverwrite {
     deny,
@@ -131,15 +131,15 @@ pub fn create_project(params: CallBackParams) -> CallbackReturn {
   Ok(Some(String::from("Done")))
 }
 
-    project_args.get("client").unwrap_or(&""),
-    project_args.get("codex").unwrap_or(&"#PXXX"),
-    project_args
-      .get("lead")
-      .unwrap_or(&&*params.message.author.name),
-    project_args.get("deadline").unwrap_or(&"N/A"),
-    project_args.get("description").unwrap_or(&"TBD"),
-    project_args.get("contexte").unwrap_or(&"TBD"),
-  )))
+// fn update_project(params: CallBackParams) -> CallbackReturn {
+//   let project_args = match project_creation_args(&params.args[1..]) {
+//     Ok(result) => result,
+//     Err(error) => return Ok(Some(error)),
+//   };
+
+//   Ok(Some(String::from("Done")))
+// }
+
 pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
   let emoji_name = match &reaction.emoji {
     ReactionType::Unicode(e) => e.clone(),
