@@ -2,6 +2,7 @@
 use super::commands::{
   CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
+use super::permissions;
 use crate::database;
 use log::{debug, error};
 use serenity::{
@@ -10,7 +11,7 @@ use serenity::{
   model::id::{ChannelId, UserId},
   prelude::*,
 };
-use std::{str::FromStr, sync::Arc, time::SystemTime};
+use std::{sync::Arc, time::SystemTime};
 
 lazy_static! {
   pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
@@ -42,41 +43,21 @@ fn allowed_channel(
   }
 }
 
-fn allowed_user(expected: database::Role, user: &database::User) -> bool {
-  let role = match database::Role::from_str(&*user.role) {
-    Err(e) => {
-      println!("Error {}", e);
-      return false;
-    }
-    Ok(role) => (role),
-  };
-
-  role as u32 >= expected as u32
-}
-
 pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
     if *key == message_split[0] {
       if !allowed_channel(command.channel, message.channel_id, ctx) {
         return true;
       };
-      {
-        let db_instance = database::INSTANCE.read().unwrap();
-        let user: &database::User = db_instance
-          .user_search(*message.author.id.as_u64())
+      let (allowed, role) = permissions::is_user_allowed(ctx, command.permission, message);
+      if !allowed {
+        message
+          .channel_id
+          .send_message(&ctx.http, |m| {
+            m.content(format!("You({}) are not allowed to run this command", role))
+          })
           .unwrap();
-        if !allowed_user(command.permission, &user) {
-          message
-            .channel_id
-            .send_message(&ctx.http, |m| {
-              m.content(format!(
-                "You({}) are not allowed to run this command",
-                user.role
-              ))
-            })
-            .unwrap();
-          return true;
-        }
+        return true;
       }
       // We remove default arguments: author and command name from the total
       let arguments_length = message_split.len() - 1;

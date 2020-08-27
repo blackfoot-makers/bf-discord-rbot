@@ -24,7 +24,7 @@ pub struct Message {
   pub date: Option<std::time::SystemTime>,
 }
 
-#[derive(Copy, Clone, Display, EnumString)]
+#[derive(Copy, Clone, Display, EnumString, PartialEq, PartialOrd)]
 pub enum Role {
   Guest,
   User,
