@@ -164,26 +164,26 @@ const CATS: [&str; 12] = [
   "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
 ];
 const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
-const HERDINGCHATTE: ChannelId = ChannelId(570275817804791809);
-const CYBERGOD: ChannelId = ChannelId(588666452849065994);
-const TESTBOT: ChannelId = ChannelId(555206410619584519);
+use crate::constants::discordids::{
+  ANNOYED_CHAN_CYBERGOD, ANNOYED_CHAN_HERDINGCHATTE, ANNOYED_CHAN_TESTBOT,
+};
 /// Anoying other channels
 pub fn annoy_channel(ctx: &Context, message: &Message) {
-  if message.channel_id == HERDINGCHATTE {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_HERDINGCHATTE) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % CATS.len();
       message.react(ctx, CATS[random_icon]).unwrap();
     }
   }
-  if message.channel_id == CYBERGOD {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_CYBERGOD) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
       message.react(ctx, KEYS[random_icon]).unwrap();
     }
   }
-  if message.channel_id == TESTBOT {
+  if message.channel_id == ChannelId(ANNOYED_CHAN_TESTBOT) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
@@ -256,8 +256,7 @@ pub fn database_update(message: &Message) {
 }
 
 // TODO: This is only working for 1 server as channel is static
-const ARCHIVE_CATEGORY: ChannelId = ChannelId(585403527564886027);
-const PROJECT_CATEGORY: ChannelId = ChannelId(481747896539152384);
+use crate::constants::discordids::{ARCHIVE_CATEGORY, PROJECT_CATEGORY};
 pub fn archive_activity(ctx: &Context, message: &Message) {
   match message.channel(&ctx.cache) {
     Some(channel) => {
@@ -268,7 +267,7 @@ pub fn archive_activity(ctx: &Context, message: &Message) {
           if let Some(category) = channel.category_id {
             if category == ARCHIVE_CATEGORY {
               channel
-                .edit(&ctx.http, |edit| edit.category(PROJECT_CATEGORY))
+                .edit(&ctx.http, |edit| edit.category(ChannelId(PROJECT_CATEGORY)))
                 .expect(&*format!(
                   "Unable to edit channel:{} to unarchive",
                   channel.id

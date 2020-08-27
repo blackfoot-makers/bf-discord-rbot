@@ -29,7 +29,7 @@ pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
 }
 
 // TODO: This is only working for 1 server as channel is static
-const ARCHIVE_CHANNEL: ChannelId = ChannelId(585403527564886027);
+use crate::constants::discordids::ARCHIVE_CATEGORY;
 pub fn move_channels_to_archive(chanids: Vec<u64>) {
   let cache_lock = CACHE.write().clone();
 
@@ -39,7 +39,7 @@ pub fn move_channels_to_archive(chanids: Vec<u64>) {
       Some(channel) => {
         let mut channel = channel.write();
         let http = HTTP_STATIC.write().clone().unwrap();
-        if let Err(why) = channel.edit(&http, |chan| chan.category(ARCHIVE_CHANNEL)) {
+        if let Err(why) = channel.edit(&http, |chan| chan.category(ChannelId(ARCHIVE_CATEGORY))) {
           // TODO: Should tell the user about it
           error!("Unable to edit channel {}:\n{}", channel.name, why);
         }

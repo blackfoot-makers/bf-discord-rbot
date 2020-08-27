@@ -60,8 +60,7 @@ fn user_add_permission(user: UserId) -> PermissionOverwrite {
   }
 }
 
-const PROJECT_CATEGORY: u64 = 481747896539152384;
-const PROJECT_ANOUNCEMENT: ChannelId = ChannelId(747066293135605791);
+use crate::constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY};
 pub fn create_project(params: CallBackParams) -> CallbackReturn {
   let project_args = match project_creation_args(&params.args[1..]) {
     Ok(result) => result,
@@ -89,7 +88,7 @@ pub fn create_project(params: CallBackParams) -> CallbackReturn {
   let deadline = project_args.get("deadline").unwrap_or(&"N/A");
   let description = project_args.get("description").unwrap_or(&"N/A");
   let contexte = project_args.get("contexte").unwrap_or(&"N/A");
-  let message = PROJECT_ANOUNCEMENT.say(
+  let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL).say(
     http,
     format!(
       "Création de <#{}>.
