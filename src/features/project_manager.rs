@@ -1,8 +1,9 @@
+use crate::constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY};
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
 };
-use crate::database::{NewProject, INSTANCE};
+use crate::database::{NewProject, ProjectIds, INSTANCE};
 use chrono::offset::Utc;
 use chrono::DateTime;
 use log::error;
@@ -60,13 +61,12 @@ fn user_add_permission(user: UserId) -> PermissionOverwrite {
   }
 }
 
-use crate::constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY};
 pub fn create_project(params: CallBackParams) -> CallbackReturn {
   let project_args = match project_creation_args(&params.args[1..]) {
     Ok(result) => result,
     Err(error) => return Ok(Some(error)),
   };
-  let blackfoot = parse::get_blackfoot(&params.context);
+  let blackfoot = parse::get_main_guild(&params.context);
   let http = &params.context.http;
   let newchan = blackfoot.write().create_channel(http, |channel| {
     channel
@@ -130,6 +130,25 @@ pub fn create_project(params: CallBackParams) -> CallbackReturn {
   Ok(Some(String::from("Done")))
 }
 
+pub fn delete_project(params: CallBackParams) -> CallbackReturn {
+  match parse::discord_str_to_id(params.args[1]) {
+    Ok(target) => {
+      let mut db_instance = INSTANCE.write().unwrap();
+      let (result, project) = db_instance.projects_delete(target)?;
+      if let Some(project) = project {
+        let http = &params.context.http;
+        ChannelId(project.channel_id as u64).delete(http)?;
+        ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
+          .message(http, project.message_id as u64)?
+          .delete(http)?;
+      };
+
+      Ok(Some(String::from(result)))
+    }
+    Err(error) => Ok(Some(String::from(error))),
+  }
+}
+
 // fn update_project(params: CallBackParams) -> CallbackReturn {
 //   let project_args = match project_creation_args(&params.args[1..]) {
 //     Ok(result) => result,
@@ -151,7 +170,9 @@ pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
   };
   if ["✅"].contains(&&*emoji_name) {
     let db_instance = INSTANCE.read().unwrap();
-    if let Some(project) = db_instance.projects_search(reaction.message_id.0 as i64) {
+    if let Some((_index, project)) =
+      db_instance.projects_search(reaction.message_id.0 as i64, ProjectIds::MessageId)
+    {
       if let Some(channel) = ctx.cache.read().guild_channel(project.channel_id as u64) {
         if removed {
           channel

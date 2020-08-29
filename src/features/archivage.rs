@@ -1,5 +1,6 @@
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
+  parse,
   process::{CACHE, HTTP_STATIC},
 };
 use chrono::prelude::*;
@@ -15,7 +16,10 @@ use std::{collections::HashMap, sync::Arc};
 
 pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
   let category: u64 = if params.args.len() == 3 {
-    params.args[1].parse::<u64>()?
+    match parse::discord_str_to_id(params.args[1]) {
+      Ok(id) => id,
+      Err(error) => return Ok(Some(String::from(error))),
+    }
   } else {
     0
   };
