@@ -188,9 +188,13 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
                 .0;
               add_perm(&guildchannel, userid)
             } else {
+              let mut members_nick = String::new();
+              for member in members {
+                members_nick.push_str(&format!("{}, ", member.display_name()));
+              }
               Ok(Some(format!(
-                "Found to many member with this nickname: {:?}",
-                members
+                "Found too many member with this nickname: {}",
+                &members_nick[..members_nick.len() - 2]
               )))
             }
           } else {
