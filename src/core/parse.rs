@@ -6,8 +6,12 @@ use serenity::{
 };
 use std::sync::Arc;
 
-pub fn get_blackfoot(context: &Context) -> Arc<RwLock<Guild>> {
-  context.cache.read().guild(discordids::GUILD_ID).unwrap()
+pub fn get_main_guild(context: &Context) -> Arc<RwLock<Guild>> {
+  context
+    .cache
+    .read()
+    .guild(discordids::GUILD_ID)
+    .expect("Unable to find main guild")
 }
 
 pub fn get_guild(
@@ -30,9 +34,25 @@ pub fn get_guild(
           None => Err(format!("Guild: {} not found", gid)),
         }
       }
-      None => Ok(get_blackfoot(context)),
+      None => Ok(get_main_guild(context)),
     },
     Channel::Guild(guildchan) => Ok(guildchan.read().guild(&context.cache).unwrap()),
     _ => Err(String::from("This doesn't work in this channel")),
   }
+}
+
+pub fn discord_str_to_id(id: &str) -> Result<u64, &str> {
+  let size = id.len();
+  if size < 18 {
+    return Err("Unable to parse, text isn't an disocrd ID");
+  }
+
+  let result = if size == 18 {
+    id.parse::<u64>().expect("Unable to parse Id, not numeric")
+  } else {
+    id[size - 19..size - 1]
+      .parse::<u64>()
+      .expect("Unable to parse Id, badly formated")
+  };
+  Ok(result)
 }

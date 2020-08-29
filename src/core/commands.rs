@@ -1,4 +1,5 @@
 //! Handle the connection with discord and it's events.
+use super::parse;
 use super::validation::TO_VALIDATE;
 use crate::database::{Role, INSTANCE};
 use crate::features::{event::Event, project_manager, renaming};
@@ -197,11 +198,29 @@ lazy_static! {
     },
     "create-project" =>
     Command {
-      exec: project_manager::create_project,
+      exec: project_manager::create,
       argument_min: 1,
       argument_max: 7,
       channel: None,
       usage: String::from("@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]"),
+      permission: Role::User,
+    },
+    "delete-project" =>
+    Command {
+      exec: project_manager::delete,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: String::from("@BOT delete-project <name>"),
+      permission: Role::User,
+    },
+    "adduser" =>
+    Command {
+      exec: project_manager::add_user,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: String::from("@BOT adduser <@user>"),
       permission: Role::User,
     },
     "help" =>
@@ -236,9 +255,10 @@ fn promote_user(params: CallBackParams) -> CallbackReturn {
     Ok(role) => role,
   };
 
-  let userid = params.args[1];
-  let userid = userid[3..userid.len() - 1].parse::<u64>().unwrap();
-  Ok(Some(db_instance.user_role_update(userid, role)))
+  match parse::discord_str_to_id(params.args[1]) {
+    Ok(userid) => Ok(Some(db_instance.user_role_update(userid, role))),
+    Err(error) => Ok(Some(String::from(error))),
+  }
 }
 
 fn get_cat_pic(_: CallBackParams) -> CallbackReturn {
@@ -265,11 +285,15 @@ fn set_activity(params: CallBackParams) -> CallbackReturn {
 fn manual_send_message(params: CallBackParams) -> CallbackReturn {
   let http = super::process::HTTP_STATIC.read().clone().unwrap();
 
-  let chan_id = params.args[1].parse::<u64>().unwrap();
-  ChannelId(chan_id)
-    .send_message(http, |m| m.content(params.args[2]))
-    .unwrap();
-  Ok(None)
+  match parse::discord_str_to_id(params.args[1]) {
+    Ok(chan_id) => {
+      ChannelId(chan_id)
+        .send_message(http, |m| m.content(params.args[2]))
+        .unwrap();
+      Ok(None)
+    }
+    Err(error) => Ok(Some(String::from(error))),
+  }
 }
 
 fn attack_lauch(params: CallBackParams) -> CallbackReturn {

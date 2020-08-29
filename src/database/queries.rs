@@ -1,6 +1,12 @@
 pub use super::models::*;
 use super::Instance;
 use diesel::prelude::*;
+use std::error::Error;
+
+pub enum ProjectIds {
+  MessageId,
+  ChannelId,
+}
 
 impl Instance {
   pub fn user_load(&mut self) {
@@ -155,12 +161,36 @@ impl Instance {
     self.projects = results;
   }
 
-  pub fn projects_search(&self, message_id: i64) -> Option<&Project> {
-    for project in self.projects.iter() {
-      if project.message_id == message_id {
-        return Some(project);
+  pub fn projects_search(&self, id: i64, typeid: ProjectIds) -> Option<(usize, &Project)> {
+    for (index, project) in self.projects.iter().enumerate() {
+      match typeid {
+        ProjectIds::MessageId => {
+          if project.message_id == id {
+            return Some((index, project));
+          }
+        }
+        ProjectIds::ChannelId => {
+          if project.channel_id == id {
+            return Some((index, project));
+          }
+        }
       }
     }
     None
+  }
+
+  pub fn projects_delete(
+    &mut self,
+    p_channel_id: u64,
+  ) -> Result<(&str, Option<Project>), Box<dyn Error + Send + Sync>> {
+    use super::schema::projects::dsl::*;
+
+    if let Some((index, project)) = self.projects_search(p_channel_id as i64, ProjectIds::ChannelId)
+    {
+      diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
+      let project = self.projects.remove(index);
+      return Ok(("Done", Some(project)));
+    }
+    Ok(("Channel wasn't found", None))
   }
 }
