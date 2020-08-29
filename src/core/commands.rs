@@ -198,7 +198,7 @@ lazy_static! {
     },
     "create-project" =>
     Command {
-      exec: project_manager::create_project,
+      exec: project_manager::create,
       argument_min: 1,
       argument_max: 7,
       channel: None,
@@ -207,11 +207,20 @@ lazy_static! {
     },
     "delete-project" =>
     Command {
-      exec: project_manager::delete_project,
+      exec: project_manager::delete,
       argument_min: 1,
       argument_max: 1,
       channel: None,
       usage: String::from("@BOT delete-project <name>"),
+      permission: Role::User,
+    },
+    "adduser" =>
+    Command {
+      exec: project_manager::add_user,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: String::from("@BOT adduser <@user>"),
       permission: Role::User,
     },
     "help" =>
