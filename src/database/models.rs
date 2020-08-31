@@ -53,6 +53,7 @@ pub struct Project {
   pub id: i32,
   pub message_id: i64,
   pub channel_id: i64,
+  pub pinned_message_id: Option<i64>,
   pub codex: String,
   pub client: String,
   pub lead: String,
@@ -67,6 +68,7 @@ pub struct Project {
 pub struct NewProject<'a> {
   pub message_id: i64,
   pub channel_id: i64,
+  pub pinned_message_id: Option<i64>,
   pub codex: Option<&'a str>,
   pub client: Option<&'a str>,
   pub lead: Option<&'a str>,

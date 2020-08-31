@@ -9,7 +9,7 @@ pub fn rename(params: CallBackParams) -> CallbackReturn {
   let cache = &params.context.cache;
   let http = &params.context.http;
   let channel = params.message.channel(&cache).unwrap();
-  let guild = match parse::get_guild(channel, params.context, Some(params.args[3])) {
+  let guild = match parse::get_guild(channel, params.context, params.args.get(3)) {
     Ok(guild) => guild,
     Err(error) => return Ok(Some(error)),
   };
