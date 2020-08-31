@@ -131,6 +131,10 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
     });
   }
   annoucement_message.react(http, "✅")?;
+  if params.message.channel_id == ChannelId(PROJECT_ANOUNCEMENT_CHANNEL) {
+    params.message.delete(http)?;
+    return Ok(None);
+  }
   Ok(Some(String::from("Done")))
 }
 
