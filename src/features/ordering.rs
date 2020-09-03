@@ -27,7 +27,7 @@ pub fn ordering_channel_command(params: CallBackParams) -> CallbackReturn {
     Some(res) => res,
     None => return Ok(Some(String::from("Channels are already ordered"))),
   };
-  crate::core::commands::validate_command(&ordering, params.message, params.context, func);
+  crate::core::validation::validate_command(&ordering, params.message, params.context, func);
   Ok(None)
 }
 

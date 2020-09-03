@@ -1,9 +1,10 @@
 //! Handle the connection with discord and it's events.
 use super::commands::{
-  CallBackParams, ATTACKED, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
+  CallBackParams, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 use super::permissions;
 use crate::database;
+use crate::features::funny::ATTACKED;
 use log::{debug, error};
 use serenity::{
   cache, http,
@@ -75,7 +76,7 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
           } else {
             "No enough arguments"
           };
-          Ok(Some(format!("{}\nUsage: {}", why, command.usage.clone())))
+          Ok(Some(format!("{}\nUsage: {}", why, command.usage)))
         };
 
       match result {
