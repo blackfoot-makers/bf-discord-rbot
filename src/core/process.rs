@@ -124,7 +124,20 @@ pub fn process_contains(message: &Message, ctx: &Context) {
 
 pub fn split_args(input: &str) -> Vec<&str> {
   let mut count = 0;
-  let message_split_quote: Vec<&str> = input.split('"').collect();
+  let mut escaped = false;
+  let message_split_quote: Vec<&str> = input
+    .split(|c| {
+      if c == '\\' {
+        escaped = !escaped;
+        false
+      } else if escaped {
+        escaped = false;
+        false
+      } else {
+        c == '"'
+      }
+    })
+    .collect();
   let mut result: Vec<&str> = Vec::new();
   for msg in message_split_quote {
     if msg.is_empty() {
@@ -139,6 +152,7 @@ pub fn split_args(input: &str) -> Vec<&str> {
       result.append(&mut message_split_space);
     }
   }
+  println!("Resparse: {:?}", result);
   result
 }
 
