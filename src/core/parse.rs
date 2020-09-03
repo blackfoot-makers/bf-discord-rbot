@@ -17,7 +17,7 @@ pub fn get_main_guild(context: &Context) -> Arc<RwLock<Guild>> {
 pub fn get_guild(
   channel: Channel,
   context: &Context,
-  gid: Option<&str>,
+  gid: Option<&&str>,
 ) -> Result<Arc<RwLock<Guild>>, String> {
   match channel {
     Channel::Private(_) => match gid {

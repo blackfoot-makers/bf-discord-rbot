@@ -11,6 +11,7 @@
 pub mod airtable;
 pub mod archivage;
 pub mod event;
+pub mod funny;
 pub mod ordering;
 pub mod project_manager;
 pub mod renaming;

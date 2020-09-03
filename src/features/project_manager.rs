@@ -91,10 +91,8 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
   let deadline = project_args.get("deadline").unwrap_or(&"N/A");
   let description = project_args.get("description").unwrap_or(&"N/A");
   let contexte = project_args.get("contexte").unwrap_or(&"N/A");
-  let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL).say(
-    http,
-    format!(
-      "Création de <#{}>.
+  let content = &format!(
+    "Création de <#{}>.
 
 **Fiche de projet**
 ---
@@ -105,22 +103,25 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
 **Deadline (si applicable)** : {}
 **Brief projet** : {}
 **Contexte projet** : {}
-    ",
-      newchan.id,
-      datetime.format("%d/%m/%Y"),
-      client,
-      codex,
-      lead,
-      deadline,
-      description,
-      contexte,
-    ),
-  )?;
+  ",
+    newchan.id,
+    datetime.format("%d/%m/%Y"),
+    client,
+    codex,
+    lead,
+    deadline,
+    description,
+    contexte,
+  );
+  let annoucement_message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL).say(http, content)?;
+  let channel_message = newchan.say(http, content)?;
+  channel_message.pin(http)?;
   {
     let mut db_instance = INSTANCE.write().unwrap();
     db_instance.project_add(NewProject {
-      message_id: message.id.0 as i64,
+      message_id: annoucement_message.id.0 as i64,
       channel_id: newchan.id.0 as i64,
+      pinned_message_id: Some(channel_message.id.0 as i64),
       codex: Some(codex),
       client: Some(client),
       lead: Some(lead),
@@ -129,7 +130,11 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
       contexte: Some(contexte),
     });
   }
-  message.react(http, "✅")?;
+  annoucement_message.react(http, "✅")?;
+  if params.message.channel_id == ChannelId(PROJECT_ANOUNCEMENT_CHANNEL) {
+    params.message.delete(http)?;
+    return Ok(None);
+  }
   Ok(Some(String::from("Done")))
 }
 

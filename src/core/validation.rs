@@ -1,5 +1,5 @@
 use serenity::{
-  model::channel::{Reaction, ReactionType},
+  model::channel::{Message, Reaction, ReactionType},
   prelude::*,
 };
 use std::collections::HashMap;
@@ -56,4 +56,17 @@ pub fn check_validation(ctx: &Context, reaction: &Reaction) {
       }
     }
   }
+}
+
+pub fn validate_command(
+  responsse: &str,
+  message: &Message,
+  context: &Context,
+  callback: Box<dyn FnOnce() + Send + Sync>,
+) {
+  let mut to_validate = TO_VALIDATE.write();
+  let message = message.reply(&context.http, responsse).unwrap();
+  message.react(&context.http, "✅").unwrap();
+  message.react(&context.http, "❌").unwrap();
+  to_validate.insert(message.id.0, callback);
 }

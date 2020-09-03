@@ -28,7 +28,7 @@ pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
     Some(res) => res,
     None => return Ok(Some(String::from("Nothing to do"))),
   };
-  crate::core::commands::validate_command(&archivage, params.message, params.context, func);
+  crate::core::validation::validate_command(&archivage, params.message, params.context, func);
   Ok(None)
 }
 
