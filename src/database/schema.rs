@@ -10,9 +10,9 @@ table! {
 table! {
     invites (id) {
         id -> Int4,
-        code -> Nullable<Varchar>,
-        actionrole -> Int4,
-        actionchannel -> Int4,
+        code -> Varchar,
+        actionrole -> Nullable<Int8>,
+        actionchannel -> Nullable<Int8>,
         used_count -> Int4,
     }
 }

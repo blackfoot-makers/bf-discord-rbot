@@ -2,11 +2,13 @@ use crate::constants::discordids;
 use crate::database;
 use serenity::{
   model::{
-    channel::{Channel, Message},
-    id::RoleId,
+    channel::{Channel, Message, PermissionOverwrite, PermissionOverwriteType},
+    id::{RoleId, UserId},
+    Permissions,
   },
   prelude::*,
 };
+
 use std::str::FromStr;
 
 pub fn is_user_allowed(
@@ -54,4 +56,14 @@ pub fn is_user_allowed(
     }
   }
   (dbrole >= expected, dbrole)
+}
+
+pub fn member_channel_read(user: UserId) -> PermissionOverwrite {
+  let allow = Permissions::READ_MESSAGES;
+  let deny = Permissions::empty();
+  PermissionOverwrite {
+    deny,
+    allow,
+    kind: PermissionOverwriteType::Member(user),
+  }
 }

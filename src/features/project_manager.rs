@@ -2,6 +2,7 @@ use crate::constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
+  permissions::member_channel_read,
 };
 use crate::database::{NewProject, ProjectIds, INSTANCE};
 use chrono::offset::Utc;
@@ -10,11 +11,9 @@ use log::error;
 use serenity::{
   model::{
     channel::{
-      Channel, ChannelType, GuildChannel, PermissionOverwrite, PermissionOverwriteType, Reaction,
-      ReactionType,
+      Channel, ChannelType, GuildChannel, PermissionOverwriteType, Reaction, ReactionType,
     },
     id::{ChannelId, UserId},
-    Permissions,
   },
   prelude::*,
 };
@@ -54,16 +53,6 @@ pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'
   Err(String::from("Missing name."))
 }
 
-fn user_add_permission(user: UserId) -> PermissionOverwrite {
-  let allow = Permissions::READ_MESSAGES;
-  let deny = Permissions::empty();
-  PermissionOverwrite {
-    deny,
-    allow,
-    kind: PermissionOverwriteType::Member(user),
-  }
-}
-
 pub fn create(params: CallBackParams) -> CallbackReturn {
   let project_args = match project_creation_args(&params.args[1..]) {
     Ok(result) => result,
@@ -81,7 +70,7 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
   let system_time = SystemTime::now();
   let datetime: DateTime<Utc> = system_time.into();
 
-  let overwrite = user_add_permission(params.message.author.id);
+  let overwrite = member_channel_read(params.message.author.id);
   newchan.create_permission(http, &overwrite)?;
 
   let client = project_args.get("client").unwrap_or(&"");
@@ -162,7 +151,7 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
   let http = &params.context.http;
   let usertag = params.args[1];
   let add_perm = |guildchannel: &Arc<RwLock<GuildChannel>>, userid| {
-    let overwrite = user_add_permission(UserId(userid));
+    let overwrite = member_channel_read(UserId(userid));
     guildchannel
       .read()
       .create_permission(http, &overwrite)
@@ -252,7 +241,7 @@ pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
             .delete_permission(&ctx.http, PermissionOverwriteType::Member(reaction.user_id))
             .unwrap();
         } else {
-          let overwrite = user_add_permission(reaction.user_id);
+          let overwrite = member_channel_read(reaction.user_id);
           channel
             .read()
             .create_permission(&ctx.http, &overwrite)

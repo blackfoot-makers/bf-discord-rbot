@@ -107,8 +107,8 @@ impl EventHandler for Handler {
     }
   }
 
-  fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, new_member: Member) {
-    invite_action::check(ctx, guild_id, new_member);
+  fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
+    invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
   }
 
   fn ready(&self, ctx: Context, ready: Ready) {

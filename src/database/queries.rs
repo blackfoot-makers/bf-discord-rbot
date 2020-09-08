@@ -206,29 +206,37 @@ impl Instance {
 
   pub fn invite_search(&self, code: &str) -> Option<&Invite> {
     for invite in self.invites.iter() {
-      if let Some(invite_code) = &invite.code {
-        if invite_code == code {
-          return Some(invite);
-        }
+      if invite.code == code {
+        return Some(invite);
       }
     }
     None
   }
 
   pub fn invite_update(
-    &self,
-    p_code: &str,
+    &mut self,
+    p_code: String,
     p_count: i32,
-  ) -> Result<i32, Box<dyn Error + Send + Sync>> {
-    use super::schema::invites::dsl::*;
-
-    if let Some(invite) = self.invite_search(p_code) {
+  ) -> Result<(i32, Invite), Box<dyn Error + Send + Sync>> {
+    if let Some(invite) = self.invite_search(&p_code) {
+      use super::schema::invites::dsl::*;
       diesel::update(invites.filter(id.eq(invite.id)))
         .set(used_count.eq(p_count))
         .execute(&self.get_connection())?;
-      Ok(p_count - invite.used_count)
-    } else {
-      Ok(6)
-    }
+      let inviteclone = invite.clone();
+      return Ok((p_count - invite.used_count, inviteclone));
+    };
+    let new_invite = NewInvite {
+      code: p_code,
+      used_count: p_count,
+      actionchannel: None,
+      actionrole: None,
+    };
+    let new_invite: Invite = diesel::insert_into(invites::table)
+      .values(&new_invite)
+      .get_result(&self.get_connection())
+      .expect("Error saving new airtable_row");
+    self.invites.push(new_invite.clone());
+    Ok((p_count, new_invite))
   }
 }

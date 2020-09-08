@@ -77,13 +77,21 @@ pub struct NewProject<'a> {
   pub pinned_message_id: Option<i64>,
 }
 
-#[derive(Queryable, Insertable, Debug)]
-#[table_name = "invites"]
+#[derive(Queryable, Debug, Clone)]
 pub struct Invite {
   pub id: i32,
-  pub code: Option<String>,
-  pub actionrole: i32,
-  pub actionchannel: i32,
+  pub code: String,
+  pub actionrole: Option<i64>,
+  pub actionchannel: Option<i64>,
+  pub used_count: i32,
+}
+
+#[derive(Insertable, Debug)]
+#[table_name = "invites"]
+pub struct NewInvite {
+  pub code: String,
+  pub actionrole: Option<i64>,
+  pub actionchannel: Option<i64>,
   pub used_count: i32,
 }
 
