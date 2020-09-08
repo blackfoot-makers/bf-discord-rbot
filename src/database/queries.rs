@@ -193,4 +193,42 @@ impl Instance {
     }
     Ok(("Channel wasn't found", None))
   }
+
+  pub fn invites_load(&mut self) {
+    use super::schema::invites::dsl::*;
+
+    let results = invites
+      .load::<Invite>(&self.get_connection())
+      .expect("Error loading airtable_rows");
+
+    self.invites = results;
+  }
+
+  pub fn invite_search(&self, code: &str) -> Option<&Invite> {
+    for invite in self.invites.iter() {
+      if let Some(invite_code) = &invite.code {
+        if invite_code == code {
+          return Some(invite);
+        }
+      }
+    }
+    None
+  }
+
+  pub fn invite_update(
+    &self,
+    p_code: &str,
+    p_count: i32,
+  ) -> Result<i32, Box<dyn Error + Send + Sync>> {
+    use super::schema::invites::dsl::*;
+
+    if let Some(invite) = self.invite_search(p_code) {
+      diesel::update(invites.filter(id.eq(invite.id)))
+        .set(used_count.eq(p_count))
+        .execute(&self.get_connection())?;
+      Ok(p_count - invite.used_count)
+    } else {
+      Ok(6)
+    }
+  }
 }

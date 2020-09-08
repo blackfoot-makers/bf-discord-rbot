@@ -8,6 +8,16 @@ table! {
 }
 
 table! {
+    invites (id) {
+        id -> Int4,
+        code -> Nullable<Varchar>,
+        actionrole -> Int4,
+        actionchannel -> Int4,
+        used_count -> Int4,
+    }
+}
+
+table! {
     messages (id) {
         id -> Int8,
         author -> Int8,
@@ -22,7 +32,6 @@ table! {
         id -> Int4,
         message_id -> Int8,
         channel_id -> Int8,
-        pinned_message_id -> Nullable<Int8>,
         codex -> Varchar,
         client -> Varchar,
         lead -> Varchar,
@@ -30,6 +39,7 @@ table! {
         description -> Varchar,
         contexte -> Varchar,
         created_at -> Timestamp,
+        pinned_message_id -> Nullable<Int8>,
     }
 }
 
@@ -41,4 +51,10 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(airtable, messages, projects, users,);
+allow_tables_to_appear_in_same_query!(
+    airtable,
+    invites,
+    messages,
+    projects,
+    users,
+);

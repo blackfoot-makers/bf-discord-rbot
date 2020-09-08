@@ -4,11 +4,16 @@ use super::process::{
   HTTP_STATIC,
 };
 use super::validation::check_validation;
-use crate::features::{project_manager, Features};
+use crate::features::{invite_action, project_manager, Features};
 use log::{error, info};
 use serenity::{
-  model::channel::{Message, Reaction},
-  model::{event::ResumedEvent, gateway::Ready},
+  model::{
+    channel::{Message, Reaction},
+    event::ResumedEvent,
+    gateway::Ready,
+    guild::Member,
+    id::GuildId,
+  },
   prelude::*,
 };
 use std::{env, process};
@@ -100,6 +105,10 @@ impl EventHandler for Handler {
     if reaction.user_id.0 != botid {
       project_manager::check_subscribe(&ctx, &reaction, true);
     }
+  }
+
+  fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, new_member: Member) {
+    invite_action::check(ctx, guild_id, new_member);
   }
 
   fn ready(&self, ctx: Context, ready: Ready) {

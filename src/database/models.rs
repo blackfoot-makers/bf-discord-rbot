@@ -53,7 +53,6 @@ pub struct Project {
   pub id: i32,
   pub message_id: i64,
   pub channel_id: i64,
-  pub pinned_message_id: Option<i64>,
   pub codex: String,
   pub client: String,
   pub lead: String,
@@ -61,6 +60,7 @@ pub struct Project {
   pub description: String,
   pub contexte: String,
   pub created_at: std::time::SystemTime,
+  pub pinned_message_id: Option<i64>,
 }
 
 #[derive(Insertable, Debug)]
@@ -68,13 +68,23 @@ pub struct Project {
 pub struct NewProject<'a> {
   pub message_id: i64,
   pub channel_id: i64,
-  pub pinned_message_id: Option<i64>,
   pub codex: Option<&'a str>,
   pub client: Option<&'a str>,
   pub lead: Option<&'a str>,
   pub deadline: Option<&'a str>,
   pub description: Option<&'a str>,
   pub contexte: Option<&'a str>,
+  pub pinned_message_id: Option<i64>,
+}
+
+#[derive(Queryable, Insertable, Debug)]
+#[table_name = "invites"]
+pub struct Invite {
+  pub id: i32,
+  pub code: Option<String>,
+  pub actionrole: i32,
+  pub actionchannel: i32,
+  pub used_count: i32,
 }
 
 pub use super::schema::*;
