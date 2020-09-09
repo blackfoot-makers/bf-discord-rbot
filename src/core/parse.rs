@@ -5,6 +5,15 @@ use serenity::{
   prelude::*,
 };
 use std::sync::Arc;
+use strum_macros::Display;
+
+#[derive(PartialEq, Debug, Display)]
+pub enum DiscordIds {
+  Message,
+  Channel,
+  Role,
+  User,
+}
 
 pub fn get_main_guild(context: &Context) -> Arc<RwLock<Guild>> {
   context
@@ -41,18 +50,41 @@ pub fn get_guild(
   }
 }
 
-pub fn discord_str_to_id(id: &str) -> Result<u64, &str> {
+pub fn discord_str_to_id(
+  id: &str,
+  exepected_type: Option<DiscordIds>,
+) -> Result<(u64, DiscordIds), String> {
   let size = id.len();
-  if size < 18 {
-    return Err("Unable to parse, text isn't an disocrd ID");
+  const SIZEBIGINT: usize = 18;
+  if size < SIZEBIGINT {
+    return Err(String::from("Unable to parse, text isn't an disocrd ID"));
   }
 
-  let result = if size == 18 {
-    id.parse::<u64>().expect("Unable to parse Id, not numeric")
+  if size == SIZEBIGINT {
+    let parsedid = id.parse::<u64>().expect("Unable to parse Id, not numeric");
+    Ok((parsedid, DiscordIds::Channel))
   } else {
-    id[size - 19..size - 1]
+    let parsedid = id[size - (SIZEBIGINT + 1)..size - 1]
       .parse::<u64>()
-      .expect("Unable to parse Id, badly formated")
-  };
-  Ok(result)
+      .expect("Unable to parse Id, badly formated");
+    let identifier = &id[0..size - (SIZEBIGINT + 1)];
+    let discordtype: DiscordIds = match identifier {
+      "<@" | "<@!" => DiscordIds::User,
+      "<#" => DiscordIds::Channel,
+      "<@&" => DiscordIds::Role,
+      _ => DiscordIds::Channel,
+      // Channel can't be pinged so no identifier sadly
+      // _ => return Err(&*format!("Incored type for discordid: {}", identifier)),
+    };
+    if let Some(expected) = exepected_type {
+      if expected != discordtype {
+        let msg = format!(
+          "Mismatched type, expected: {}, got: {}",
+          expected, discordtype
+        );
+        return Err(msg);
+      }
+    }
+    Ok((parsedid, discordtype))
+  }
 }

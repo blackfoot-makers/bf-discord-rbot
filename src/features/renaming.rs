@@ -13,7 +13,8 @@ pub fn rename(params: CallBackParams) -> CallbackReturn {
     Ok(guild) => guild,
     Err(error) => return Ok(Some(error)),
   };
-  let targeted_user_id = parse::discord_str_to_id(params.args[1])?;
+  let (targeted_user_id, _) =
+    parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User))?;
   let member = guild.read().member(http, UserId(targeted_user_id));
   match member {
     Ok(member) => {

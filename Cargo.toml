@@ -27,7 +27,7 @@ failure = "0.1"
 hyper-reverse-proxy = "0.4"
 diesel = { version = "1.4.3", features = ["postgres", "r2d2"] }
 dotenv = "0.15.0"
-strum = "0.17.1"
+strum = "0.19.2"
 strum_macros = "0.17.1"
 job_scheduler = "1.1.0"
 

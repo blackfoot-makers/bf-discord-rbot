@@ -4,7 +4,7 @@ use crate::core::{
   parse,
   permissions::member_channel_read,
 };
-use crate::database::{NewProject, ProjectIds, INSTANCE};
+use crate::database::{NewProject, INSTANCE};
 use chrono::offset::Utc;
 use chrono::DateTime;
 use log::error;
@@ -128,8 +128,8 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
 }
 
 pub fn delete(params: CallBackParams) -> CallbackReturn {
-  match parse::discord_str_to_id(params.args[1]) {
-    Ok(target) => {
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+    Ok((target, _)) => {
       let mut db_instance = INSTANCE.write().unwrap();
       let (result, project) = db_instance.projects_delete(target)?;
       if let Some(project) = project {
@@ -142,7 +142,7 @@ pub fn delete(params: CallBackParams) -> CallbackReturn {
 
       Ok(Some(String::from(result)))
     }
-    Err(error) => Ok(Some(String::from(error))),
+    Err(error) => Ok(Some(error)),
   }
 }
 
@@ -164,46 +164,48 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
     .channel(cache)
     .expect("Channel of message wasn't found")
   {
-    Channel::Guild(guildchannel) => match parse::discord_str_to_id(usertag) {
-      Ok(userid) => add_perm(&guildchannel, userid),
-      Err(_error) => {
-        if let Some(guild) = &guildchannel.read().guild(cache) {
-          let guildptr = guild.read();
-          let mut members = guildptr.members_nick_containing(usertag, false, false);
-          if members.is_empty() {
-            members = guildptr.members_username_containing(usertag, false, false);
-          }
-          if !members.is_empty() {
-            if members.len() == 1 {
-              let userid = members
-                .first()
-                .expect("Weird no first member...")
-                .user_id()
-                .0;
-              add_perm(&guildchannel, userid)
-            } else {
-              let mut members_nick = String::new();
-              for member in members {
-                members_nick.push_str(&format!("{}, ", member.display_name()));
+    Channel::Guild(guildchannel) => {
+      match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
+        Ok((userid, _)) => add_perm(&guildchannel, userid),
+        Err(_error) => {
+          if let Some(guild) = &guildchannel.read().guild(cache) {
+            let guildptr = guild.read();
+            let mut members = guildptr.members_nick_containing(usertag, false, false);
+            if members.is_empty() {
+              members = guildptr.members_username_containing(usertag, false, false);
+            }
+            if !members.is_empty() {
+              if members.len() == 1 {
+                let userid = members
+                  .first()
+                  .expect("Weird no first member...")
+                  .user_id()
+                  .0;
+                add_perm(&guildchannel, userid)
+              } else {
+                let mut members_nick = String::new();
+                for member in members {
+                  members_nick.push_str(&format!("{}, ", member.display_name()));
+                }
+                Ok(Some(format!(
+                  "Found too many member with this nickname: {}",
+                  &members_nick[..members_nick.len() - 2]
+                )))
               }
+            } else {
               Ok(Some(format!(
-                "Found too many member with this nickname: {}",
-                &members_nick[..members_nick.len() - 2]
+                "Didn't find any user with {} in their name",
+                usertag
               )))
             }
           } else {
-            Ok(Some(format!(
-              "Didn't find any user with {} in their name",
-              usertag
+            Ok(Some(String::from(
+              "Unable to find user using tag or nickname",
             )))
           }
-        } else {
-          Ok(Some(String::from(
-            "Unable to find user using tag or nickname",
-          )))
         }
       }
-    },
+    }
     _ => Ok(Some(String::from(
       "This command is restricted to a guild channel",
     ))),
@@ -232,7 +234,7 @@ pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
   if ["✅"].contains(&&*emoji_name) {
     let db_instance = INSTANCE.read().unwrap();
     if let Some((_index, project)) =
-      db_instance.projects_search(reaction.message_id.0 as i64, ProjectIds::MessageId)
+      db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
     {
       if let Some(channel) = ctx.cache.read().guild_channel(project.channel_id as u64) {
         if removed {

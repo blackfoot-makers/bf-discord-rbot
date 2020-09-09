@@ -260,9 +260,9 @@ fn promote_user(params: CallBackParams) -> CallbackReturn {
     Ok(role) => role,
   };
 
-  match parse::discord_str_to_id(params.args[1]) {
-    Ok(userid) => Ok(Some(db_instance.user_role_update(userid, role))),
-    Err(error) => Ok(Some(String::from(error))),
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User)) {
+    Ok((userid, _)) => Ok(Some(db_instance.user_role_update(userid, role))),
+    Err(error) => Ok(Some(error)),
   }
 }
 
@@ -277,27 +277,30 @@ fn set_activity(params: CallBackParams) -> CallbackReturn {
 fn manual_send_message(params: CallBackParams) -> CallbackReturn {
   let http = super::process::HTTP_STATIC.read().clone().unwrap();
 
-  match parse::discord_str_to_id(params.args[1]) {
-    Ok(chan_id) => {
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+    Ok((chan_id, _)) => {
       ChannelId(chan_id)
         .send_message(http, |m| m.content(params.args[2]))
         .unwrap();
       Ok(None)
     }
-    Err(error) => Ok(Some(String::from(error))),
+    Err(error) => Ok(Some(error)),
   }
 }
 
 fn modify_message(params: CallBackParams) -> CallbackReturn {
-  let (channel_id, message_id) = if params.args.len() == 4 {
+  let ((channel_id, _), (message_id, _)) = if params.args.len() == 4 {
     (
-      parse::discord_str_to_id(params.args[1])?,
-      parse::discord_str_to_id(params.args[2])?,
+      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?,
+      parse::discord_str_to_id(params.args[2], Some(parse::DiscordIds::Message))?,
     )
   } else {
     (
-      params.message.channel_id.0 as u64,
-      parse::discord_str_to_id(params.args[1])?,
+      (
+        params.message.channel_id.0 as u64,
+        parse::DiscordIds::Channel,
+      ),
+      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Message))?,
     )
   };
   let mut message = ChannelId(channel_id).message(&params.context.http, message_id)?;

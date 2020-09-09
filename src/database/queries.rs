@@ -1,12 +1,8 @@
 pub use super::models::*;
 use super::Instance;
+use crate::core::parse::DiscordIds;
 use diesel::prelude::*;
 use std::error::Error;
-
-pub enum ProjectIds {
-  MessageId,
-  ChannelId,
-}
 
 impl Instance {
   pub fn user_load(&mut self) {
@@ -161,19 +157,20 @@ impl Instance {
     self.projects = results;
   }
 
-  pub fn projects_search(&self, id: i64, typeid: ProjectIds) -> Option<(usize, &Project)> {
+  pub fn projects_search(&self, id: i64, typeid: DiscordIds) -> Option<(usize, &Project)> {
     for (index, project) in self.projects.iter().enumerate() {
       match typeid {
-        ProjectIds::MessageId => {
+        DiscordIds::Message => {
           if project.message_id == id {
             return Some((index, project));
           }
         }
-        ProjectIds::ChannelId => {
+        DiscordIds::Channel => {
           if project.channel_id == id {
             return Some((index, project));
           }
         }
+        _ => {}
       }
     }
     None
@@ -185,8 +182,7 @@ impl Instance {
   ) -> Result<(&str, Option<Project>), Box<dyn Error + Send + Sync>> {
     use super::schema::projects::dsl::*;
 
-    if let Some((index, project)) = self.projects_search(p_channel_id as i64, ProjectIds::ChannelId)
-    {
+    if let Some((index, project)) = self.projects_search(p_channel_id as i64, DiscordIds::Channel) {
       diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
       let project = self.projects.remove(index);
       return Ok(("Done", Some(project)));

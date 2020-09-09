@@ -1,4 +1,7 @@
-use crate::core::permissions::member_channel_read;
+use crate::core::{
+  commands::{CallBackParams, CallbackReturn},
+  permissions::member_channel_read,
+};
 use crate::database::INSTANCE;
 use log::warn;
 use serenity::{
@@ -8,8 +11,6 @@ use serenity::{
   },
   prelude::*,
 };
-
-fn action() {}
 
 pub fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut Member) {
   let invites = guild_id.invites(&ctx.http).unwrap();
@@ -45,6 +46,6 @@ pub fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut Member
   }
 }
 
-pub fn new_invite() {}
-
-pub fn create() {}
+pub fn create(params: CallBackParams) -> CallbackReturn {
+  Ok(Some(String::from("Done")))
+}
