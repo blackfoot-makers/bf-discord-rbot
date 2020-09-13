@@ -152,7 +152,6 @@ pub fn split_args(input: &str) -> Vec<&str> {
       result.append(&mut message_split_space);
     }
   }
-  println!("Resparse: {:?}", result);
   result
 }
 
