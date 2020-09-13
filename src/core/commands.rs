@@ -1,7 +1,7 @@
 //! Handle the connection with discord and it's events.
 use super::parse;
 use crate::database::{Role, INSTANCE};
-use crate::features::{event::Event, funny, project_manager, renaming};
+use crate::features::{event::Event, funny, invite_action, project_manager, renaming};
 use serenity::{
   model::channel::Message,
   model::{gateway::Activity, id::ChannelId},
@@ -226,6 +226,15 @@ lazy_static! {
       argument_max: 3,
       channel: None,
       usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
+      permission: Role::User,
+    },
+    "invite" =>
+    Command {
+      exec: invite_action::create,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
       permission: Role::User,
     },
     "help" =>

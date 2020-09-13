@@ -1,5 +1,6 @@
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
+  parse::{discord_str_to_id, DiscordIds},
   permissions::member_channel_read,
 };
 use crate::database::INSTANCE;
@@ -11,6 +12,7 @@ use serenity::{
   },
   prelude::*,
 };
+use std::error;
 
 pub fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut Member) {
   let invites = guild_id.invites(&ctx.http).unwrap();
@@ -46,6 +48,21 @@ pub fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut Member
   }
 }
 
+fn parseCreateArgument(
+  argument: &str,
+) -> Result<Result<(u64, DiscordIds), String>, Box<dyn error::Error>> {
+  let param1 = discord_str_to_id(argument, None)?;
+  match param1.1 {
+    DiscordIds::Role => Ok(Ok(param1)),
+    DiscordIds::Channel => Ok(Ok(param1)),
+    _ => Ok(Err(String::from(
+      "Id provided should be a Channel or a Role",
+    ))),
+  }
+}
+
 pub fn create(params: CallBackParams) -> CallbackReturn {
+  let role = None;
+  let channel = None;
   Ok(Some(String::from("Done")))
 }
