@@ -22,7 +22,6 @@ table! {
         id -> Int4,
         message_id -> Int8,
         channel_id -> Int8,
-        pinned_message_id -> Nullable<Int8>,
         codex -> Varchar,
         client -> Varchar,
         lead -> Varchar,
@@ -30,6 +29,7 @@ table! {
         description -> Varchar,
         contexte -> Varchar,
         created_at -> Timestamp,
+        pinned_message_id -> Nullable<Int8>,
     }
 }
 
@@ -41,4 +41,9 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(airtable, messages, projects, users,);
+allow_tables_to_appear_in_same_query!(
+    airtable,
+    messages,
+    projects,
+    users,
+);

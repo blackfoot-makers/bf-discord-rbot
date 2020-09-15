@@ -48,7 +48,7 @@ fn query(client: &reqwest::blocking::Client, api_token: &str) -> Result<Querry, 
   Ok(serde_json::from_str(&result)?)
 }
 
-pub fn check_airtable<F>(http: Arc<http::Http>, threads_check: F)
+pub fn check<F>(http: Arc<http::Http>, threads_check: F)
 where
   F: for<'a> Fn(),
 {

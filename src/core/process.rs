@@ -152,7 +152,6 @@ pub fn split_args(input: &str) -> Vec<&str> {
       result.append(&mut message_split_space);
     }
   }
-  println!("Resparse: {:?}", result);
   result
 }
 
@@ -242,13 +241,13 @@ pub fn database_update(message: &Message) {
     db_instance.user_add(author_id, &*database::Role::Guest.to_string());
   }
   let time: SystemTime = SystemTime::from(message.timestamp);
-  db_instance.message_add(
-    *message.id.as_u64() as i64,
-    author_id,
-    &message.content,
-    *message.channel_id.as_u64() as i64,
-    Some(time),
-  );
+  db_instance.message_add(database::Message {
+    id: *message.id.as_u64() as i64,
+    author: author_id,
+    content: message.content.clone(),
+    channel: *message.channel_id.as_u64() as i64,
+    date: Some(time),
+  });
 }
 
 // TODO: This is only working for 1 server as channel is static
