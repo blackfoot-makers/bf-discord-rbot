@@ -23,7 +23,7 @@ fn ftp_connect() -> FtpStream {
   ftp_stream
 }
 
-pub fn add_dirrectory(params: CallBackParams) -> CallbackReturn {
+pub fn add_directory(params: CallBackParams) -> CallbackReturn {
   let dir_target = String::from(params.args[1]);
   let mut ftp_stream = ftp_connect();
   let root = ftp_stream.nlst(None).expect("Unable to list ftp dir");

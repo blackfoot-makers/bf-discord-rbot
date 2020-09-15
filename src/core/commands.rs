@@ -228,13 +228,13 @@ lazy_static! {
       usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
       permission: Role::User,
     },
-    "frontline-add-dirrectory" =>
+    "frontline-add-directory" =>
     Command {
-      exec: frontline::add_dirrectory,
+      exec: frontline::add_directory,
       argument_min: 1,
       argument_max: 1,
       channel: None,
-      usage: "@BOT frontline-add-dirrectory  \"<directory>\"",
+      usage: "@BOT frontline-add-directory  \"<directory>\"",
       permission: Role::User,
     },
     "help" =>
