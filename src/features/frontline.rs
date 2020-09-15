@@ -1,6 +1,5 @@
 use crate::core::commands::{CallBackParams, CallbackReturn};
 // use crate::database;
-// use chrono::DateTime;
 use ftp::FtpStream;
 use log::error;
 use serenity::{http, model::id::ChannelId};
@@ -35,7 +34,7 @@ pub fn add_dirrectory(params: CallBackParams) -> CallbackReturn {
   }
 
   DIRECTORY_WATCH.write().unwrap().insert(dir_target, 0);
-  Ok(Some(String::from("Done")))
+  Ok(Some(String::from(":ok:")))
 }
 
 pub fn check<F>(http: Arc<http::Http>, threads_check: F)
@@ -54,7 +53,6 @@ where
   //   db_instance.airtable_load();
   // }
 
-  // let client = reqwest::blocking::Client::new();
   loop {
     threads_check();
     {
@@ -66,11 +64,9 @@ where
         let list = ftp_stream
           .nlst(Some(&*path))
           .expect("Unable to list ftp dir");
-        println!("DEBUG {} {}", count, list.len());
         if *count < list.len() {
           *count = list.len();
         } else {
-          println!("DEBUG {:#?}", list);
           ChannelId(ANNOYED_CHAN_HERDINGCHATTE)
             .say(
               &http,

@@ -291,7 +291,7 @@ fn manual_send_message(params: CallBackParams) -> CallbackReturn {
       ChannelId(chan_id)
         .send_message(http, |m| m.content(params.args[2]))
         .unwrap();
-      Ok(None)
+      Ok(Some(String::from(":ok:")))
     }
     Err(error) => Ok(Some(String::from(error))),
   }
@@ -314,7 +314,7 @@ fn modify_message(params: CallBackParams) -> CallbackReturn {
     message.edit(&params.context.http, |message| {
       message.content(params.args.last().unwrap())
     })?;
-    Ok(Some(String::from("Done")))
+    Ok(Some(String::from(":ok:")))
   } else {
     Ok(Some(String::from("I can only modify my own messages")))
   }

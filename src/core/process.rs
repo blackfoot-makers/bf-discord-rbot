@@ -82,7 +82,11 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
       match result {
         Ok(option) => {
           if let Some(reply) = option {
-            message.reply(&ctx.http, reply).unwrap();
+            if reply == ":ok:" {
+              message.react(&ctx.http, "✅").unwrap();
+            } else {
+              message.reply(&ctx.http, reply).unwrap();
+            }
           }
         }
         Err(err) => {

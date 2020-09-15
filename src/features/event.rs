@@ -87,7 +87,7 @@ impl Event {
       countdown_day: 0.0,
     };
     save_event(new_event);
-    Ok(Some(String::from("Done")))
+    Ok(Some(String::from(":ok:")))
   }
 
   pub fn add_countdown(params: CallBackParams) -> CallbackReturn {
@@ -117,7 +117,7 @@ impl Event {
     };
     save_event(new_event);
 
-    Ok(Some(String::from("Done")))
+    Ok(Some(String::from(":ok:")))
   }
 }
 

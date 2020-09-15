@@ -162,7 +162,7 @@ impl Instance {
     {
       diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
       let project = self.projects.remove(index);
-      return Ok(("Done", Some(project)));
+      return Ok((":ok:", Some(project)));
     }
     Ok(("Channel wasn't found", None))
   }
