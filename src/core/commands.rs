@@ -1,7 +1,7 @@
 //! Handle the connection with discord and it's events.
 use super::parse;
 use crate::database::{Role, INSTANCE};
-use crate::features::{event::Event, funny, invite_action, project_manager, renaming};
+use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
 use serenity::{
   model::channel::Message,
   model::{gateway::Activity, id::ChannelId},
@@ -237,6 +237,15 @@ lazy_static! {
       usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
       permission: Role::User,
     },
+    "frontline-add-directory" =>
+    Command {
+      exec: frontline::add_directory,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT frontline-add-directory  \"<directory>\"",
+      permission: Role::User,
+    },
     "help" =>
     Command {
       exec: print_help,
@@ -291,7 +300,7 @@ fn manual_send_message(params: CallBackParams) -> CallbackReturn {
       ChannelId(chan_id)
         .send_message(http, |m| m.content(params.args[2]))
         .unwrap();
-      Ok(None)
+      Ok(Some(String::from(":ok:")))
     }
     Err(error) => Ok(Some(error)),
   }
@@ -317,7 +326,7 @@ fn modify_message(params: CallBackParams) -> CallbackReturn {
     message.edit(&params.context.http, |message| {
       message.content(params.args.last().unwrap())
     })?;
-    Ok(Some(String::from("Done")))
+    Ok(Some(String::from(":ok:")))
   } else {
     Ok(Some(String::from("I can only modify my own messages")))
   }

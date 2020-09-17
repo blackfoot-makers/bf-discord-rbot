@@ -11,6 +11,7 @@
 pub mod airtable;
 pub mod archivage;
 pub mod event;
+pub mod frontline;
 pub mod funny;
 pub mod invite_action;
 pub mod ordering;
@@ -50,6 +51,9 @@ impl Features {
     thread::spawn(move || event::check_events(http_clone, || ThreadControl::check(&tc_clone)));
     let http_clone = http.clone();
     let tc_clone = self.thread_control.clone();
-    thread::spawn(move || airtable::check_airtable(http_clone, || ThreadControl::check(&tc_clone)));
+    thread::spawn(move || airtable::check(http_clone, || ThreadControl::check(&tc_clone)));
+    let http_clone = http.clone();
+    let tc_clone = self.thread_control.clone();
+    thread::spawn(move || frontline::check(http_clone, || ThreadControl::check(&tc_clone)));
   }
 }

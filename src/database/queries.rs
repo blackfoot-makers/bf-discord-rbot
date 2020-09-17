@@ -72,28 +72,7 @@ impl Instance {
     self.messages = results;
   }
 
-  pub fn message_add(
-    &mut self,
-    id: i64,
-    author: i64,
-    content: &str,
-    channel: i64,
-    date: Option<std::time::SystemTime>,
-  ) {
-    let new_message = Message {
-      id,
-      author,
-      content: content.to_string(),
-      channel,
-      date,
-    };
-
-    let new_message = diesel::insert_into(messages::table)
-      .values(&new_message)
-      .get_result(&self.get_connection())
-      .expect("Error saving new user");
-    self.messages.push(new_message);
-  }
+  db_add! { message_add, Message, Message, messages }
 
   pub fn airtable_row_add(
     &mut self,
@@ -139,13 +118,7 @@ impl Instance {
     self.airtable = results;
   }
 
-  pub fn project_add(&mut self, project: NewProject) {
-    let new_project: Project = diesel::insert_into(projects::table)
-      .values(&project)
-      .get_result(&self.get_connection())
-      .expect("Error saving new airtable_row");
-    self.projects.push(new_project);
-  }
+  db_add! {project_add, NewProject, Project, projects}
 
   pub fn projects_load(&mut self) {
     use super::schema::projects::dsl::*;
@@ -185,7 +158,7 @@ impl Instance {
     if let Some((index, project)) = self.projects_search(p_channel_id as i64, DiscordIds::Channel) {
       diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
       let project = self.projects.remove(index);
-      return Ok(("Done", Some(project)));
+      return Ok((":ok:", Some(project)));
     }
     Ok(("Channel wasn't found", None))
   }
@@ -200,8 +173,8 @@ impl Instance {
     self.invites = results;
   }
 
-  pub fn invite_search(&self, code: &str) -> Option<&Invite> {
-    for invite in self.invites.iter() {
+  pub fn invite_search(&mut self, code: &str) -> Option<&mut Invite> {
+    for invite in self.invites.iter_mut() {
       if invite.code == code {
         return Some(invite);
       }
@@ -212,27 +185,36 @@ impl Instance {
   pub fn invite_update(
     &mut self,
     p_code: String,
-    p_count: i32,
+    p_count: Option<i32>,
+    p_actionchannel: Option<i64>,
+    p_actionrole: Option<i64>,
   ) -> Result<(i32, Invite), Box<dyn Error + Send + Sync>> {
+    let connection = &self.get_connection();
     if let Some(invite) = self.invite_search(&p_code) {
       use super::schema::invites::dsl::*;
-      diesel::update(invites.filter(id.eq(invite.id)))
-        .set(used_count.eq(p_count))
-        .execute(&self.get_connection())?;
-      let inviteclone = invite.clone();
-      return Ok((p_count - invite.used_count, inviteclone));
-    };
-    let new_invite = NewInvite {
-      code: p_code,
-      used_count: p_count,
-      actionchannel: None,
-      actionrole: None,
-    };
-    let new_invite: Invite = diesel::insert_into(invites::table)
-      .values(&new_invite)
-      .get_result(&self.get_connection())
-      .expect("Error saving new airtable_row");
-    self.invites.push(new_invite.clone());
-    Ok((p_count, new_invite))
+      let updated: Invite = diesel::update(invites.filter(id.eq(invite.id)))
+        .set((
+          used_count.eq(p_count.unwrap_or(invite.used_count)),
+          actionchannel.eq(p_actionchannel.or(invite.actionchannel)),
+          actionrole.eq(p_actionrole.or(invite.actionrole)),
+        ))
+        .get_result(connection)?;
+      let used_diff = p_count.unwrap_or(invite.used_count) - invite.used_count;
+      *invite = updated.clone();
+      Ok((used_diff, updated))
+    } else {
+      let new_invite = NewInvite {
+        code: p_code,
+        used_count: p_count.unwrap_or(0),
+        actionchannel: p_actionchannel,
+        actionrole: p_actionrole,
+      };
+      let new_invite: Invite = diesel::insert_into(invites::table)
+        .values(&new_invite)
+        .get_result(&self.get_connection())
+        .expect("Error saving new airtable_row");
+      self.invites.push(new_invite.clone());
+      Ok((0, new_invite))
+    }
   }
 }
