@@ -135,7 +135,7 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
     params.message.delete(http)?;
     return Ok(None);
   }
-  Ok(Some(String::from("Done")))
+  Ok(Some(String::from(":ok:")))
 }
 
 pub fn delete(params: CallBackParams) -> CallbackReturn {
@@ -227,7 +227,7 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
 //     Err(error) => return Ok(Some(error)),
 //   };
 
-//   Ok(Some(String::from("Done")))
+//   Ok(Some(String::from(":ok:")))
 // }
 
 pub fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {

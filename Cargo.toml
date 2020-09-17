@@ -30,6 +30,7 @@ dotenv = "0.15.0"
 strum = "0.17.1"
 strum_macros = "0.17.1"
 job_scheduler = "1.1.0"
+ftp = "3.0.1"
 
 # Unused dependencies from commented code
 # imap = "0.8.1"

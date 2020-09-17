@@ -76,28 +76,7 @@ impl Instance {
     self.messages = results;
   }
 
-  pub fn message_add(
-    &mut self,
-    id: i64,
-    author: i64,
-    content: &str,
-    channel: i64,
-    date: Option<std::time::SystemTime>,
-  ) {
-    let new_message = Message {
-      id,
-      author,
-      content: content.to_string(),
-      channel,
-      date,
-    };
-
-    let new_message = diesel::insert_into(messages::table)
-      .values(&new_message)
-      .get_result(&self.get_connection())
-      .expect("Error saving new user");
-    self.messages.push(new_message);
-  }
+  db_add! { message_add, Message, Message, messages }
 
   pub fn airtable_row_add(
     &mut self,
@@ -143,13 +122,7 @@ impl Instance {
     self.airtable = results;
   }
 
-  pub fn project_add(&mut self, project: NewProject) {
-    let new_project: Project = diesel::insert_into(projects::table)
-      .values(&project)
-      .get_result(&self.get_connection())
-      .expect("Error saving new airtable_row");
-    self.projects.push(new_project);
-  }
+  db_add! {project_add, NewProject, Project, projects}
 
   pub fn projects_load(&mut self) {
     use super::schema::projects::dsl::*;
@@ -189,7 +162,7 @@ impl Instance {
     {
       diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
       let project = self.projects.remove(index);
-      return Ok(("Done", Some(project)));
+      return Ok((":ok:", Some(project)));
     }
     Ok(("Channel wasn't found", None))
   }
