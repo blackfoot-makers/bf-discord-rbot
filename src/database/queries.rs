@@ -1,12 +1,8 @@
 pub use super::models::*;
 use super::Instance;
+use crate::core::parse::DiscordIds;
 use diesel::prelude::*;
 use std::error::Error;
-
-pub enum ProjectIds {
-  MessageId,
-  ChannelId,
-}
 
 impl Instance {
   pub fn user_load(&mut self) {
@@ -134,19 +130,20 @@ impl Instance {
     self.projects = results;
   }
 
-  pub fn projects_search(&self, id: i64, typeid: ProjectIds) -> Option<(usize, &Project)> {
+  pub fn projects_search(&self, id: i64, typeid: DiscordIds) -> Option<(usize, &Project)> {
     for (index, project) in self.projects.iter().enumerate() {
       match typeid {
-        ProjectIds::MessageId => {
+        DiscordIds::Message => {
           if project.message_id == id {
             return Some((index, project));
           }
         }
-        ProjectIds::ChannelId => {
+        DiscordIds::Channel => {
           if project.channel_id == id {
             return Some((index, project));
           }
         }
+        _ => {}
       }
     }
     None
@@ -158,12 +155,66 @@ impl Instance {
   ) -> Result<(&str, Option<Project>), Box<dyn Error + Send + Sync>> {
     use super::schema::projects::dsl::*;
 
-    if let Some((index, project)) = self.projects_search(p_channel_id as i64, ProjectIds::ChannelId)
-    {
+    if let Some((index, project)) = self.projects_search(p_channel_id as i64, DiscordIds::Channel) {
       diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
       let project = self.projects.remove(index);
       return Ok((":ok:", Some(project)));
     }
     Ok(("Channel wasn't found", None))
+  }
+
+  pub fn invites_load(&mut self) {
+    use super::schema::invites::dsl::*;
+
+    let results = invites
+      .load::<Invite>(&self.get_connection())
+      .expect("Error loading airtable_rows");
+
+    self.invites = results;
+  }
+
+  pub fn invite_search(&mut self, code: &str) -> Option<&mut Invite> {
+    for invite in self.invites.iter_mut() {
+      if invite.code == code {
+        return Some(invite);
+      }
+    }
+    None
+  }
+
+  pub fn invite_update(
+    &mut self,
+    p_code: String,
+    p_count: Option<i32>,
+    p_actionchannel: Option<i64>,
+    p_actionrole: Option<i64>,
+  ) -> Result<(i32, Invite), Box<dyn Error + Send + Sync>> {
+    let connection = &self.get_connection();
+    if let Some(invite) = self.invite_search(&p_code) {
+      use super::schema::invites::dsl::*;
+      let updated: Invite = diesel::update(invites.filter(id.eq(invite.id)))
+        .set((
+          used_count.eq(p_count.unwrap_or(invite.used_count)),
+          actionchannel.eq(p_actionchannel.or(invite.actionchannel)),
+          actionrole.eq(p_actionrole.or(invite.actionrole)),
+        ))
+        .get_result(connection)?;
+      let used_diff = p_count.unwrap_or(invite.used_count) - invite.used_count;
+      *invite = updated.clone();
+      Ok((used_diff, updated))
+    } else {
+      let new_invite = NewInvite {
+        code: p_code,
+        used_count: p_count.unwrap_or(0),
+        actionchannel: p_actionchannel,
+        actionrole: p_actionrole,
+      };
+      let new_invite: Invite = diesel::insert_into(invites::table)
+        .values(&new_invite)
+        .get_result(&self.get_connection())
+        .expect("Error saving new airtable_row");
+      self.invites.push(new_invite.clone());
+      Ok((0, new_invite))
+    }
   }
 }

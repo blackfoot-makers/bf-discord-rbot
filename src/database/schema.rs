@@ -8,6 +8,16 @@ table! {
 }
 
 table! {
+    invites (id) {
+        id -> Int4,
+        code -> Varchar,
+        actionrole -> Nullable<Int8>,
+        actionchannel -> Nullable<Int8>,
+        used_count -> Int4,
+    }
+}
+
+table! {
     messages (id) {
         id -> Int8,
         author -> Int8,
@@ -41,9 +51,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    airtable,
-    messages,
-    projects,
-    users,
-);
+allow_tables_to_appear_in_same_query!(airtable, messages, projects, users);

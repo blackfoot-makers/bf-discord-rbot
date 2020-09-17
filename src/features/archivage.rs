@@ -15,10 +15,10 @@ use serenity::{
 use std::{collections::HashMap, sync::Arc};
 
 pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
-  let category: u64 = if params.args.len() == 3 {
-    match parse::discord_str_to_id(params.args[1]) {
-      Ok(id) => id,
-      Err(error) => return Ok(Some(String::from(error))),
+  let category: u64 = if params.args.len() == 2 {
+    match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+      Ok((id, _)) => id,
+      Err(error) => return Ok(Some(error)),
     }
   } else {
     0

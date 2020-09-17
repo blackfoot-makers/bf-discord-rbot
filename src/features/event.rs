@@ -72,7 +72,7 @@ impl Event {
       }
     };
     let chan_id = get_chan_id(params.args[4]);
-    let repeat = if params.args.len() != 6 {
+    let repeat = if params.args.len() != 5 {
       numstr_to_duration(params.args[5])
     } else {
       time::Duration::new(0, 0)
