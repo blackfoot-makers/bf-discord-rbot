@@ -5,15 +5,7 @@ use diesel::prelude::*;
 use std::error::Error;
 
 impl Instance {
-  pub fn user_load(&mut self) {
-    use super::schema::users::dsl::*;
-
-    let results = users
-      .load::<User>(&self.get_connection())
-      .expect("Error loading users");
-
-    self.users = results;
-  }
+  db_load! {user_load, User, users}
 
   pub fn user_add<'a>(&mut self, discordid: i64, role: &'a str) {
     let new_user = NewUser { discordid, role };
@@ -62,15 +54,7 @@ impl Instance {
     None
   }
 
-  pub fn message_load(&mut self) {
-    use super::schema::messages::dsl::*;
-
-    let results = messages
-      .load::<Message>(&self.get_connection())
-      .expect("Error loading messages");
-
-    self.messages = results;
-  }
+  db_load! {message_load, Message, messages}
 
   db_add! { message_add, Message, Message, messages }
 
@@ -108,27 +92,11 @@ impl Instance {
     None
   }
 
-  pub fn airtable_load(&mut self) {
-    use super::schema::airtable::dsl::*;
-
-    let results = airtable
-      .load::<AirtableRow>(&self.get_connection())
-      .expect("Error loading airtable_rows");
-
-    self.airtable = results;
-  }
+  db_load! {airtable_load, AirtableRow, airtable}
 
   db_add! {project_add, NewProject, Project, projects}
 
-  pub fn projects_load(&mut self) {
-    use super::schema::projects::dsl::*;
-
-    let results = projects
-      .load::<Project>(&self.get_connection())
-      .expect("Error loading airtable_rows");
-
-    self.projects = results;
-  }
+  db_load! {projects_load, Project, projects}
 
   pub fn projects_search(&self, id: i64, typeid: DiscordIds) -> Option<(usize, &Project)> {
     for (index, project) in self.projects.iter().enumerate() {
@@ -163,15 +131,7 @@ impl Instance {
     Ok(("Channel wasn't found", None))
   }
 
-  pub fn invites_load(&mut self) {
-    use super::schema::invites::dsl::*;
-
-    let results = invites
-      .load::<Invite>(&self.get_connection())
-      .expect("Error loading airtable_rows");
-
-    self.invites = results;
-  }
+  db_load! {invites_load, Invite, invites}
 
   pub fn invite_search(&mut self, code: &str) -> Option<&mut Invite> {
     for invite in self.invites.iter_mut() {
