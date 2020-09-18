@@ -5,13 +5,13 @@ use crate::core::{
   permissions::member_channel_read,
 };
 use crate::database::{NewProject, INSTANCE};
-use chrono::offset::Utc;
-use chrono::DateTime;
+use chrono::{offset::Utc, DateTime};
 use log::error;
 use serenity::{
+  http::Http,
   model::{
     channel::{
-      Channel, ChannelType, GuildChannel, PermissionOverwriteType, Reaction, ReactionType,
+      Channel, ChannelType, GuildChannel, Message, PermissionOverwriteType, Reaction, ReactionType,
     },
     id::{ChannelId, UserId},
   },
@@ -53,29 +53,21 @@ pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'
   Err(String::from("Missing name."))
 }
 
-pub fn create(params: CallBackParams) -> CallbackReturn {
-  let project_args = match project_creation_args(&params.args[1..]) {
-    Ok(result) => result,
-    Err(error) => return Ok(Some(error)),
-  };
-  let blackfoot = parse::get_main_guild(&params.context);
-  let http = &params.context.http;
-  let newchan = blackfoot.write().create_channel(http, |channel| {
-    channel
-      .kind(ChannelType::Text)
-      .category(PROJECT_CATEGORY)
-      .name(project_args["name"])
-  })?;
-
+fn project_init(
+  project_args: HashMap<&str, &str>,
+  project_chan: ChannelId,
+  message: &Message,
+  http: &Arc<Http>,
+) -> CallbackReturn {
   let system_time = SystemTime::now();
   let datetime: DateTime<Utc> = system_time.into();
 
-  let overwrite = member_channel_read(params.message.author.id);
-  newchan.create_permission(http, &overwrite)?;
+  let overwrite = member_channel_read(message.author.id);
+  project_chan.create_permission(http, &overwrite)?;
 
   let client = project_args.get("client").unwrap_or(&"");
   let codex = project_args.get("codex").unwrap_or(&"#PXXX");
-  let author_name = &*params.message.author.name;
+  let author_name = &*message.author.name;
   let lead = project_args.get("lead").unwrap_or(&author_name);
   let deadline = project_args.get("deadline").unwrap_or(&"N/A");
   let description = project_args.get("description").unwrap_or(&"N/A");
@@ -93,7 +85,7 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
 **Brief projet** : {}
 **Contexte projet** : {}
   ",
-    newchan.id,
+    project_chan.0,
     datetime.format("%d/%m/%Y"),
     client,
     codex,
@@ -103,13 +95,13 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
     contexte,
   );
   let annoucement_message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL).say(http, content)?;
-  let channel_message = newchan.say(http, content)?;
+  let channel_message = project_chan.say(http, content)?;
   channel_message.pin(http)?;
   {
     let mut db_instance = INSTANCE.write().unwrap();
     db_instance.project_add(NewProject {
       message_id: annoucement_message.id.0 as i64,
-      channel_id: newchan.id.0 as i64,
+      channel_id: project_chan.0 as i64,
       pinned_message_id: Some(channel_message.id.0 as i64),
       codex: Some(codex),
       client: Some(client),
@@ -120,11 +112,49 @@ pub fn create(params: CallBackParams) -> CallbackReturn {
     });
   }
   annoucement_message.react(http, "✅")?;
-  if params.message.channel_id == ChannelId(PROJECT_ANOUNCEMENT_CHANNEL) {
-    params.message.delete(http)?;
+  if message.channel_id == ChannelId(PROJECT_ANOUNCEMENT_CHANNEL) {
+    message.delete(http)?;
     return Ok(None);
   }
   Ok(Some(String::from(":ok:")))
+}
+pub fn create(params: CallBackParams) -> CallbackReturn {
+  let project_args = match project_creation_args(&params.args[1..]) {
+    Ok(result) => result,
+    Err(error) => return Ok(Some(error)),
+  };
+  let mainguild = parse::get_main_guild(&params.context);
+  let http = &params.context.http;
+  let newchan = mainguild.write().create_channel(http, |channel| {
+    channel
+      .kind(ChannelType::Text)
+      .category(PROJECT_CATEGORY)
+      .name(project_args["name"])
+  })?;
+
+  project_init(
+    project_args,
+    newchan.id,
+    params.message,
+    &params.context.http,
+  )
+}
+
+pub fn add(params: CallBackParams) -> CallbackReturn {
+  let (project_chan_id, _) =
+    parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?;
+  let project_chan = ChannelId(project_chan_id);
+  let project_args = match project_creation_args(&params.args[2..]) {
+    Ok(result) => result,
+    Err(error) => return Ok(Some(error)),
+  };
+
+  project_init(
+    project_args,
+    project_chan,
+    params.message,
+    &params.context.http,
+  )
 }
 
 pub fn delete(params: CallBackParams) -> CallbackReturn {
