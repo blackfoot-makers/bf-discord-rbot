@@ -4,7 +4,7 @@ macro_rules! db_add {
       let result: $result = diesel::insert_into($table::table)
         .values(&new)
         .get_result(&self.get_connection())
-        .expect("Error saving new $ident");
+        .expect("Error saving new $table");
       self.$table.push(result);
     }
   };
@@ -16,4 +16,18 @@ macro_rules! hashmap {
        $( map.insert($key, $val); )*
        map
   }}
+}
+
+macro_rules! db_load {
+  ($name:ident, $result:ident, $table:ident ) => {
+    pub fn $name(&mut self) {
+      use super::schema::$table::dsl::*;
+
+      let results = $table
+        .load::<$result>(&self.get_connection())
+        .expect("Error loading $table");
+
+      self.$table = results;
+    }
+  };
 }

@@ -201,6 +201,15 @@ lazy_static! {
       usage: "@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
       permission: Role::User,
     },
+    "add-project" =>
+    Command {
+      exec: project_manager::add,
+      argument_min: 2,
+      argument_max: 8,
+      channel: None,
+      usage: "@BOT add-project <#channel_id> <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
+      permission: Role::User,
+    },
     "delete-project" =>
     Command {
       exec: project_manager::delete,
