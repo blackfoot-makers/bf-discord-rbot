@@ -200,28 +200,12 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
         Err(_error) => {
           if let Some(guild) = &guildchannel.read().guild(cache) {
             let guildptr = guild.read();
-            let mut members = guildptr.members_nick_containing(usertag, false, false);
-            if members.is_empty() {
-              members = guildptr.members_username_containing(usertag, false, false);
-            }
-            if !members.is_empty() {
-              if members.len() == 1 {
-                let userid = members
-                  .first()
-                  .expect("Weird no first member...")
+            let member = guildptr.member_named(usertag);
+            if let Some(member) = member {
+                let userid = member
                   .user_id()
                   .0;
                 add_perm(&guildchannel, userid)
-              } else {
-                let mut members_nick = String::new();
-                for member in members {
-                  members_nick.push_str(&format!("{}, ", member.display_name()));
-                }
-                Ok(Some(format!(
-                  "Found too many member with this nickname: {}",
-                  &members_nick[..members_nick.len() - 2]
-                )))
-              }
             } else {
               Ok(Some(format!(
                 "Didn't find any user with {} in their name",
@@ -229,9 +213,7 @@ pub fn add_user(params: CallBackParams) -> CallbackReturn {
               )))
             }
           } else {
-            Ok(Some(String::from(
-              "Unable to find user using tag or nickname",
-            )))
+            panic!("Unable to get guild from cache")
           }
         }
       }
