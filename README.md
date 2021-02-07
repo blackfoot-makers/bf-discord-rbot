@@ -12,7 +12,7 @@ Run the diesel migrations and use cargo run.
 ## .env
 
 ```bash
-token=token=<THE_DISCORD_BOT_TOKEN>
+token=<THE_DISCORD_BOT_TOKEN>
 DATABASE_URL=postgres://<user>:<password>@localhost/discordbot
 ```
 
