@@ -14,6 +14,7 @@ COPY Cargo.toml .
 COPY caching.rs .
 RUN mkdir .cargo
 RUN sed -i 's#src/main.rs#caching.rs#' Cargo.toml
+COPY ./procedural_macros procedural_macros
 RUN cargo build --release
 RUN cargo vendor > .cargo/config
 
