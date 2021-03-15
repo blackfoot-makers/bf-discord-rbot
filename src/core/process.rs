@@ -71,7 +71,7 @@ pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Co
             message,
             context: ctx,
           };
-          (command.exec)(params)
+          (command.exec)(params).await
         } else {
           let why = if arguments_length >= command.argument_min {
             "Too many arguments"

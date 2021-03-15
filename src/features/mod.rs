@@ -13,7 +13,7 @@
 // pub mod event;
 // pub mod frontline;
 // pub mod funny;
-pub mod invite_action;
+// pub mod invite_action;
 // pub mod ordering;
 pub mod project_manager;
 // pub mod renaming;

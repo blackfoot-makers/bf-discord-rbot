@@ -3,7 +3,7 @@ use super::process::{
   process_contains, process_tag_msg, split_args, HTTP_STATIC,
 };
 // use super::validation::check_validation;
-use crate::features::{invite_action, project_manager, Features};
+// use crate::features::{invite_action, project_manager, Features};
 use futures::executor::block_on;
 use log::{error, info};
 use serenity::{
@@ -109,7 +109,7 @@ impl EventHandler for Handler {
   // }
 
   async fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
-    invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
+    // invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
   }
 
   async fn ready(&self, ctx: Context, ready: Ready) {
@@ -119,12 +119,12 @@ impl EventHandler for Handler {
     // let mut cache = CACHE.write();
     // *cache = ctx.cache;
 
-    let data = &mut ctx.data.write().await;
-    let feature = data.get_mut::<Features>().unwrap();
-    if !feature.running {
-      feature.running = true;
-      feature.run(&ctx.http);
-    }
+    // let data = &mut ctx.data.write().await;
+    // let feature = data.get_mut::<Features>().unwrap();
+    // if !feature.running {
+    //   feature.running = true;
+    //   feature.run(&ctx.http);
+    // }
   }
 
   async fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {
@@ -157,8 +157,8 @@ pub async fn bot_connect() {
   let mut client =
     block_on(Client::builder(token).event_handler(Handler)).expect("Err creating client");
   {
-    let mut data = block_on(client.data.write());
-    data.insert::<Features>(Features::new());
+    // let mut data = block_on(client.data.write());
+    // data.insert::<Features>(Features::new());
   }
 
   // Finally, start a single shard, and start listening to events.

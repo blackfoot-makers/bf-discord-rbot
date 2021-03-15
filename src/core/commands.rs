@@ -2,9 +2,12 @@
 use super::parse;
 use super::process::HTTP_STATIC;
 use crate::database::{Role, INSTANCE};
-use crate::features::{invite_action, project_manager};
-use futures::executor::block_on;
+use crate::features::project_manager;
+// use crate::features::{invite_action, project_manager};
+use diesel::serialize::Output;
+use futures::{executor::block_on, Future};
 // use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
+use serenity::{futures::future::BoxFuture, FutureExt};
 use serenity::{
   model::channel::Message,
   model::{gateway::Activity, id::ChannelId},
@@ -17,7 +20,8 @@ pub struct CallBackParams<'a> {
   pub message: &'a Message,
   pub context: &'a Context,
 }
-pub type CallbackReturn = Result<Option<String>, Box<dyn Error + Send + Sync>>;
+pub type CallbackReturn<'fut> =
+  BoxFuture<'fut, Result<Option<String>, Box<dyn Error + Send + Sync>>>;
 type Callback = fn(CallBackParams) -> CallbackReturn;
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
@@ -69,15 +73,15 @@ lazy_static! {
     "pm" => '🐱'
   ];
   pub static ref COMMANDS_LIST: HashMap<&'static str, Command> = hashmap![
-    "quit" =>
-    Command {
-      exec: |_| -> CallbackReturn { process::exit(0x0100) },
-      argument_min: 0,
-      argument_max: 0,
-      channel: None,
-      usage: "@BOT quit",
-      permission: Role::Admin,
-    },
+    // "quit" =>
+    // Command {
+    //   exec: |_| -> CallbackReturn { process::exit(0x0100) },
+    //   argument_min: 0,
+    //   argument_max: 0,
+    //   channel: None,
+    //   usage: "@BOT quit",
+    //   permission: Role::Admin,
+    // }
     // "send_message" =>
     // Command {
     //   exec: manual_send_message,
@@ -197,7 +201,7 @@ lazy_static! {
     // },
     "create-project" =>
     Command {
-      exec: closure_call_async!{project_manager::create},
+      exec: project_manager::create,
       argument_min: 1,
       argument_max: 7,
       channel: None,
@@ -240,15 +244,15 @@ lazy_static! {
     //   usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
     //   permission: Role::User,
     // },
-    "invite" =>
-    Command {
-      exec: invite_action::create,
-      argument_min: 2,
-      argument_max: 3,
-      channel: None,
-      usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
-      permission: Role::User,
-    },
+    // "invite" =>
+    // Command {
+    //   exec: invite_action::create,
+    //   argument_min: 2,
+    //   argument_max: 3,
+    //   channel: None,
+    //   usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
+    //   permission: Role::User,
+    // },
     // "frontline-add-directory" =>
     // Command {
     //   exec: frontline::add_directory,
@@ -270,16 +274,19 @@ lazy_static! {
   ];
 }
 
-fn print_help(_: CallBackParams) -> CallbackReturn {
-  let mut result =
-    String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
-  for (key, command) in COMMANDS_LIST.iter() {
-    result.push_str(&*format!(
-      "{} => Usage: {} | {{{}}}\n",
-      key, command.usage, command.permission
-    ))
+fn print_help<'fut>(_: CallBackParams<'_>) -> CallbackReturn<'fut> {
+  async move {
+    let mut result =
+      String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
+    for (key, command) in COMMANDS_LIST.iter() {
+      result.push_str(&*format!(
+        "{} => Usage: {} | {{{}}}\n",
+        key, command.usage, command.permission
+      ))
+    }
+    Ok(Some(result))
   }
-  Ok(Some(result))
+  .boxed()
 }
 
 // fn promote_user(params: CallBackParams) -> CallbackReturn {
