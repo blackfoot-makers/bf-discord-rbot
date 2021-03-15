@@ -1468,6 +1468,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "procedural_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1550,6 +1559,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "log",
  "pretty_env_logger",
+ "procedural_macros",
  "rand",
  "reqwest 0.10.8",
  "serde",

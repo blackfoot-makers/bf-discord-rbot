@@ -8,6 +8,7 @@ use crate::database::{NewProject, INSTANCE};
 use chrono::{offset::Utc, DateTime};
 use futures::{executor::block_on, FutureExt};
 use log::error;
+use procedural_macros::command;
 use serenity::{
   http::Http,
   model::{
@@ -125,115 +126,120 @@ fn project_init<'fut>(
   .boxed()
 }
 
-pub fn create(params: CallBackParams<'_>) -> CallbackReturn<'_> {
-  async move {
-    let project_args = match project_creation_args(&params.args[1..]) {
-      Ok(result) => result,
-      Err(error) => return Ok(Some(error)),
-    };
-    let mainguild = parse::get_main_guild(&params.context).await;
-    let http = &params.context.http;
-    let newchan = mainguild
-      .create_channel(http, |channel| {
-        channel
-          .kind(ChannelType::Text)
-          .category(PROJECT_CATEGORY)
-          .name(project_args["name"])
-      })
-      .await?;
+#[command]
+pub async fn create(params: CallBackParams) -> CallbackReturn {
+  let project_args = match project_creation_args(&params.args[1..]) {
+    Ok(result) => result,
+    Err(error) => return Ok(Some(error)),
+  };
+  let mainguild = parse::get_main_guild(&params.context).await;
+  let http = &params.context.http;
+  let newchan = mainguild
+    .create_channel(http, |channel| {
+      channel
+        .kind(ChannelType::Text)
+        .category(PROJECT_CATEGORY)
+        .name(project_args["name"])
+    })
+    .await?;
 
-    project_init(
-      project_args,
-      newchan.id,
-      params.message,
-      &params.context.http,
-    )
-    .await
-  }
-  .boxed()
+  project_init(
+    project_args,
+    newchan.id,
+    params.message,
+    &params.context.http,
+  )
+  .await
 }
 
-// pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
-//   let (project_chan_id, _) =
-//     parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?;
-//   let project_chan = ChannelId(project_chan_id);
-//   let project_args = match project_creation_args(&params.args[2..]) {
-//     Ok(result) => result,
-//     Err(error) => return Ok(Some(error)),
-//   };
+#[command]
+pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
+  let (project_chan_id, _) =
+    parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?;
+  let project_chan = ChannelId(project_chan_id);
+  let project_args = match project_creation_args(&params.args[2..]) {
+    Ok(result) => result,
+    Err(error) => return Ok(Some(error)),
+  };
 
-//   project_init(
-//     project_args,
-//     project_chan,
-//     params.message,
-//     &params.context.http,
-//   )
-//   .await
-// }
+  project_init(
+    project_args,
+    project_chan,
+    params.message,
+    &params.context.http,
+  )
+  .await
+}
 
-// pub async fn delete(params: CallBackParams<'_>) -> CallbackReturn {
-//   match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
-//     Ok((target, _)) => {
-//       let mut db_instance = INSTANCE.write().unwrap();
-//       let (result, project) = db_instance.projects_delete(target)?;
-//       if let Some(project) = project {
-//         let http = &params.context.http;
-//         ChannelId(project.channel_id as u64).delete(http).await?;
-//         ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
-//           .message(http, project.message_id as u64)
-//           .await?
-//           .delete(http)
-//           .await?;
-//       };
+#[command]
+pub async fn delete(params: CallBackParams) -> CallbackReturn {
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+    Ok((target, _)) => {
+      let resultcpy;
+      {
+        let mut db_instance = INSTANCE.write().unwrap();
+        let result = db_instance.projects_delete(target)?;
+        resultcpy = (String::from(result.0), result.1);
+      }
+      if let Some(project) = resultcpy.1 {
+        let http = &params.context.http;
+        ChannelId(project.channel_id as u64).delete(http).await?;
+        ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
+          .message(http, project.message_id as u64)
+          .await?
+          .delete(http)
+          .await?;
+      };
 
-//       Ok(Some(String::from(result)))
-//     }
-//     Err(error) => Ok(Some(error)),
-//   }
-// }
+      Ok(Some(resultcpy.0))
+    }
+    Err(error) => Ok(Some(error)),
+  }
+}
 
-// pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
-//   let cache = &params.context.cache;
-//   let http = &params.context.http;
-//   let usertag = params.args[1];
-//   let add_perm = |guildchannel: &GuildChannel, userid| {
-//     let overwrite = member_channel_read(UserId(userid));
-//     block_on(guildchannel.create_permission(http, &overwrite)).unwrap();
-//     Ok(Some(format!("Added <@{}> Welcome !", userid)))
-//   };
+#[command]
+pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
+  let cache = &params.context.cache;
+  let http = &params.context.http;
+  let usertag = params.args[1];
+  let add_perm = |guildchannel: &GuildChannel, userid| {
+    let overwrite = member_channel_read(UserId(userid));
+    block_on(guildchannel.create_permission(http, &overwrite)).unwrap();
+    Ok(Some(format!("Added <@{}> Welcome !", userid)))
+  };
 
-//   match params
-//     .message
-//     .channel(cache)
-//     .await
-//     .expect("Channel of message wasn't found")
-//   {
-//     Channel::Guild(guildchannel) => {
-//       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
-//         Ok((userid, _)) => add_perm(&guildchannel, userid),
-//         Err(_error) => {
-//           if let Some(guild) = &guildchannel.guild(cache).await {
-//             let member = guild.member_named(usertag);
-//             if let Some(member) = member {
-//               let userid = member.user.id.0;
-//               add_perm(&guildchannel, userid)
-//             } else {
-//               Ok(Some(format!(
-//                 "Didn't find any user with {} in their name",
-//                 usertag
-//               )))
-//             }
-//           } else {
-//             panic!("Unable to get guild from cache")
-//           }
-//         }
-//       }
-//     }
-//     _ => Ok(Some(String::from(
-//       "This command is restricted to a guild channel",
-//     ))),
-//   }
-// }
+  match params
+    .message
+    .channel(cache)
+    .await
+    .expect("Channel of message wasn't found")
+  {
+    Channel::Guild(guildchannel) => {
+      match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
+        Ok((userid, _)) => add_perm(&guildchannel, userid),
+        Err(_error) => {
+          if let Some(guild) = &guildchannel.guild(cache).await {
+            let member = guild.member_named(usertag);
+            if let Some(member) = member {
+              let userid = member.user.id.0;
+              add_perm(&guildchannel, userid)
+            } else {
+              Ok(Some(format!(
+                "Didn't find any user with {} in their name",
+                usertag
+              )))
+            }
+          } else {
+            panic!("Unable to get guild from cache")
+          }
+        }
+      }
+    }
+    _ => Ok(Some(String::from(
+      "This command is restricted to a guild channel",
+    ))),
+  }
+}
 
 // fn update_project(params: CallBackParams) -> CallbackReturn {
 //   let project_args = match project_creation_args(&params.args[1..]) {
@@ -244,40 +250,40 @@ pub fn create(params: CallBackParams<'_>) -> CallbackReturn<'_> {
 //   Ok(Some(String::from(":ok:")))
 // }
 
-// pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
-//   let emoji_name = match &reaction.emoji {
-//     ReactionType::Unicode(e) => e.clone(),
-//     ReactionType::Custom {
-//       animated: _,
-//       name,
-//       id: _,
-//     } => name.clone().unwrap(),
-//     _ => "".to_string(),
-//   };
-//   if ["✅"].contains(&&*emoji_name) {
-//     let db_instance = INSTANCE.read().unwrap();
-//     if let Some((_index, project)) =
-//       db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
-//     {
-//       if let Some(channel) = ctx.cache.guild_channel(project.channel_id as u64).await {
-//         if removed {
-//           channel
-//             .delete_permission(
-//               &ctx.http,
-//               PermissionOverwriteType::Member(reaction.user_id.unwrap()),
-//             )
-//             .await
-//             .unwrap();
-//         } else {
-//           let overwrite = member_channel_read(reaction.user_id.unwrap());
-//           channel
-//             .create_permission(&ctx.http, &overwrite)
-//             .await
-//             .unwrap();
-//         }
-//       } else {
-//         error!("Unable to find project channel in cache");
-//       }
-//     }
-//   }
-// }
+pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
+  let emoji_name = match &reaction.emoji {
+    ReactionType::Unicode(e) => e.clone(),
+    ReactionType::Custom {
+      animated: _,
+      name,
+      id: _,
+    } => name.clone().unwrap(),
+    _ => "".to_string(),
+  };
+  if ["✅"].contains(&&*emoji_name) {
+    let db_instance = INSTANCE.read().unwrap();
+    if let Some((_index, project)) =
+      db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+    {
+      if let Some(channel) = ctx.cache.guild_channel(project.channel_id as u64).await {
+        if removed {
+          channel
+            .delete_permission(
+              &ctx.http,
+              PermissionOverwriteType::Member(reaction.user_id.unwrap()),
+            )
+            .await
+            .unwrap();
+        } else {
+          let overwrite = member_channel_read(reaction.user_id.unwrap());
+          channel
+            .create_permission(&ctx.http, &overwrite)
+            .await
+            .unwrap();
+        }
+      } else {
+        error!("Unable to find project channel in cache");
+      }
+    }
+  }
+}

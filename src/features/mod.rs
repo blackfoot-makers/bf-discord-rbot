@@ -4,19 +4,19 @@
 // pub mod mail;
 // pub mod monitor;
 // pub mod slackimport;
-// pub mod githooks;
+// pub mod gitcommands;
 // pub mod docker;
 // pub mod calendar;
 
 // pub mod airtable;
-// pub mod archivage;
 // pub mod event;
 // pub mod frontline;
 // pub mod funny;
-// pub mod invite_action;
+// pub mod archivage;
 // pub mod ordering;
+// pub mod invite_action;
 pub mod project_manager;
-// pub mod renaming;
+pub mod renaming;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};

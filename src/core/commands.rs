@@ -3,9 +3,9 @@ use super::parse;
 use super::process::HTTP_STATIC;
 use crate::database::{Role, INSTANCE};
 use crate::features::project_manager;
-// use crate::features::{invite_action, project_manager};
 use diesel::serialize::Output;
 use futures::{executor::block_on, Future};
+use procedural_macros::command;
 // use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
 use serenity::{futures::future::BoxFuture, FutureExt};
 use serenity::{
@@ -73,40 +73,130 @@ lazy_static! {
     "pm" => '🐱'
   ];
   pub static ref COMMANDS_LIST: HashMap<&'static str, Command> = hashmap![
-    // "quit" =>
+    "quit" =>
+    Command {
+      exec: |_| -> CallbackReturn { process::exit(0x0100) },
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT quit",
+      permission: Role::Admin,
+    },
+    "send_message" =>
+    Command {
+      exec: manual_send_message,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None,
+      usage: "@BOT send_message <#channelid> <@who>",
+      permission: Role::Admin,
+    },
+    "users" =>
+    Command {
+      exec: |_| -> CallbackReturn { async move { Ok(Some(format!("{:?}", INSTANCE.write().unwrap().users))) }.boxed() },
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT users",
+      permission: Role::Admin,
+    },
+    "promote" =>
+    Command {
+      exec: promote_user,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None,
+      usage: "@BOT promote <@user> <role>",
+      permission: Role::Admin,
+    },
+    "set-activity" =>
+    Command {
+      exec: set_activity,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT set-activity <ACTIVITY_NAME>",
+      permission: Role::User,
+    },
+    "edit" =>
+    Command {
+      exec: modify_message,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
+      permission: Role::User,
+    },
+    "create-project" =>
+    Command {
+      exec: project_manager::create,
+      argument_min: 1,
+      argument_max: 7,
+      channel: None,
+      usage: "@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
+      permission: Role::User,
+    },
+    "add-project" =>
+    Command {
+      exec: project_manager::add,
+      argument_min: 2,
+      argument_max: 8,
+      channel: None,
+      usage: "@BOT add-project <#channel_id> <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
+      permission: Role::User,
+    },
+    "delete-project" =>
+    Command {
+      exec: project_manager::delete,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT delete-project <name>",
+      permission: Role::User,
+    },
+    "add" =>
+    Command {
+      exec: project_manager::add_user,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT add <@user>",
+      permission: Role::User,
+    },
+    // "invite" =>
     // Command {
-    //   exec: |_| -> CallbackReturn { process::exit(0x0100) },
-    //   argument_min: 0,
-    //   argument_max: 0,
-    //   channel: None,
-    //   usage: "@BOT quit",
-    //   permission: Role::Admin,
-    // }
-    // "send_message" =>
-    // Command {
-    //   exec: manual_send_message,
+    //   exec: invite_action::create,
     //   argument_min: 2,
-    //   argument_max: 2,
+    //   argument_max: 3,
     //   channel: None,
-    //   usage: "@BOT send_message <#channelid> <@who>",
+    //   usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
+    //   permission: Role::User,
+    // },
+    // "frontline-add-directory" =>
+    // Command {
+    //   exec: frontline::add_directory,
+    //   argument_min: 1,
+    //   argument_max: 1,
+    //   channel: None,
+    //   usage: "@BOT frontline-add-directory  \"<directory>\"",
+    //   permission: Role::User,
+    // },
+    // "archivage" =>
+    // Command {
+    //   exec: crate::features::archivage::archive_channels_command,
+    //   argument_min: 0,
+    //   argument_max: 1,
+    //   channel: None,
+    //   usage: "@BOT archivage [<category>]",
     //   permission: Role::Admin,
     // },
-    // "users" =>
+    // "ordering" =>
     // Command {
-    //   exec: |_| -> CallbackReturn { Ok(Some(format!("{:?}", INSTANCE.write().unwrap().users))) },
+    //   exec: crate::features::ordering::ordering_channel_command,
     //   argument_min: 0,
-    //   argument_max: 0,
+    //   argument_max: 1,
     //   channel: None,
-    //   usage: "@BOT users",
-    //   permission: Role::Admin,
-    // },
-    // "promote" =>
-    // Command {
-    //   exec: promote_user,
-    //   argument_min: 2,
-    //   argument_max: 2,
-    //   channel: None,
-    //   usage: "@BOT promote <@user> <role>",
+    //   usage: "@BOT ordering [<category>]",
     //   permission: Role::Admin,
     // },
     // "reminder" =>
@@ -163,33 +253,6 @@ lazy_static! {
     //   usage: "@BOT cat",
     //   permission: Role::Guest,
     // },
-    // "set-activity" =>
-    // Command {
-    //   exec: set_activity,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT set-activity <ACTIVITY_NAME>",
-    //   permission: Role::User,
-    // },
-    // "ordering" =>
-    // Command {
-    //   exec: crate::features::ordering::ordering_channel_command,
-    //   argument_min: 0,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT ordering [<category>]",
-    //   permission: Role::Admin,
-    // },
-    // "archivage" =>
-    // Command {
-    //   exec: crate::features::archivage::archive_channels_command,
-    //   argument_min: 0,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT archivage [<category>]",
-    //   permission: Role::Admin,
-    // },
     // "rename" =>
     // Command {
     //   exec: renaming::rename,
@@ -197,69 +260,6 @@ lazy_static! {
     //   argument_max: 3,
     //   channel: None,
     //   usage: "@BOT rename <@user> <new nickname> [<guild>]",
-    //   permission: Role::User,
-    // },
-    "create-project" =>
-    Command {
-      exec: project_manager::create,
-      argument_min: 1,
-      argument_max: 7,
-      channel: None,
-      usage: "@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
-      permission: Role::User,
-    },
-    // "add-project" =>
-    // Command {
-    //   exec: project_manager::add,
-    //   argument_min: 2,
-    //   argument_max: 8,
-    //   channel: None,
-    //   usage: "@BOT add-project <#channel_id> <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
-    //   permission: Role::User,
-    // },
-    // "delete-project" =>
-    // Command {
-    //   exec: project_manager::delete,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT delete-project <name>",
-    //   permission: Role::User,
-    // },
-    // "add" =>
-    // Command {
-    //   exec: project_manager::add_user,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT add <@user>",
-    //   permission: Role::User,
-    // },
-    // "edit" =>
-    // Command {
-    //   exec: modify_message,
-    //   argument_min: 2,
-    //   argument_max: 3,
-    //   channel: None,
-    //   usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
-    //   permission: Role::User,
-    // },
-    // "invite" =>
-    // Command {
-    //   exec: invite_action::create,
-    //   argument_min: 2,
-    //   argument_max: 3,
-    //   channel: None,
-    //   usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
-    //   permission: Role::User,
-    // },
-    // "frontline-add-directory" =>
-    // Command {
-    //   exec: frontline::add_directory,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT frontline-add-directory  \"<directory>\"",
     //   permission: Role::User,
     // },
     "help" =>
@@ -274,79 +274,85 @@ lazy_static! {
   ];
 }
 
-fn print_help<'fut>(_: CallBackParams<'_>) -> CallbackReturn<'fut> {
-  async move {
-    let mut result =
-      String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
-    for (key, command) in COMMANDS_LIST.iter() {
-      result.push_str(&*format!(
-        "{} => Usage: {} | {{{}}}\n",
-        key, command.usage, command.permission
-      ))
-    }
-    Ok(Some(result))
+#[command]
+async fn print_help(_: CallBackParams) -> CallbackReturn {
+  let mut result =
+    String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
+  for (key, command) in COMMANDS_LIST.iter() {
+    result.push_str(&*format!(
+      "{} => Usage: {} | {{{}}}\n",
+      key, command.usage, command.permission
+    ))
   }
-  .boxed()
+  Ok(Some(result))
 }
 
-// fn promote_user(params: CallBackParams) -> CallbackReturn {
-//   let mut db_instance = INSTANCE.write().unwrap();
+#[command]
+async fn promote_user(params: CallBackParams) -> CallbackReturn {
+  let mut db_instance = INSTANCE.write().unwrap();
 
-//   let role = match Role::from_str(params.args[2]) {
-//     Err(_) => return Ok(Some(String::from("Role not found"))),
-//     Ok(role) => role,
-//   };
+  let role = match Role::from_str(params.args[2]) {
+    Err(_) => return Ok(Some(String::from("Role not found"))),
+    Ok(role) => role,
+  };
 
-//   match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User)) {
-//     Ok((userid, _)) => Ok(Some(db_instance.user_role_update(userid, role))),
-//     Err(error) => Ok(Some(error)),
-//   }
-// }
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User)) {
+    Ok((userid, _)) => Ok(Some(db_instance.user_role_update(userid, role))),
+    Err(error) => Ok(Some(error)),
+  }
+}
 
-// fn set_activity(params: CallBackParams) -> CallbackReturn {
-//   params
-//     .context
-//     .set_activity(Activity::playing(params.args[1]));
-//   let myname = &params.context.cache.user.name;
-//   Ok(Some(format!("{} is now {} !", myname, params.args[1])))
-// }
+#[command]
+async fn set_activity(params: CallBackParams) -> CallbackReturn {
+  params
+    .context
+    .set_activity(Activity::playing(params.args[1]))
+    .await;
+  let myname = &params.context.cache.current_user().await.name;
+  Ok(Some(format!("{} is now {} !", myname, params.args[1])))
+}
 
-// fn manual_send_message(params: CallBackParams) -> CallbackReturn {
-//   let http = HTTP_STATIC.read().clone().unwrap();
+#[command]
+async fn manual_send_message(params: CallBackParams) -> CallbackReturn {
+  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+    Ok((chan_id, _)) => {
+      ChannelId(chan_id)
+        .send_message(&params.context.http, |m| m.content(params.args[2]))
+        .await
+        .unwrap();
+      Ok(Some(String::from(":ok:")))
+    }
+    Err(error) => Ok(Some(error)),
+  }
+}
 
-//   match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
-//     Ok((chan_id, _)) => {
-//       ChannelId(chan_id)
-//         .send_message(http, |m| m.content(params.args[2]))
-//         .unwrap();
-//       Ok(Some(String::from(":ok:")))
-//     }
-//     Err(error) => Ok(Some(error)),
-//   }
-// }
-
-// fn modify_message(params: CallBackParams) -> CallbackReturn {
-//   let ((channel_id, _), (message_id, _)) = if params.args.len() == 4 {
-//     (
-//       parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?,
-//       parse::discord_str_to_id(params.args[2], Some(parse::DiscordIds::Message))?,
-//     )
-//   } else {
-//     (
-//       (
-//         params.message.channel_id.0 as u64,
-//         parse::DiscordIds::Channel,
-//       ),
-//       parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Message))?,
-//     )
-//   };
-//   let mut message = ChannelId(channel_id).message(&params.context.http, message_id)?;
-//   if message.is_own(&params.context.cache) {
-//     message.edit(&params.context.http, |message| {
-//       message.content(params.args.last().unwrap())
-//     })?;
-//     Ok(Some(String::from(":ok:")))
-//   } else {
-//     Ok(Some(String::from("I can only modify my own messages")))
-//   }
-// }
+#[command]
+async fn modify_message(params: CallBackParams) -> CallbackReturn {
+  let ((channel_id, _), (message_id, _)) = if params.args.len() == 4 {
+    (
+      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?,
+      parse::discord_str_to_id(params.args[2], Some(parse::DiscordIds::Message))?,
+    )
+  } else {
+    (
+      (
+        params.message.channel_id.0 as u64,
+        parse::DiscordIds::Channel,
+      ),
+      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Message))?,
+    )
+  };
+  let mut message = ChannelId(channel_id)
+    .message(&params.context.http, message_id)
+    .await?;
+  if message.is_own(&params.context.cache).await {
+    message
+      .edit(&params.context.http, |message| {
+        message.content(params.args.last().unwrap())
+      })
+      .await?;
+    Ok(Some(String::from(":ok:")))
+  } else {
+    Ok(Some(String::from("I can only modify my own messages")))
+  }
+}

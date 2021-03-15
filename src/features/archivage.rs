@@ -1,10 +1,11 @@
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
-  process::{CACHE, HTTP_STATIC},
+  process::HTTP_STATIC,
 };
 use chrono::prelude::*;
 use log::error;
+use procedural_macros::command;
 use serenity::{
   model::{
     channel::{ChannelType, GuildChannel},
@@ -14,7 +15,8 @@ use serenity::{
 };
 use std::{collections::HashMap, sync::Arc};
 
-pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
+#[command]
+pub async fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
   let category: u64 = if params.args.len() == 2 {
     match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
       Ok((id, _)) => id,
@@ -28,7 +30,8 @@ pub fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
     Some(res) => res,
     None => return Ok(Some(String::from("Nothing to do"))),
   };
-  crate::core::validation::validate_command(&archivage, params.message, params.context, func);
+  // FIXME: this isn't working
+  // crate::core::validation::validate_command(&archivage, params.message, params.context, func);
   Ok(None)
 }
 

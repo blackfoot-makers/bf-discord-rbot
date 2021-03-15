@@ -95,7 +95,7 @@ impl EventHandler for Handler {
   // async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
   //   let botid = getbotid(&ctx);
   //   if reaction.user_id.0 != botid {
-  //     // parse_githook_reaction(ctx, reaction);
+  //     // parse_gitcommand_reaction(ctx, reaction);
   //     check_validation(&ctx, &reaction);
   //     project_manager::check_subscribe(&ctx, &reaction, false);
   //   }
