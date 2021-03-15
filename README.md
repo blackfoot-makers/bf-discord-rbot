@@ -18,7 +18,7 @@ DATABASE_URL=postgres://<user>:<password>@localhost/discordbot
 
 ## [Diesel](https://diesel.rs/)
 
-Install the diesel-cli with: `cargo install diesel_cli`
+Install the diesel-cli with: `cargo install diesel_cli --no-default-features --features postgres`
 and run the migrations: `diesel migration run`
 
 ## Run

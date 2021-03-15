@@ -31,3 +31,9 @@ macro_rules! db_load {
     }
   };
 }
+
+macro_rules! closure_call_async {
+  ($function:expr ) => {
+    |args| -> CallbackReturn { blocking($function(args)) }
+  };
+}

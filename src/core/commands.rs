@@ -1,6 +1,9 @@
 //! Handle the connection with discord and it's events.
-// use super::parse;
+use super::parse;
+use super::process::HTTP_STATIC;
 use crate::database::{Role, INSTANCE};
+use crate::features::{invite_action, project_manager};
+use futures::executor::block_on;
 // use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
 use serenity::{
   model::channel::Message,
@@ -57,13 +60,13 @@ lazy_static! {
     "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif",
     "ok boomer" => "Ok millennial"
   ];
-  pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
-    "👊" => "👊",
-    "licorne" => "🦄",
-    "leslie" => "🦄",
-    "max" => "🍌",
-    "retard" => "⌚",
-    "pm" => "🐱"
+  pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, char> = hashmap![
+    "👊" => '👊',
+    "licorne" => '🦄',
+    "leslie" => '🦄',
+    "max" => '🍌',
+    "retard" => '⌚',
+    "pm" => '🐱'
   ];
   pub static ref COMMANDS_LIST: HashMap<&'static str, Command> = hashmap![
     "quit" =>
@@ -192,15 +195,15 @@ lazy_static! {
     //   usage: "@BOT rename <@user> <new nickname> [<guild>]",
     //   permission: Role::User,
     // },
-    // "create-project" =>
-    // Command {
-    //   exec: project_manager::create,
-    //   argument_min: 1,
-    //   argument_max: 7,
-    //   channel: None,
-    //   usage: "@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
-    //   permission: Role::User,
-    // },
+    "create-project" =>
+    Command {
+      exec: closure_call_async!{project_manager::create},
+      argument_min: 1,
+      argument_max: 7,
+      channel: None,
+      usage: "@BOT create-project <name> [codex=<codex>, client=<client>, lead=<Lead>, deadline=<Deadline>, description=<Brief projet>, contexte=<Contexte>]",
+      permission: Role::User,
+    },
     // "add-project" =>
     // Command {
     //   exec: project_manager::add,
@@ -237,15 +240,15 @@ lazy_static! {
     //   usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
     //   permission: Role::User,
     // },
-    // "invite" =>
-    // Command {
-    //   exec: invite_action::create,
-    //   argument_min: 2,
-    //   argument_max: 3,
-    //   channel: None,
-    //   usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
-    //   permission: Role::User,
-    // },
+    "invite" =>
+    Command {
+      exec: invite_action::create,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
+      permission: Role::User,
+    },
     // "frontline-add-directory" =>
     // Command {
     //   exec: frontline::add_directory,
@@ -297,12 +300,12 @@ fn print_help(_: CallBackParams) -> CallbackReturn {
 //   params
 //     .context
 //     .set_activity(Activity::playing(params.args[1]));
-//   let myname = &params.context.cache.read().user.name;
+//   let myname = &params.context.cache.user.name;
 //   Ok(Some(format!("{} is now {} !", myname, params.args[1])))
 // }
 
 // fn manual_send_message(params: CallBackParams) -> CallbackReturn {
-//   let http = super::process::HTTP_STATIC.read().clone().unwrap();
+//   let http = HTTP_STATIC.read().clone().unwrap();
 
 //   match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
 //     Ok((chan_id, _)) => {

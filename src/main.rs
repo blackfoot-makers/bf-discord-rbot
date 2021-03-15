@@ -25,6 +25,7 @@
 //! [features docs]: features/index.html
 
 #![warn(clippy::all)]
+#![feature(async_closure)]
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -37,7 +38,7 @@ pub mod macros;
 mod constants;
 mod core;
 mod database;
-// mod features;
+mod features;
 
 use dotenv::dotenv;
 use std::io::{self, Write};
@@ -97,26 +98,26 @@ fn main() {
         //   let positionnum = position.parse::<u64>().unwrap();
 
         //   features::ordering::move_channels(chanid, positionnum);
-        // } else if input == "promote" {
-        //   let mut who = String::new();
-        //   let mut rolestring = String::new();
-        //   print!("Who?(id) >");
-        //   io::stdout().flush().unwrap();
-        //   io::stdin().read_line(&mut who).unwrap();
-        //   who.pop();
-        //   let userid = who.parse::<u64>().unwrap();
+        } else if input == "promote" {
+          let mut who = String::new();
+          let mut rolestring = String::new();
+          print!("Who?(id) >");
+          io::stdout().flush().unwrap();
+          io::stdin().read_line(&mut who).unwrap();
+          who.pop();
+          let userid = who.parse::<u64>().unwrap();
 
-        //   print!("role?(string) >");
-        //   io::stdout().flush().unwrap();
-        //   io::stdin().read_line(&mut rolestring).unwrap();
-        //   rolestring.pop();
-        //   let role = match database::Role::from_str(&*rolestring) {
-        //     Err(_) => return println!("Role not found"),
-        //     Ok(role) => role,
-        //   };
+          print!("role?(string) >");
+          io::stdout().flush().unwrap();
+          io::stdin().read_line(&mut rolestring).unwrap();
+          rolestring.pop();
+          let role = match database::Role::from_str(&*rolestring) {
+            Err(_) => return println!("Role not found"),
+            Ok(role) => role,
+          };
 
-        //   let mut db_instance = database::INSTANCE.write().unwrap();
-        //   println!("Promoting =>{}", db_instance.user_role_update(userid, role));
+          let mut db_instance = database::INSTANCE.write().unwrap();
+          println!("Promoting =>{}", db_instance.user_role_update(userid, role));
         } else {
           println!("Invalid input [{}]", input);
         }

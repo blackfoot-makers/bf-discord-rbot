@@ -1,10 +1,9 @@
-// use super::process::{
-//   annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
-//   personal_attack, process_command, process_contains, process_tag_msg, split_args, CACHE,
-//   HTTP_STATIC,
-// };
+use super::process::{
+  annoy_channel, archive_activity, database_update, filter_outannoying_messages, process_command,
+  process_contains, process_tag_msg, split_args, HTTP_STATIC,
+};
 // use super::validation::check_validation;
-// use crate::features::{invite_action, project_manager, Features};
+use crate::features::{invite_action, project_manager, Features};
 use futures::executor::block_on;
 use log::{error, info};
 use serenity::{
@@ -45,7 +44,7 @@ impl EventHandler for Handler {
       message.timestamp, chan_name, message.author.name, message.content
     );
 
-    // database_update(&message);
+    database_update(&message);
     // archive_activity(&ctx, &message);
     if message.is_own(&ctx).await || message.content.is_empty() {
       return;
@@ -64,38 +63,36 @@ impl EventHandler for Handler {
       //   return;
       // }
       let line = message.content.clone();
-      //   let mut message_split = split_args(&line);
+      let mut message_split = split_args(&line);
 
-      //   // Check if there is only the tag : "@bot"
-      //   if message_split.len() == 1 {
-      //     message
-      //       .channel_id
-      //       .say(&ctx.http, "What do you need ?")
-      //       .await
-      //       .unwrap();
-      //     return;
-      //   }
+      // Check if there is only the tag : "@bot"
+      if message_split.len() == 1 {
+        message
+          .channel_id
+          .say(&ctx.http, "What do you need ?")
+          .await
+          .unwrap();
+        return;
+      }
+      // Removing tag
+      message_split.remove(0);
 
-      //   // Removing tag
-      //   message_split.remove(0);
-
-      //   // will go through commands.rs definitions to try and execute the request
-      //   if !process_tag_msg(&message_split, &message, &ctx)
-      //     && !process_command(&message_split, &message, &ctx)
-      //   {
-      //     message
-      //       .channel_id
-      //       .say(&ctx.http, "How about a proper request ?")
-      //       .await
-      //       .unwrap();
-      //   }
-      // } else {
-      //   process_contains(&message, &ctx);
-      // }
+      // will go through commands.rs definitions to try and execute the request
+      if !process_tag_msg(&message_split, &message, &ctx).await
+        && !process_command(&message_split, &message, &ctx).await
+      {
+        message
+          .channel_id
+          .say(&ctx.http, "How about a proper request ?")
+          .await
+          .unwrap();
+      }
+    } else {
+      process_contains(&message, &ctx).await;
     }
   }
 
-  // fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+  // async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
   //   let botid = getbotid(&ctx);
   //   if reaction.user_id.0 != botid {
   //     // parse_githook_reaction(ctx, reaction);
@@ -104,41 +101,41 @@ impl EventHandler for Handler {
   //   }
   // }
 
-  // fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+  // async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
   //   let botid = getbotid(&ctx);
   //   if reaction.user_id.0 != botid {
   //     project_manager::check_subscribe(&ctx, &reaction, true);
   //   }
   // }
 
-  // fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
-  //   invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
-  // }
+  async fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
+    invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
+  }
 
-  // fn ready(&self, ctx: Context, ready: Ready) {
-  //   info!("{} is connected!", ready.user.name);
-  //   let mut arc = HTTP_STATIC.write();
-  //   *arc = Some(ctx.http.clone());
-  //   let mut cache = CACHE.write();
-  //   *cache = ctx.cache;
+  async fn ready(&self, ctx: Context, ready: Ready) {
+    info!("{} is connected!", ready.user.name);
+    let mut arc = HTTP_STATIC.write().await;
+    *arc = Some(ctx.http.clone());
+    // let mut cache = CACHE.write();
+    // *cache = ctx.cache;
 
-  //   let data = &mut ctx.data.write();
-  //   let feature = data.get_mut::<Features>().unwrap();
-  //   if !feature.running {
-  //     feature.running = true;
-  //     feature.run(&ctx.http);
-  //   }
-  // }
+    let data = &mut ctx.data.write().await;
+    let feature = data.get_mut::<Features>().unwrap();
+    if !feature.running {
+      feature.running = true;
+      feature.run(&ctx.http);
+    }
+  }
 
-  // fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {
-  //   info!("{} => {:?}", name, raw);
-  // }
+  async fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {
+    info!("{} => {:?}", name, raw);
+  }
 
-  // fn resume(&self, _: Context, _: ResumedEvent) {
-  //   info!("Resumed");
-  //   // let data = &mut ctx.data.write();
-  //   // data.get_mut::<Features>().unwrap().thread_control.resume();
-  // }
+  async fn resume(&self, _ctx: Context, _: ResumedEvent) {
+    info!("Resumed");
+    // let data = &mut ctx.data.write();
+    // data.get_mut::<Features>().unwrap().thread_control.resume();
+  }
 }
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
@@ -161,7 +158,7 @@ pub async fn bot_connect() {
     block_on(Client::builder(token).event_handler(Handler)).expect("Err creating client");
   {
     let mut data = block_on(client.data.write());
-    // data.insert::<Features>(Features::new());
+    data.insert::<Features>(Features::new());
   }
 
   // Finally, start a single shard, and start listening to events.

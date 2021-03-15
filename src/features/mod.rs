@@ -8,15 +8,15 @@
 // pub mod docker;
 // pub mod calendar;
 
-pub mod airtable;
-pub mod archivage;
-pub mod event;
-pub mod frontline;
-pub mod funny;
+// pub mod airtable;
+// pub mod archivage;
+// pub mod event;
+// pub mod frontline;
+// pub mod funny;
 pub mod invite_action;
-pub mod ordering;
+// pub mod ordering;
 pub mod project_manager;
-pub mod renaming;
+// pub mod renaming;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};
@@ -45,15 +45,15 @@ impl Features {
 
   /// Spawn a Thread per feature to run in background
   pub fn run(&mut self, http: &Arc<http::Http>) {
-    println!("Running featrues");
-    let http_clone = http.clone();
-    let tc_clone = self.thread_control.clone();
-    thread::spawn(move || event::check_events(http_clone, || ThreadControl::check(&tc_clone)));
-    let http_clone = http.clone();
-    let tc_clone = self.thread_control.clone();
-    thread::spawn(move || airtable::check(http_clone, || ThreadControl::check(&tc_clone)));
-    let http_clone = http.clone();
-    let tc_clone = self.thread_control.clone();
-    thread::spawn(move || frontline::check(http_clone, || ThreadControl::check(&tc_clone)));
+    //   println!("Running featrues");
+    //   let http_clone = http.clone();
+    //   let tc_clone = self.thread_control.clone();
+    //   thread::spawn(move || event::check_events(http_clone, || ThreadControl::check(&tc_clone)));
+    //   let http_clone = http.clone();
+    //   let tc_clone = self.thread_control.clone();
+    //   thread::spawn(move || airtable::check(http_clone, || ThreadControl::check(&tc_clone)));
+    //   let http_clone = http.clone();
+    //   let tc_clone = self.thread_control.clone();
+    //   thread::spawn(move || frontline::check(http_clone, || ThreadControl::check(&tc_clone)));
   }
 }

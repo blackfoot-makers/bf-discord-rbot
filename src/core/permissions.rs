@@ -11,7 +11,7 @@ use serenity::{
 
 use std::str::FromStr;
 
-pub fn is_user_allowed(
+pub async fn is_user_allowed(
   context: &Context,
   expected: database::Role,
   message: &Message,
@@ -33,14 +33,15 @@ pub fn is_user_allowed(
   }
   // Only checking/updating for user or guests
   if dbrole <= database::Role::User {
-    if let Channel::Guild(guildchan) = message.channel(&context.cache).unwrap() {
+    if let Channel::Guild(guildchan) = message.channel(&context.cache).await.unwrap() {
       let has_discord_role = message
         .author
         .has_role(
           &context.http,
-          guildchan.read().guild_id,
+          guildchan.guild_id,
           RoleId(discordids::USER_ROLE),
         )
+        .await
         .unwrap();
       if let Some(newrole) = if has_discord_role && dbrole != database::Role::User {
         Some(database::Role::User)

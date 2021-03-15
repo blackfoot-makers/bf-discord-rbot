@@ -4,7 +4,7 @@ use super::commands::{
 };
 use super::permissions;
 use crate::database;
-use crate::features::funny::ATTACKED;
+// use crate::features::funny::ATTACKED;
 use log::{debug, error};
 use serenity::{
   cache, http,
@@ -16,10 +16,10 @@ use std::{sync::Arc, time::SystemTime};
 
 lazy_static! {
   pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
-  pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
+  // pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
 }
 
-fn allowed_channel(
+async fn allowed_channel(
   command_channel: Option<ChannelId>,
   message_channel: ChannelId,
   ctx: &Context,
@@ -35,6 +35,7 @@ fn allowed_channel(
               chan.mention()
             ),
           )
+          .await
           .unwrap();
         return false;
       }
@@ -44,19 +45,20 @@ fn allowed_channel(
   }
 }
 
-pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
     if *key == message_split[0] {
-      if !allowed_channel(command.channel, message.channel_id, ctx) {
+      if !allowed_channel(command.channel, message.channel_id, ctx).await {
         return true;
       };
-      let (allowed, role) = permissions::is_user_allowed(ctx, command.permission, message);
+      let (allowed, role) = permissions::is_user_allowed(ctx, command.permission, message).await;
       if !allowed {
         message
           .channel_id
           .send_message(&ctx.http, |m| {
             m.content(format!("You({}) are not allowed to run this command", role))
           })
+          .await
           .unwrap();
         return true;
       }
@@ -83,15 +85,16 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
         Ok(option) => {
           if let Some(reply) = option {
             if reply == ":ok:" {
-              message.react(&ctx.http, "✅").unwrap();
+              message.react(&ctx.http, '✅').await.unwrap();
             } else {
-              message.reply(&ctx.http, reply).unwrap();
+              message.reply(&ctx.http, reply).await.unwrap();
             }
           }
         }
         Err(err) => {
           message
             .reply(&ctx.http, "Bipboop this is broken <@173013989180178432>")
+            .await
             .unwrap();
           error!("Command Error: {} => {}", key, err);
         }
@@ -102,26 +105,26 @@ pub fn process_command(message_split: &[&str], message: &Message, ctx: &Context)
   false
 }
 
-pub fn process_tag_msg(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_tag_msg(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
   for (key, reaction) in TAG_MSG_LIST.iter() {
     if *key == message_split[0] {
-      message.channel_id.say(&ctx.http, reaction).unwrap();
+      message.channel_id.say(&ctx.http, reaction).await.unwrap();
       return true;
     }
   }
   false
 }
 
-pub fn process_contains(message: &Message, ctx: &Context) {
+pub async fn process_contains(message: &Message, ctx: &Context) {
   for (key, text) in CONTAIN_MSG_LIST.iter() {
     if message.content.contains(key) {
-      message.channel_id.say(&ctx.http, *text).unwrap();
+      message.channel_id.say(&ctx.http, *text).await.unwrap();
     }
   }
 
   for (key, reaction) in CONTAIN_REACTION_LIST.iter() {
     if message.content.contains(key) {
-      message.react(ctx, *reaction).unwrap();
+      message.react(ctx, *reaction).await.unwrap();
     }
   }
 }
@@ -159,34 +162,34 @@ pub fn split_args(input: &str) -> Vec<&str> {
   result
 }
 
-const CATS: [&str; 12] = [
-  "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🐈", "🐁", "🐭",
+const CATS: [char; 12] = [
+  '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐈', '🐁', '🐭',
 ];
-const KEYS: [&str; 8] = ["🔑", "🗝", "🔏", "🔐", "🔒", "🔓", "🖱", "👓"];
+const KEYS: [char; 8] = ['🔑', '🗝', '🔏', '🔐', '🔒', '🔓', '🖱', '👓'];
 use crate::constants::discordids::{
   ANNOYED_CHAN_CYBERGOD, ANNOYED_CHAN_HERDINGCHATTE, ANNOYED_CHAN_TESTBOT,
 };
 /// Anoying other channels
-pub fn annoy_channel(ctx: &Context, message: &Message) {
+pub async fn annoy_channel(ctx: &Context, message: &Message) {
   if message.channel_id == ChannelId(ANNOYED_CHAN_HERDINGCHATTE) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % CATS.len();
-      message.react(ctx, CATS[random_icon]).unwrap();
+      message.react(ctx, CATS[random_icon]).await.unwrap();
     }
   }
   if message.channel_id == ChannelId(ANNOYED_CHAN_CYBERGOD) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
-      message.react(ctx, KEYS[random_icon]).unwrap();
+      message.react(ctx, KEYS[random_icon]).await.unwrap();
     }
   }
   if message.channel_id == ChannelId(ANNOYED_CHAN_TESTBOT) {
     let random_active = rand::random::<usize>() % 10;
     if random_active == 0 {
       let random_icon = rand::random::<usize>() % KEYS.len();
-      message.react(ctx, KEYS[random_icon]).unwrap();
+      message.react(ctx, KEYS[random_icon]).await.unwrap();
     }
   }
 }
@@ -205,38 +208,38 @@ pub fn filter_outannoying_messages(ctx: &Context, message: &Message) {
   }
 }
 
-pub fn personal_attack(ctx: &Context, message: &Message) {
-  if message.author.mention() == *ATTACKED.read() {
-    const ANNOYING: [&str; 11] = [
-      "🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
-    ];
-    let random1 = rand::random::<usize>() % ANNOYING.len();
-    let random2 = rand::random::<usize>() % ANNOYING.len();
-    message.react(ctx, ANNOYING[random1]).unwrap();
-    message.react(ctx, ANNOYING[random2]).unwrap();
-  }
-}
+// pub fn personal_attack(ctx: &Context, message: &Message) {
+//   if message.author.mention() == *ATTACKED.read() {
+//     const ANNOYING: [&str; 11] = [
+//       "🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
+//     ];
+//     let random1 = rand::random::<usize>() % ANNOYING.len();
+//     let random2 = rand::random::<usize>() % ANNOYING.len();
+//     message.react(ctx, ANNOYING[random1]).unwrap();
+//     message.react(ctx, ANNOYING[random2]).unwrap();
+//   }
+// }
 
-pub fn attacked(ctx: &Context, message: &Message) -> bool {
-  const ANNOYING_MESSAGE: [&str; 6] = [
-    "Ah oui mais y'a JPO",
-    "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
-    "Avant, Faut laver les vitres les gars",
-    "Ah mais vous faites quoi ?",
-    "Non mais tu as vu le jeu qui est sorti ?",
-    "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
-  ];
+// pub fn attacked(ctx: &Context, message: &Message) -> bool {
+//   const ANNOYING_MESSAGE: [&str; 6] = [
+//     "Ah oui mais y'a JPO",
+//     "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
+//     "Avant, Faut laver les vitres les gars",
+//     "Ah mais vous faites quoi ?",
+//     "Non mais tu as vu le jeu qui est sorti ?",
+//     "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
+//   ];
 
-  if message.author.mention() == *ATTACKED.read() {
-    let random = rand::random::<usize>() % 6;
-    message
-      .channel_id
-      .say(&ctx.http, ANNOYING_MESSAGE[random])
-      .unwrap();
-    return true;
-  }
-  false
-}
+//   if message.author.mention() == *ATTACKED.read() {
+//     let random = rand::random::<usize>() % 6;
+//     message
+//       .channel_id
+//       .say(&ctx.http, ANNOYING_MESSAGE[random])
+//       .unwrap();
+//     return true;
+//   }
+//   false
+// }
 
 pub fn database_update(message: &Message) {
   let mut db_instance = database::INSTANCE.write().unwrap();
@@ -256,17 +259,17 @@ pub fn database_update(message: &Message) {
 
 // TODO: This is only working for 1 server as channel is static
 use crate::constants::discordids::{ARCHIVE_CATEGORY, PROJECT_CATEGORY};
-pub fn archive_activity(ctx: &Context, message: &Message) {
-  match message.channel(&ctx.cache) {
+pub async fn archive_activity(ctx: &Context, message: &Message) {
+  match message.channel(&ctx.cache).await {
     Some(channel) => {
       let channelid = channel.id().0;
       match channel.guild() {
-        Some(channel) => {
-          let mut channel = channel.write();
+        Some(mut channel) => {
           if let Some(category) = channel.category_id {
             if category == ARCHIVE_CATEGORY {
               channel
                 .edit(&ctx.http, |edit| edit.category(ChannelId(PROJECT_CATEGORY)))
+                .await
                 .expect(&*format!(
                   "Unable to edit channel:{} to unarchive",
                   channel.id
