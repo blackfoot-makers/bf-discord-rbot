@@ -2,7 +2,7 @@
 # Cargo Build Stage
 # -----------------
 
-FROM rust:latest as cargo-build
+FROM rustlang/rust:nightly as cargo-build
 WORKDIR /app
 
 RUN cargo install diesel_cli --no-default-features --features "postgres"
