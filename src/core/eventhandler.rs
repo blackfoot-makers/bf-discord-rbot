@@ -2,8 +2,8 @@ use super::process::{
   annoy_channel, archive_activity, database_update, filter_outannoying_messages, process_command,
   process_contains, process_tag_msg, split_args, HTTP_STATIC,
 };
-// use super::validation::check_validation;
-// use crate::features::{invite_action, project_manager, Features};
+use super::validation::check_validation;
+use crate::features::{invite_action, project_manager, Features};
 use futures::executor::block_on;
 use log::{error, info};
 use serenity::{
@@ -45,13 +45,13 @@ impl EventHandler for Handler {
     );
 
     database_update(&message);
-    // archive_activity(&ctx, &message);
+    archive_activity(&ctx, &message).await;
     if message.is_own(&ctx).await || message.content.is_empty() {
       return;
     };
     // personal_attack(&ctx, &message);
-    // annoy_channel(&ctx, &message);
-    // filter_outannoying_messages(&ctx, &message);
+    annoy_channel(&ctx, &message).await;
+    filter_outannoying_messages(&ctx, &message);
 
     //Check if i am tagged in the message else do the reactions
     // check for @me first so it's considered a command
@@ -92,24 +92,24 @@ impl EventHandler for Handler {
     }
   }
 
-  // async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-  //   let botid = getbotid(&ctx);
-  //   if reaction.user_id.0 != botid {
-  //     // parse_gitcommand_reaction(ctx, reaction);
-  //     check_validation(&ctx, &reaction);
-  //     project_manager::check_subscribe(&ctx, &reaction, false);
-  //   }
-  // }
+  async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+    let botid = getbotid(&ctx).await;
+    if reaction.user_id.unwrap() != botid {
+      // parse_gitcommand_reaction(ctx, reaction);
+      check_validation(&ctx, &reaction).await;
+      project_manager::check_subscribe(&ctx, &reaction, false).await;
+    }
+  }
 
-  // async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
-  //   let botid = getbotid(&ctx);
-  //   if reaction.user_id.0 != botid {
-  //     project_manager::check_subscribe(&ctx, &reaction, true);
-  //   }
-  // }
+  async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+    let botid = getbotid(&ctx).await;
+    if reaction.user_id.unwrap() != botid {
+      project_manager::check_subscribe(&ctx, &reaction, true).await;
+    }
+  }
 
   async fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
-    // invite_action::on_new_member_check(ctx, &guild_id, &mut new_member);
+    invite_action::on_new_member_check(ctx, &guild_id, &mut new_member).await;
   }
 
   async fn ready(&self, ctx: Context, ready: Ready) {
@@ -119,12 +119,12 @@ impl EventHandler for Handler {
     // let mut cache = CACHE.write();
     // *cache = ctx.cache;
 
-    // let data = &mut ctx.data.write().await;
-    // let feature = data.get_mut::<Features>().unwrap();
-    // if !feature.running {
-    //   feature.running = true;
-    //   feature.run(&ctx.http);
-    // }
+    let data = &mut ctx.data.write().await;
+    let feature = data.get_mut::<Features>().unwrap();
+    if !feature.running {
+      feature.running = true;
+      feature.run(&ctx.http);
+    }
   }
 
   async fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {
@@ -157,8 +157,8 @@ pub async fn bot_connect() {
   let mut client =
     block_on(Client::builder(token).event_handler(Handler)).expect("Err creating client");
   {
-    // let mut data = block_on(client.data.write());
-    // data.insert::<Features>(Features::new());
+    let mut data = block_on(client.data.write());
+    data.insert::<Features>(Features::new());
   }
 
   // Finally, start a single shard, and start listening to events.

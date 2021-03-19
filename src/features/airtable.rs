@@ -48,7 +48,7 @@ fn query(client: &reqwest::blocking::Client, api_token: &str) -> Result<Querry, 
   Ok(serde_json::from_str(&result)?)
 }
 
-pub fn check<F>(http: Arc<http::Http>, threads_check: F)
+pub async fn check<F>(http: Arc<http::Http>, threads_check: F)
 where
   F: for<'a> Fn(),
 {
@@ -67,18 +67,15 @@ where
   let client = reqwest::blocking::Client::new();
   loop {
     threads_check();
+
+    let mut newticket = String::new();
     match query(&client, &api_token) {
       Ok(result_parsed) => {
         for record in result_parsed.records {
           if record.fields.contains_key("Requete") {
             let inserted = database_record_add(&record);
             if inserted {
-              ChannelId(AITABLE_NOTIFY_CHAN)
-                .say(&http, format!("New ticket: {}", record.fields["Requete"]))
-                .expect(&*format!(
-                  "Unable to send new message ticket: {}",
-                  record.fields["Requete"]
-                ));
+              newticket = String::from(&record.fields["Requete"]);
             }
           }
         }
@@ -86,6 +83,15 @@ where
       Err(err) => {
         error!("Error querying airtable: {}", err);
       }
+    }
+    if !newticket.is_empty() {
+      ChannelId(AITABLE_NOTIFY_CHAN)
+        .say(&http, format!("New ticket: {}", newticket))
+        .await
+        .expect(&*format!(
+          "Unable to send new message ticket: {}",
+          newticket
+        ));
     }
     thread::sleep(time::Duration::from_secs(120));
   }

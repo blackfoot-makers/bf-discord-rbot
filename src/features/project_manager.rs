@@ -261,11 +261,18 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
     _ => "".to_string(),
   };
   if ["✅"].contains(&&*emoji_name) {
-    let db_instance = INSTANCE.read().unwrap();
-    if let Some((_index, project)) =
-      db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+    let mut project_chanid = 0;
     {
-      if let Some(channel) = ctx.cache.guild_channel(project.channel_id as u64).await {
+      let db_instance = INSTANCE.read().unwrap();
+      if let Some((_index, project)) =
+        db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+      {
+        project_chanid = project.channel_id;
+      }
+    }
+
+    if project_chanid > 0 {
+      if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
         if removed {
           channel
             .delete_permission(

@@ -1,10 +1,7 @@
 //! Handle the connection with discord and it's events.
 use super::parse;
-use super::process::HTTP_STATIC;
 use crate::database::{Role, INSTANCE};
-use crate::features::project_manager;
-use diesel::serialize::Output;
-use futures::{executor::block_on, Future};
+use crate::features::{archivage, invite_action, ordering, project_manager};
 use procedural_macros::command;
 // use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
 use serenity::{futures::future::BoxFuture, FutureExt};
@@ -163,15 +160,33 @@ lazy_static! {
       usage: "@BOT add <@user>",
       permission: Role::User,
     },
-    // "invite" =>
-    // Command {
-    //   exec: invite_action::create,
-    //   argument_min: 2,
-    //   argument_max: 3,
-    //   channel: None,
-    //   usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
-    //   permission: Role::User,
-    // },
+    "invite" =>
+    Command {
+      exec: invite_action::create,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
+      permission: Role::User,
+    },
+    "archivage" =>
+    Command {
+      exec: archivage::archive_channels_command,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT archivage [<category>]",
+      permission: Role::Admin,
+    },
+    "ordering" =>
+    Command {
+      exec: ordering::ordering_channel_command,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT ordering [<category>]",
+      permission: Role::Admin,
+    },
     // "frontline-add-directory" =>
     // Command {
     //   exec: frontline::add_directory,
@@ -180,24 +195,6 @@ lazy_static! {
     //   channel: None,
     //   usage: "@BOT frontline-add-directory  \"<directory>\"",
     //   permission: Role::User,
-    // },
-    // "archivage" =>
-    // Command {
-    //   exec: crate::features::archivage::archive_channels_command,
-    //   argument_min: 0,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT archivage [<category>]",
-    //   permission: Role::Admin,
-    // },
-    // "ordering" =>
-    // Command {
-    //   exec: crate::features::ordering::ordering_channel_command,
-    //   argument_min: 0,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT ordering [<category>]",
-    //   permission: Role::Admin,
     // },
     // "reminder" =>
     // Command {

@@ -6,7 +6,7 @@ pub mod eventhandler;
 pub mod parse;
 pub mod permissions;
 pub mod process;
-// pub mod validation;
+pub mod validation;
 
 use std::thread;
 

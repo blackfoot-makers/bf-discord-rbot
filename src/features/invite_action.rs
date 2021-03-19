@@ -5,6 +5,7 @@ use crate::core::{
 };
 use crate::database::INSTANCE;
 use log::warn;
+use procedural_macros::command;
 use serenity::{
   model::{
     guild::Member,
@@ -85,7 +86,8 @@ fn parse_create_argument(
   Ok(())
 }
 
-pub fn create(params: CallBackParams) -> CallbackReturn {
+#[command]
+pub async fn create(params: CallBackParams) -> CallbackReturn {
   let mut role = None;
   let mut channel = None;
   if let Err(err) = parse_create_argument(params.args[2], &mut role, &mut channel) {
