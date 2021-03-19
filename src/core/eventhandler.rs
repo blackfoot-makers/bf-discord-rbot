@@ -2,7 +2,7 @@ use super::process::{
   annoy_channel, archive_activity, database_update, filter_outannoying_messages, process_command,
   process_contains, process_tag_msg, split_args, HTTP_STATIC,
 };
-use super::validation::check_validation;
+use super::validation::{check_validation, WaitingValidation};
 use crate::features::{invite_action, project_manager, Features};
 use futures::executor::block_on;
 use log::{error, info};
@@ -159,6 +159,7 @@ pub async fn bot_connect() {
   {
     let mut data = block_on(client.data.write());
     data.insert::<Features>(Features::new());
+    data.insert::<WaitingValidation>(WaitingValidation::default());
   }
 
   // Finally, start a single shard, and start listening to events.

@@ -6,10 +6,17 @@ use serenity::{
 };
 use std::collections::HashMap;
 
-lazy_static! {
-  pub static ref TO_VALIDATE: RwLock<HashMap<u64, Box<dyn FnOnce() + Send + Sync>>> =
-    RwLock::new(HashMap::new());
+
+pub type ValidationCallback = Box<dyn FnOnce() -> BoxFuture<'static, ()> + Send + Sync>;
+#[derive(Default)]
+pub struct WaitingValidation {
+  pub to_validate: HashMap<u64, ValidationCallback>
 }
+
+impl TypeMapKey for WaitingValidation {
+  type Value = WaitingValidation;
+}
+
 
 fn message_link(reaction: &Reaction) -> String {
   format!(
@@ -31,12 +38,14 @@ pub async fn check_validation(ctx: &Context, reaction: &Reaction) {
     _ => "".to_string(),
   };
   if ["✅", "❌"].contains(&&*emoji_name) {
-    let mut to_validate = TO_VALIDATE.write().await;
-    let callback = to_validate.remove(&reaction.message_id.0);
+    let data = &mut ctx.data.write().await;
+    let waitingvalidation = data.get_mut::<WaitingValidation>().unwrap();
+
+      let callback = waitingvalidation.to_validate.remove(&reaction.message_id.0);
     if let Some(callback) = callback {
       let mut message = reaction.message(&ctx.http).await.unwrap();
       if emoji_name == "✅" {
-        callback();
+        callback().await;
         message
           .channel_id
           .say(
@@ -67,11 +76,13 @@ pub async fn validate_command(
   responsse: &str,
   message: &Message,
   context: &Context,
-  callback: Box<dyn FnOnce() + Send + Sync>,
+  callback: ValidationCallback,
 ) -> BoxFuture<'fut, ()> {
-  let mut to_validate = TO_VALIDATE.write().await;
+  let data = &mut context.data.write().await;
+  let waitingvalidation = data.get_mut::<WaitingValidation>().unwrap();
+
   let message = message.reply(&context.http, responsse).await.unwrap();
   message.react(&context.http, '✅').await.unwrap();
   message.react(&context.http, '❌').await.unwrap();
-  to_validate.insert(message.id.0, callback);
+  waitingvalidation.to_validate.insert(message.id.0, callback);
 }

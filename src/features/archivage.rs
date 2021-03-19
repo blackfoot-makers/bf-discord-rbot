@@ -1,10 +1,7 @@
-use crate::core::{
-  commands::{CallBackParams, CallbackReturn},
-  parse, validation,
-};
+use crate::core::{commands::{CallBackParams, CallbackReturn}, parse, validation::{self, ValidationCallback, WaitingValidation}};
 use chrono::prelude::*;
 use diesel::serialize::Output;
-use futures::Future;
+use futures::{Future, FutureExt, future::BoxFuture};
 use log::error;
 use procedural_macros::command;
 use serenity::{
@@ -31,6 +28,7 @@ pub async fn archive_channels_command(params: CallBackParams) -> CallbackReturn 
     Some(res) => res,
     None => return Ok(Some(String::from("Nothing to do"))),
   };
+
   validation::validate_command(&archivage, params.message, params.context, func);
   Ok(None)
 }
@@ -99,11 +97,11 @@ async fn check_channels_activity(
   (display, unactive_channels)
 }
 
-pub async fn guild_chanels_archivage(
+pub async fn guild_chanels_archivage<'fut>(
   gid: GuildId,
   category: u64,
   context: &Context,
-) -> Option<(String, Box<Pin<dyn FnOnce() + Send + Sync>>)> {
+) -> Option<(String, ValidationCallback)> {
   let cache = context.cache.clone();
   let unactive_channels = match cache.guild(gid).await {
     Some(mut guild) => {
@@ -123,9 +121,11 @@ pub async fn guild_chanels_archivage(
     unactive_channels.0
   );
   let context_clone = context.clone();
-  let func = async move || {
-    move_channels_to_archive(unactive_channels.1, &context_clone).await;
+  let func = || {
+    async move {
+      move_channels_to_archive(unactive_channels.1, &context_clone).await;
+    }.boxed()
   };
 
-  Some((preview_reply, Box::new(Box::pin(func))))
+  Some((preview_reply, Box::new(func)))
 }

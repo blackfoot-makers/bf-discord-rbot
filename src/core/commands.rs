@@ -178,15 +178,15 @@ lazy_static! {
       usage: "@BOT archivage [<category>]",
       permission: Role::Admin,
     },
-    "ordering" =>
-    Command {
-      exec: ordering::ordering_channel_command,
-      argument_min: 0,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT ordering [<category>]",
-      permission: Role::Admin,
-    },
+    // "ordering" =>
+    // Command {
+    //   exec: ordering::ordering_channel_command,
+    //   argument_min: 0,
+    //   argument_max: 1,
+    //   channel: None,
+    //   usage: "@BOT ordering [<category>]",
+    //   permission: Role::Admin,
+    // },
     // "frontline-add-directory" =>
     // Command {
     //   exec: frontline::add_directory,
