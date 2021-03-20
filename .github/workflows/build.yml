@@ -28,4 +28,4 @@ jobs:
           push: true
           cache-from: type=registry,ref=greefine/discord-rbot:latest
           cache-to: type=inline
-          tags: "greefine/discord-rbot:latest,greefine/discord-rbot:sha-${GITHUB_SHA::8}"
+          tags: ${{ "greefine/discord-rbot:latest,greefine/discord-rbot:sha-${GITHUB_SHA::8}" }}
