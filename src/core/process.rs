@@ -4,20 +4,14 @@ use super::commands::{
 };
 use super::permissions;
 use crate::database;
-// use crate::features::funny::ATTACKED;
+use crate::features::funny::ATTACKED;
 use log::{debug, error};
 use serenity::{
-  cache, http,
   model::channel::Message,
   model::id::{ChannelId, UserId},
   prelude::*,
 };
-use std::{sync::Arc, time::SystemTime};
-
-lazy_static! {
-  pub static ref HTTP_STATIC: RwLock<Option<Arc<http::Http>>> = RwLock::new(None);
-  // pub static ref CACHE: RwLock<cache::CacheRwLock> = RwLock::new(cache::CacheRwLock::default());
-}
+use std::time::SystemTime;
 
 async fn allowed_channel(
   command_channel: Option<ChannelId>,
@@ -208,38 +202,39 @@ pub fn filter_outannoying_messages(ctx: &Context, message: &Message) {
   }
 }
 
-// pub fn personal_attack(ctx: &Context, message: &Message) {
-//   if message.author.mention() == *ATTACKED.read() {
-//     const ANNOYING: [&str; 11] = [
-//       "🐧", "💩", "🍌", "💣", "👾", "🐔", "📛", "🔥", "‼", "⚡", "⚠",
-//     ];
-//     let random1 = rand::random::<usize>() % ANNOYING.len();
-//     let random2 = rand::random::<usize>() % ANNOYING.len();
-//     message.react(ctx, ANNOYING[random1]).unwrap();
-//     message.react(ctx, ANNOYING[random2]).unwrap();
-//   }
-// }
+pub async fn personal_attack(ctx: &Context, message: &Message) {
+  if message.author.name == *ATTACKED.read().await {
+    const ANNOYING: [char; 11] = [
+      '🐧', '💩', '🍌', '💣', '👾', '🐔', '📛', '🔥', '‼', '⚡', '⚠',
+    ];
+    let random1 = rand::random::<usize>() % ANNOYING.len();
+    let random2 = rand::random::<usize>() % ANNOYING.len();
+    message.react(ctx, ANNOYING[random1]).await.unwrap();
+    message.react(ctx, ANNOYING[random2]).await.unwrap();
+  }
+}
 
-// pub fn attacked(ctx: &Context, message: &Message) -> bool {
-//   const ANNOYING_MESSAGE: [&str; 6] = [
-//     "Ah oui mais y'a JPO",
-//     "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
-//     "Avant, Faut laver les vitres les gars",
-//     "Ah mais vous faites quoi ?",
-//     "Non mais tu as vu le jeu qui est sorti ?",
-//     "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
-//   ];
+pub async fn attacked(ctx: &Context, message: &Message) -> bool {
+  const ANNOYING_MESSAGE: [&str; 6] = [
+    "Ah oui mais y'a JPO",
+    "Vous pourriez faire ça vous meme s'il vous plaît ? Je suis occupé",
+    "Avant, Faut laver les vitres les gars",
+    "Ah mais vous faites quoi ?",
+    "Non mais tu as vu le jeu qui est sorti ?",
+    "Je bosse sur un projet super innovant en ce moment, j'ai pas le temps",
+  ];
 
-//   if message.author.mention() == *ATTACKED.read() {
-//     let random = rand::random::<usize>() % 6;
-//     message
-//       .channel_id
-//       .say(&ctx.http, ANNOYING_MESSAGE[random])
-//       .unwrap();
-//     return true;
-//   }
-//   false
-// }
+  if message.author.name == *ATTACKED.read().await {
+    let random = rand::random::<usize>() % 6;
+    message
+      .channel_id
+      .say(&ctx.http, ANNOYING_MESSAGE[random])
+      .await
+      .unwrap();
+    return true;
+  }
+  false
+}
 
 pub fn database_update(message: &Message) {
   let mut db_instance = database::INSTANCE.write().unwrap();

@@ -4,7 +4,6 @@ use serenity::{
   model::{channel::Channel, guild::Guild},
   prelude::*,
 };
-use std::sync::Arc;
 use strum_macros::Display;
 
 #[derive(PartialEq, Debug, Display)]

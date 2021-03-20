@@ -10,22 +10,22 @@
 
 pub mod airtable;
 // pub mod event;
-pub mod frontline;
-// pub mod funny;
 pub mod archivage;
+pub mod frontline;
+pub mod funny;
 pub mod invite_action;
+pub mod mecleanup;
 pub mod ordering;
 pub mod project_manager;
 pub mod renaming;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};
-use std::{collections::HashMap, thread};
-use std::{sync::Arc, thread::JoinHandle};
+use std::sync::Arc;
+use std::thread;
 use threadcontrol::ThreadControl;
 
 pub struct Features {
-  threads: HashMap<&'static str, JoinHandle<()>>,
   pub thread_control: ThreadControl,
   pub running: bool,
 }
@@ -37,7 +37,6 @@ impl TypeMapKey for Features {
 impl Features {
   pub fn new() -> Self {
     Features {
-      threads: HashMap::new(),
       running: false,
       thread_control: ThreadControl::new(),
     }

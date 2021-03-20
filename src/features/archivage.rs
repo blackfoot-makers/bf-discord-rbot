@@ -1,7 +1,10 @@
-use crate::core::{commands::{CallBackParams, CallbackReturn}, parse, validation::{self, ValidationCallback, WaitingValidation}};
+use crate::core::{
+  commands::{CallBackParams, CallbackReturn},
+  parse,
+  validation::{self, ValidationCallback},
+};
 use chrono::prelude::*;
-use diesel::serialize::Output;
-use futures::{Future, FutureExt, future::BoxFuture};
+use futures::FutureExt;
 use log::error;
 use procedural_macros::command;
 use serenity::{
@@ -11,7 +14,7 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{collections::HashMap, pin::Pin};
+use std::collections::HashMap;
 
 #[command]
 pub async fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
@@ -29,7 +32,7 @@ pub async fn archive_channels_command(params: CallBackParams) -> CallbackReturn 
     None => return Ok(Some(String::from("Nothing to do"))),
   };
 
-  validation::validate_command(&archivage, params.message, params.context, func);
+  validation::validate_command(&archivage, params.message, params.context, func).await;
   Ok(None)
 }
 
@@ -124,7 +127,8 @@ pub async fn guild_chanels_archivage<'fut>(
   let func = || {
     async move {
       move_channels_to_archive(unactive_channels.1, &context_clone).await;
-    }.boxed()
+    }
+    .boxed()
   };
 
   Some((preview_reply, Box::new(func)))

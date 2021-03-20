@@ -252,44 +252,41 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
 
 pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
   let emoji_name = match &reaction.emoji {
-    ReactionType::Unicode(e) => e.clone(),
-    ReactionType::Custom {
-      animated: _,
-      name,
-      id: _,
-    } => name.clone().unwrap(),
-    _ => "".to_string(),
+    ReactionType::Unicode(unicode) => Some(&*unicode),
+    _ => None,
   };
-  if ["✅"].contains(&&*emoji_name) {
-    let mut project_chanid = 0;
-    {
-      let db_instance = INSTANCE.read().unwrap();
-      if let Some((_index, project)) =
-        db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+  if let Some(unicode) = emoji_name {
+    if ["✅"].contains(&&**unicode) {
+      let mut project_chanid = 0;
       {
-        project_chanid = project.channel_id;
-      }
-    }
-
-    if project_chanid > 0 {
-      if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
-        if removed {
-          channel
-            .delete_permission(
-              &ctx.http,
-              PermissionOverwriteType::Member(reaction.user_id.unwrap()),
-            )
-            .await
-            .unwrap();
-        } else {
-          let overwrite = member_channel_read(reaction.user_id.unwrap());
-          channel
-            .create_permission(&ctx.http, &overwrite)
-            .await
-            .unwrap();
+        let db_instance = INSTANCE.read().unwrap();
+        if let Some((_index, project)) =
+          db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+        {
+          project_chanid = project.channel_id;
         }
-      } else {
-        error!("Unable to find project channel in cache");
+      }
+
+      if project_chanid > 0 {
+        if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
+          if removed {
+            channel
+              .delete_permission(
+                &ctx.http,
+                PermissionOverwriteType::Member(reaction.user_id.unwrap()),
+              )
+              .await
+              .unwrap();
+          } else {
+            let overwrite = member_channel_read(reaction.user_id.unwrap());
+            channel
+              .create_permission(&ctx.http, &overwrite)
+              .await
+              .unwrap();
+          }
+        } else {
+          error!("Unable to find project channel in cache");
+        }
       }
     }
   }

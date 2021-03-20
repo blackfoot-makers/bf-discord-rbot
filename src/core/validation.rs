@@ -6,17 +6,15 @@ use serenity::{
 };
 use std::collections::HashMap;
 
-
 pub type ValidationCallback = Box<dyn FnOnce() -> BoxFuture<'static, ()> + Send + Sync>;
 #[derive(Default)]
 pub struct WaitingValidation {
-  pub to_validate: HashMap<u64, ValidationCallback>
+  pub to_validate: HashMap<u64, ValidationCallback>,
 }
 
 impl TypeMapKey for WaitingValidation {
   type Value = WaitingValidation;
 }
-
 
 fn message_link(reaction: &Reaction) -> String {
   format!(
@@ -41,7 +39,7 @@ pub async fn check_validation(ctx: &Context, reaction: &Reaction) {
     let data = &mut ctx.data.write().await;
     let waitingvalidation = data.get_mut::<WaitingValidation>().unwrap();
 
-      let callback = waitingvalidation.to_validate.remove(&reaction.message_id.0);
+    let callback = waitingvalidation.to_validate.remove(&reaction.message_id.0);
     if let Some(callback) = callback {
       let mut message = reaction.message(&ctx.http).await.unwrap();
       if emoji_name == "✅" {

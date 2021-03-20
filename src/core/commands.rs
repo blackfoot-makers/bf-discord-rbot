@@ -1,9 +1,10 @@
 //! Handle the connection with discord and it's events.
 use super::parse;
 use crate::database::{Role, INSTANCE};
-use crate::features::{archivage, invite_action, ordering, project_manager};
+use crate::features::{
+  archivage, frontline, funny, invite_action, ordering, project_manager, renaming,
+};
 use procedural_macros::command;
-// use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
 use serenity::{futures::future::BoxFuture, FutureExt};
 use serenity::{
   model::channel::Message,
@@ -178,24 +179,24 @@ lazy_static! {
       usage: "@BOT archivage [<category>]",
       permission: Role::Admin,
     },
-    // "ordering" =>
-    // Command {
-    //   exec: ordering::ordering_channel_command,
-    //   argument_min: 0,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT ordering [<category>]",
-    //   permission: Role::Admin,
-    // },
-    // "frontline-add-directory" =>
-    // Command {
-    //   exec: frontline::add_directory,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT frontline-add-directory  \"<directory>\"",
-    //   permission: Role::User,
-    // },
+    "ordering" =>
+    Command {
+      exec: ordering::ordering_channel_command,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT ordering [<category>]",
+      permission: Role::Admin,
+    },
+    "frontline-add-directory" =>
+    Command {
+      exec: frontline::add_directory,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT frontline-add-directory  \"<directory>\"",
+      permission: Role::User,
+    },
     // "reminder" =>
     // Command {
     //   exec: Event::add_reminder,
@@ -214,51 +215,51 @@ lazy_static! {
     //   usage: "@BOT countdown <NAME> <START_DATE(MONTH-DAY:HOURS)> <END_DATE(MONTH-DAY:HOURS)> <DELAY_OF_REPETITION(minutes)> <MESSAGE CHANNEL>",
     //   permission: Role::User,
     // },
-    // "attack" =>
-    // Command {
-    //   exec: funny::attack_lauch,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT attack <@user>",
-    //   permission: Role::User,
-    // },
-    // "mom-change" =>
-    // Command {
-    //   exec: funny::mom_change,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT momchange <@user>",
-    //   permission: Role::User,
-    // },
-    // "mom" =>
-    // Command {
-    //   exec: funny::witch_mom,
-    //   argument_min: 0,
-    //   argument_max: 0,
-    //   channel: None,
-    //   usage: "@BOT mom",
-    //   permission: Role::User,
-    // },
-    // "cat" =>
-    // Command {
-    //   exec: funny::get_cat_pic,
-    //   argument_min: 0,
-    //   argument_max: 0,
-    //   channel: None,
-    //   usage: "@BOT cat",
-    //   permission: Role::Guest,
-    // },
-    // "rename" =>
-    // Command {
-    //   exec: renaming::rename,
-    //   argument_min: 2,
-    //   argument_max: 3,
-    //   channel: None,
-    //   usage: "@BOT rename <@user> <new nickname> [<guild>]",
-    //   permission: Role::User,
-    // },
+    "attack" =>
+    Command {
+      exec: funny::attack_lauch,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT attack <@user>",
+      permission: Role::User,
+    },
+    "mom-change" =>
+    Command {
+      exec: funny::mom_change,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT momchange <@user>",
+      permission: Role::User,
+    },
+    "mom" =>
+    Command {
+      exec: funny::witch_mom,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT mom",
+      permission: Role::User,
+    },
+    "cat" =>
+    Command {
+      exec: funny::get_cat_pic,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT cat",
+      permission: Role::Guest,
+    },
+    "rename" =>
+    Command {
+      exec: renaming::rename,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT rename <@user> <new nickname> [<guild>]",
+      permission: Role::User,
+    },
     "help" =>
     Command {
       exec: print_help,

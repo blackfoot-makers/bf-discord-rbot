@@ -1,13 +1,14 @@
 use super::process::{
-  annoy_channel, archive_activity, database_update, filter_outannoying_messages, process_command,
-  process_contains, process_tag_msg, split_args, HTTP_STATIC,
+  annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
+  personal_attack, process_command, process_contains, process_tag_msg, split_args,
 };
 use super::validation::{check_validation, WaitingValidation};
-use crate::features::{invite_action, project_manager, Features};
+use crate::features::{invite_action, mecleanup, project_manager, Features};
 use futures::executor::block_on;
 use log::{error, info};
 use serenity::{
   async_trait,
+  client::bridge::gateway::GatewayIntents,
   model::{
     channel::{Message, Reaction},
     event::ResumedEvent,
@@ -49,7 +50,7 @@ impl EventHandler for Handler {
     if message.is_own(&ctx).await || message.content.is_empty() {
       return;
     };
-    // personal_attack(&ctx, &message);
+    personal_attack(&ctx, &message).await;
     annoy_channel(&ctx, &message).await;
     filter_outannoying_messages(&ctx, &message);
 
@@ -59,9 +60,9 @@ impl EventHandler for Handler {
     if message.content.starts_with(&*format!("<@!{}>", botid))
       || message.content.starts_with(&*format!("<@{}>", botid))
     {
-      // if attacked(&ctx, &message) {
-      //   return;
-      // }
+      if attacked(&ctx, &message).await {
+        return;
+      }
       let line = message.content.clone();
       let mut message_split = split_args(&line);
 
@@ -94,10 +95,16 @@ impl EventHandler for Handler {
 
   async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
     let botid = getbotid(&ctx).await;
-    if reaction.user_id.unwrap() != botid {
-      // parse_gitcommand_reaction(ctx, reaction);
+    let isown = reaction
+      .message(&ctx.http)
+      .await
+      .unwrap()
+      .is_own(&ctx.cache)
+      .await;
+    if reaction.user_id.unwrap() != botid && isown {
       check_validation(&ctx, &reaction).await;
       project_manager::check_subscribe(&ctx, &reaction, false).await;
+      mecleanup::check_mecleanup(&ctx, &reaction).await;
     }
   }
 
@@ -114,10 +121,6 @@ impl EventHandler for Handler {
 
   async fn ready(&self, ctx: Context, ready: Ready) {
     info!("{} is connected!", ready.user.name);
-    let mut arc = HTTP_STATIC.write().await;
-    *arc = Some(ctx.http.clone());
-    // let mut cache = CACHE.write();
-    // *cache = ctx.cache;
 
     let data = &mut ctx.data.write().await;
     let feature = data.get_mut::<Features>().unwrap();
@@ -131,10 +134,11 @@ impl EventHandler for Handler {
     info!("{} => {:?}", name, raw);
   }
 
-  async fn resume(&self, _ctx: Context, _: ResumedEvent) {
+  async fn resume(&self, ctx: Context, _: ResumedEvent) {
     info!("Resumed");
-    // let data = &mut ctx.data.write();
-    // data.get_mut::<Features>().unwrap().thread_control.resume();
+    let data = &mut ctx.data.write().await;
+    // FIXME: This is cool but we never get a stoped event
+    data.get_mut::<Features>().unwrap().thread_control.resume();
   }
 }
 
@@ -154,8 +158,10 @@ pub async fn bot_connect() {
   // Create a new instance of the Client, logging in as a bot. This will
   // automatically prepend your bot token with "Bot ", which is a requirement
   // by Discord for bot users.
-  let mut client =
-    block_on(Client::builder(token).event_handler(Handler)).expect("Err creating client");
+  let builder = Client::builder(token)
+    .event_handler(Handler)
+    .intents(GatewayIntents::all());
+  let mut client = block_on(builder).expect("Err creating client");
   {
     let mut data = block_on(client.data.write());
     data.insert::<Features>(Features::new());
