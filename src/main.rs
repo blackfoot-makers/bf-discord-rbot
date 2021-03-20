@@ -25,8 +25,6 @@
 //! [features docs]: features/index.html
 
 #![warn(clippy::all)]
-#![feature(async_closure)]
-#![feature(type_alias_impl_trait)]
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
