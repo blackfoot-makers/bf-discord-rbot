@@ -6,7 +6,7 @@ use crate::core::{
 };
 use crate::database::{NewProject, INSTANCE};
 use chrono::{offset::Utc, DateTime};
-use futures::{executor::block_on, FutureExt};
+use futures::FutureExt;
 use log::error;
 use procedural_macros::command;
 use serenity::{
@@ -15,11 +15,12 @@ use serenity::{
     channel::{
       Channel, ChannelType, GuildChannel, Message, PermissionOverwriteType, Reaction, ReactionType,
     },
+    guild::Guild,
     id::{ChannelId, UserId},
   },
   prelude::*,
 };
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{collections::HashMap, error::Error, sync::Arc, time::SystemTime};
 
 const ARGUMENT_LIST: [&str; 6] = [
   "codex",
@@ -197,16 +198,23 @@ pub async fn delete(params: CallBackParams) -> CallbackReturn {
   }
 }
 
+async fn add_permission(
+  context: &Context,
+  guildchannel: &GuildChannel,
+  userid: u64,
+) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
+  let overwrite = member_channel_read(UserId(userid));
+  guildchannel
+    .create_permission(&context.http, &overwrite)
+    .await
+    .unwrap();
+  Ok(Some(format!("Added <@{}> Welcome !", userid)))
+}
+
 #[command]
 pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   let cache = &params.context.cache;
-  let http = &params.context.http;
   let usertag = params.args[1];
-  let add_perm = |guildchannel: &GuildChannel, userid| {
-    let overwrite = member_channel_read(UserId(userid));
-    block_on(guildchannel.create_permission(http, &overwrite)).unwrap();
-    Ok(Some(format!("Added <@{}> Welcome !", userid)))
-  };
 
   match params
     .message
@@ -216,18 +224,15 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   {
     Channel::Guild(guildchannel) => {
       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
-        Ok((userid, _)) => add_perm(&guildchannel, userid),
+        Ok((userid, _)) => add_permission(&params.context, &guildchannel, userid).await,
         Err(_error) => {
           if let Some(guild) = &guildchannel.guild(cache).await {
             let member = guild.member_named(usertag);
             if let Some(member) = member {
               let userid = member.user.id.0;
-              add_perm(&guildchannel, userid)
+              add_permission(&params.context, &guildchannel, userid).await
             } else {
-              Ok(Some(format!(
-                "Didn't find any user with {} in their name",
-                usertag
-              )))
+              check_containing(&params.context, guild, usertag, guildchannel).await
             }
           } else {
             panic!("Unable to get guild from cache")
@@ -238,6 +243,35 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
     _ => Ok(Some(String::from(
       "This command is restricted to a guild channel",
     ))),
+  }
+}
+
+async fn check_containing(
+  context: &Context,
+  guild: &Guild,
+  usertag: &str,
+  guildchannel: GuildChannel,
+) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
+  let members = guild.members_containing(usertag, false, false).await;
+  if !members.is_empty() {
+    if members.len() == 1 {
+      let userid = members[0].0.user.id.0;
+      add_permission(context, &guildchannel, userid).await
+    } else {
+      let membernames: String = members
+        .iter()
+        .map(|member| format!("{}, ", member.1))
+        .collect();
+      Ok(Some(format!(
+        "Found too many users with this name: {},\n found: {}",
+        usertag, membernames
+      )))
+    }
+  } else {
+    Ok(Some(format!(
+      "Didn't find any user with {} in their name",
+      usertag
+    )))
   }
 }
 
