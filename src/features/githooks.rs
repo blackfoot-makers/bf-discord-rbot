@@ -1,7 +1,7 @@
 use hyper::rt::{run, Future};
 use hyper::{Error, Server};
 use log::info;
-use rifling::{Constructor, Delivery, Hook};
+use rifling::{Command, Constructor, Delivery};
 use serenity::{http, model::id::ChannelId};
 use std::sync::Arc;
 use std::thread;
@@ -26,7 +26,7 @@ pub fn notify(payload: &serde_json::Value, http: Arc<http::raw::Http>) {
 
 pub fn init(http: Arc<http::raw::Http>) {
   let mut cons = Constructor::new();
-  let push_hook = Hook::new(
+  let push_command = Command::new(
     "*",
     Some(String::from("secret")),
     move |delivery: &Delivery| {
@@ -44,7 +44,7 @@ pub fn init(http: Arc<http::raw::Http>) {
     },
   );
 
-  cons.register(push_hook);
+  cons.register(push_command);
   let addr = "0.0.0.0:4567".parse().unwrap();
   let server = Server::bind(&addr)
     .serve(cons)

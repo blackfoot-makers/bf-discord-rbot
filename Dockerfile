@@ -2,7 +2,7 @@
 # Cargo Build Stage
 # -----------------
 
-FROM rust:latest as cargo-build
+FROM rustlang/rust:nightly as cargo-build
 WORKDIR /app
 
 RUN cargo install diesel_cli --no-default-features --features "postgres"
@@ -14,6 +14,7 @@ COPY Cargo.toml .
 COPY caching.rs .
 RUN mkdir .cargo
 RUN sed -i 's#src/main.rs#caching.rs#' Cargo.toml
+COPY ./procedural_macros procedural_macros
 RUN cargo build --release
 RUN cargo vendor > .cargo/config
 

@@ -2,6 +2,7 @@ use crate::core::commands::{CallBackParams, CallbackReturn};
 // use crate::database;
 use ftp::FtpStream;
 use log::error;
+use procedural_macros::command;
 use serenity::{http, model::id::ChannelId};
 use std::collections::HashMap;
 use std::env;
@@ -23,7 +24,8 @@ fn ftp_connect() -> FtpStream {
   ftp_stream
 }
 
-pub fn add_directory(params: CallBackParams) -> CallbackReturn {
+#[command]
+pub async fn add_directory(params: CallBackParams) -> CallbackReturn {
   let dir_target = String::from(params.args[1]);
   let mut ftp_stream = ftp_connect();
   let root = ftp_stream.nlst(None).expect("Unable to list ftp dir");
@@ -37,7 +39,7 @@ pub fn add_directory(params: CallBackParams) -> CallbackReturn {
   Ok(Some(String::from(":ok:")))
 }
 
-pub fn check<F>(http: Arc<http::Http>, threads_check: F)
+pub async fn check<F>(http: Arc<http::Http>, threads_check: F)
 where
   F: for<'a> Fn(),
 {
@@ -55,27 +57,33 @@ where
 
   loop {
     threads_check();
+
+    let mut noupdate_dir = String::new();
     {
       let mut ftp_stream = ftp_connect();
-      let mut directories = DIRECTORY_WATCH.write().unwrap();
+      let mut directorys = DIRECTORY_WATCH.write().unwrap();
 
-      for (directorie, count) in directories.iter_mut() {
-        let path = format!("{}/Activity", directorie);
+      for (directory, count) in directorys.iter_mut() {
+        let path = format!("{}/Activity", directory);
         let list = ftp_stream
           .nlst(Some(&*path))
           .expect("Unable to list ftp dir");
         if *count < list.len() {
           *count = list.len();
         } else {
-          ChannelId(ANNOYED_CHAN_HERDINGCHATTE)
-            .say(
-              &http,
-              format!("<@344498090801364993> 😱 No update on {}", directorie),
-            )
-            .unwrap();
+          noupdate_dir = String::from(directory);
         }
       }
       ftp_stream.quit().unwrap();
+    }
+    if !noupdate_dir.is_empty() {
+      ChannelId(ANNOYED_CHAN_HERDINGCHATTE)
+        .say(
+          &http,
+          format!("<@344498090801364993> 😱 No update on {}", noupdate_dir),
+        )
+        .await
+        .unwrap();
     }
     thread::sleep(time::Duration::from_secs(60 * 20));
   }

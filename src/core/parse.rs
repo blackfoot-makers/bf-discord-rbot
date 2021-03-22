@@ -4,7 +4,6 @@ use serenity::{
   model::{channel::Channel, guild::Guild},
   prelude::*,
 };
-use std::sync::Arc;
 use strum_macros::Display;
 
 #[derive(PartialEq, Debug, Display)]
@@ -15,19 +14,19 @@ pub enum DiscordIds {
   User,
 }
 
-pub fn get_main_guild(context: &Context) -> Arc<RwLock<Guild>> {
+pub async fn get_main_guild(context: &Context) -> Guild {
   context
     .cache
-    .read()
     .guild(discordids::GUILD_ID)
+    .await
     .expect("Unable to find main guild")
 }
 
-pub fn get_guild(
+pub async fn get_guild(
   channel: Channel,
   context: &Context,
   gid: Option<&&str>,
-) -> Result<Arc<RwLock<Guild>>, String> {
+) -> Result<Guild, String> {
   match channel {
     Channel::Private(_) => match gid {
       Some(gid) => {
@@ -38,14 +37,14 @@ pub fn get_guild(
             return Err(String::from("Invalid guild id"));
           }
         };
-        match context.cache.read().guild(id) {
+        match context.cache.guild(id).await {
           Some(guild) => Ok(guild),
           None => Err(format!("Guild: {} not found", gid)),
         }
       }
-      None => Ok(get_main_guild(context)),
+      None => Ok(get_main_guild(context).await),
     },
-    Channel::Guild(guildchan) => Ok(guildchan.read().guild(&context.cache).unwrap()),
+    Channel::Guild(guildchan) => Ok(guildchan.guild(&context.cache).await.unwrap()),
     _ => Err(String::from("This doesn't work in this channel")),
   }
 }

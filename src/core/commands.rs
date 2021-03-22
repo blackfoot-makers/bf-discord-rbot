@@ -1,7 +1,11 @@
 //! Handle the connection with discord and it's events.
 use super::parse;
 use crate::database::{Role, INSTANCE};
-use crate::features::{event::Event, frontline, funny, invite_action, project_manager, renaming};
+use crate::features::{
+  archivage, frontline, funny, invite_action, ordering, project_manager, renaming,
+};
+use procedural_macros::command;
+use serenity::{futures::future::BoxFuture, FutureExt};
 use serenity::{
   model::channel::Message,
   model::{gateway::Activity, id::ChannelId},
@@ -14,7 +18,8 @@ pub struct CallBackParams<'a> {
   pub message: &'a Message,
   pub context: &'a Context,
 }
-pub type CallbackReturn = Result<Option<String>, Box<dyn Error + Send + Sync>>;
+pub type CallbackReturn<'fut> =
+  BoxFuture<'fut, Result<Option<String>, Box<dyn Error + Send + Sync>>>;
 type Callback = fn(CallBackParams) -> CallbackReturn;
 
 /// Struct that old Traits Implementations to Handle the different events send by discord.
@@ -57,13 +62,13 @@ lazy_static! {
     "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif",
     "ok boomer" => "Ok millennial"
   ];
-  pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, &'static str> = hashmap![
-    "👊" => "👊",
-    "licorne" => "🦄",
-    "leslie" => "🦄",
-    "max" => "🍌",
-    "retard" => "⌚",
-    "pm" => "🐱"
+  pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, char> = hashmap![
+    "👊" => '👊',
+    "licorne" => '🦄',
+    "leslie" => '🦄',
+    "max" => '🍌',
+    "retard" => '⌚',
+    "pm" => '🐱'
   ];
   pub static ref COMMANDS_LIST: HashMap<&'static str, Command> = hashmap![
     "quit" =>
@@ -86,7 +91,7 @@ lazy_static! {
     },
     "users" =>
     Command {
-      exec: |_| -> CallbackReturn { Ok(Some(format!("{:?}", INSTANCE.write().unwrap().users))) },
+      exec: |_| -> CallbackReturn { async move { Ok(Some(format!("{:?}", INSTANCE.write().unwrap().users))) }.boxed() },
       argument_min: 0,
       argument_max: 0,
       channel: None,
@@ -102,60 +107,6 @@ lazy_static! {
       usage: "@BOT promote <@user> <role>",
       permission: Role::Admin,
     },
-    "reminder" =>
-    Command {
-      exec: Event::add_reminder,
-      argument_min: 4,
-      argument_max: 5,
-      channel: None,
-      usage: "@BOT reminder <NAME> <DATE(MONTH-DAY:HOURS:MINUTES)> >MESSAGE> <CHANNEL> [<REPEAT(delay in minutes)>]",
-      permission: Role::User,
-    },
-    "countdown" =>
-    Command {
-      exec: Event::add_countdown,
-      argument_min: 6,
-      argument_max: 6,
-      channel: None,
-      usage: "@BOT countdown <NAME> <START_DATE(MONTH-DAY:HOURS)> <END_DATE(MONTH-DAY:HOURS)> <DELAY_OF_REPETITION(minutes)> <MESSAGE CHANNEL>",
-      permission: Role::User,
-    },
-    "attack" =>
-    Command {
-      exec: funny::attack_lauch,
-      argument_min: 1,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT attack <@user>",
-      permission: Role::User,
-    },
-    "mom-change" =>
-    Command {
-      exec: funny::mom_change,
-      argument_min: 1,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT momchange <@user>",
-      permission: Role::User,
-    },
-    "mom" =>
-    Command {
-      exec: funny::witch_mom,
-      argument_min: 0,
-      argument_max: 0,
-      channel: None,
-      usage: "@BOT mom",
-      permission: Role::User,
-    },
-    "cat" =>
-    Command {
-      exec: funny::get_cat_pic,
-      argument_min: 0,
-      argument_max: 0,
-      channel: None,
-      usage: "@BOT cat",
-      permission: Role::Guest,
-    },
     "set-activity" =>
     Command {
       exec: set_activity,
@@ -165,31 +116,13 @@ lazy_static! {
       usage: "@BOT set-activity <ACTIVITY_NAME>",
       permission: Role::User,
     },
-    "ordering" =>
+    "edit" =>
     Command {
-      exec: crate::features::ordering::ordering_channel_command,
-      argument_min: 0,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT ordering [<category>]",
-      permission: Role::Admin,
-    },
-    "archivage" =>
-    Command {
-      exec: crate::features::archivage::archive_channels_command,
-      argument_min: 0,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT archivage [<category>]",
-      permission: Role::Admin,
-    },
-    "rename" =>
-    Command {
-      exec: renaming::rename,
+      exec: modify_message,
       argument_min: 2,
       argument_max: 3,
       channel: None,
-      usage: "@BOT rename <@user> <new nickname> [<guild>]",
+      usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
       permission: Role::User,
     },
     "create-project" =>
@@ -228,15 +161,6 @@ lazy_static! {
       usage: "@BOT add <@user>",
       permission: Role::User,
     },
-    "edit" =>
-    Command {
-      exec: modify_message,
-      argument_min: 2,
-      argument_max: 3,
-      channel: None,
-      usage: "@BOT edit [<#channel>] <message_id> \"<new content>\"",
-      permission: Role::User,
-    },
     "invite" =>
     Command {
       exec: invite_action::create,
@@ -246,6 +170,24 @@ lazy_static! {
       usage: "@BOT invite [<#invitecode>] <role AND OR channel>",
       permission: Role::User,
     },
+    "archivage" =>
+    Command {
+      exec: archivage::archive_channels_command,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT archivage [<category>]",
+      permission: Role::Admin,
+    },
+    "ordering" =>
+    Command {
+      exec: ordering::ordering_channel_command,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT ordering [<category>]",
+      permission: Role::Admin,
+    },
     "frontline-add-directory" =>
     Command {
       exec: frontline::add_directory,
@@ -253,6 +195,69 @@ lazy_static! {
       argument_max: 1,
       channel: None,
       usage: "@BOT frontline-add-directory  \"<directory>\"",
+      permission: Role::User,
+    },
+    // "reminder" =>
+    // Command {
+    //   exec: Event::add_reminder,
+    //   argument_min: 4,
+    //   argument_max: 5,
+    //   channel: None,
+    //   usage: "@BOT reminder <NAME> <DATE(MONTH-DAY:HOURS:MINUTES)> >MESSAGE> <CHANNEL> [<REPEAT(delay in minutes)>]",
+    //   permission: Role::User,
+    // },
+    // "countdown" =>
+    // Command {
+    //   exec: Event::add_countdown,
+    //   argument_min: 6,
+    //   argument_max: 6,
+    //   channel: None,
+    //   usage: "@BOT countdown <NAME> <START_DATE(MONTH-DAY:HOURS)> <END_DATE(MONTH-DAY:HOURS)> <DELAY_OF_REPETITION(minutes)> <MESSAGE CHANNEL>",
+    //   permission: Role::User,
+    // },
+    "attack" =>
+    Command {
+      exec: funny::attack_lauch,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT attack <@user>",
+      permission: Role::User,
+    },
+    "mom-change" =>
+    Command {
+      exec: funny::mom_change,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT momchange <@user>",
+      permission: Role::User,
+    },
+    "mom" =>
+    Command {
+      exec: funny::witch_mom,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT mom",
+      permission: Role::User,
+    },
+    "cat" =>
+    Command {
+      exec: funny::get_cat_pic,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT cat",
+      permission: Role::Guest,
+    },
+    "rename" =>
+    Command {
+      exec: renaming::rename,
+      argument_min: 2,
+      argument_max: 3,
+      channel: None,
+      usage: "@BOT rename <@user> <new nickname> [<guild>]",
       permission: Role::User,
     },
     "help" =>
@@ -267,7 +272,8 @@ lazy_static! {
   ];
 }
 
-fn print_help(_: CallBackParams) -> CallbackReturn {
+#[command]
+async fn print_help(_: CallBackParams) -> CallbackReturn {
   let mut result =
     String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
   for (key, command) in COMMANDS_LIST.iter() {
@@ -279,7 +285,8 @@ fn print_help(_: CallBackParams) -> CallbackReturn {
   Ok(Some(result))
 }
 
-fn promote_user(params: CallBackParams) -> CallbackReturn {
+#[command]
+async fn promote_user(params: CallBackParams) -> CallbackReturn {
   let mut db_instance = INSTANCE.write().unwrap();
 
   let role = match Role::from_str(params.args[2]) {
@@ -293,21 +300,23 @@ fn promote_user(params: CallBackParams) -> CallbackReturn {
   }
 }
 
-fn set_activity(params: CallBackParams) -> CallbackReturn {
+#[command]
+async fn set_activity(params: CallBackParams) -> CallbackReturn {
   params
     .context
-    .set_activity(Activity::playing(params.args[1]));
-  let myname = &params.context.cache.read().user.name;
+    .set_activity(Activity::playing(params.args[1]))
+    .await;
+  let myname = &params.context.cache.current_user().await.name;
   Ok(Some(format!("{} is now {} !", myname, params.args[1])))
 }
 
-fn manual_send_message(params: CallBackParams) -> CallbackReturn {
-  let http = super::process::HTTP_STATIC.read().clone().unwrap();
-
+#[command]
+async fn manual_send_message(params: CallBackParams) -> CallbackReturn {
   match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
     Ok((chan_id, _)) => {
       ChannelId(chan_id)
-        .send_message(http, |m| m.content(params.args[2]))
+        .send_message(&params.context.http, |m| m.content(params.args[2]))
+        .await
         .unwrap();
       Ok(Some(String::from(":ok:")))
     }
@@ -315,7 +324,8 @@ fn manual_send_message(params: CallBackParams) -> CallbackReturn {
   }
 }
 
-fn modify_message(params: CallBackParams) -> CallbackReturn {
+#[command]
+async fn modify_message(params: CallBackParams) -> CallbackReturn {
   let ((channel_id, _), (message_id, _)) = if params.args.len() == 4 {
     (
       parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?,
@@ -330,11 +340,15 @@ fn modify_message(params: CallBackParams) -> CallbackReturn {
       parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Message))?,
     )
   };
-  let mut message = ChannelId(channel_id).message(&params.context.http, message_id)?;
-  if message.is_own(&params.context.cache) {
-    message.edit(&params.context.http, |message| {
-      message.content(params.args.last().unwrap())
-    })?;
+  let mut message = ChannelId(channel_id)
+    .message(&params.context.http, message_id)
+    .await?;
+  if message.is_own(&params.context.cache).await {
+    message
+      .edit(&params.context.http, |message| {
+        message.content(params.args.last().unwrap())
+      })
+      .await?;
     Ok(Some(String::from(":ok:")))
   } else {
     Ok(Some(String::from("I can only modify my own messages")))

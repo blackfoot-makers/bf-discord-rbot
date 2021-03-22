@@ -1,4 +1,4 @@
-use super::githooks::CHANNEL_BOTTEST;
+use super::gitcommands::CHANNEL_BOTTEST;
 use bollard::container::{
     Config, CreateContainerOptions, HostConfig, LogOutput, LogsOptions, StartContainerOptions,
 };
@@ -35,7 +35,7 @@ impl Future for SayFuture {
     }
 }
 
-pub fn deploy_from_githook(payload: &serde_json::Value, http: Arc<http::raw::Http>) {
+pub fn deploy_from_gitcommand(payload: &serde_json::Value, http: Arc<http::raw::Http>) {
     let user: String = payload["repository"]["owner"]["name"]
         .as_str()
         .unwrap()
@@ -174,7 +174,7 @@ fn deploy(user: String, repository: String, branch: String, http: Arc<http::raw:
 }
 
 /// Previously in process.rs
-// fn parse_githook_reaction(ctx: Context, reaction: Reaction) {
+// fn parse_gitcommand_reaction(ctx: Context, reaction: Reaction) {
 // 	let channel = ChannelId(555206410619584519); //TODO : Channel register
 
 // 	let emoji_name = match &reaction.emoji {
@@ -207,7 +207,7 @@ fn deploy(user: String, repository: String, branch: String, http: Arc<http::raw:
 // 				}
 
 // 				eprintln!(
-// 					"Reaction/githook: Invalid params parse : [{}]",
+// 					"Reaction/gitcommand: Invalid params parse : [{}]",
 // 					message.content
 // 				);
 // 			}

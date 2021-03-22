@@ -7,7 +7,7 @@ use std::error::Error;
 impl Instance {
   db_load! {user_load, User, users}
 
-  pub fn user_add<'a>(&mut self, discordid: i64, role: &'a str) {
+  pub fn user_add(&mut self, discordid: i64, role: &'_ str) {
     let new_user = NewUser { discordid, role };
 
     let newuser: User = diesel::insert_into(users::table)
