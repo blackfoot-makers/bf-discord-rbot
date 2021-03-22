@@ -33,11 +33,7 @@ strum = "0.19.2"
 strum_macros = "0.17.1"
 ftp = "3.0.1"
 procedural_macros = { path = "./procedural_macros" }
-
-
-
-# Unused dependencies from commented code
-# imap = "0.8.1"
-# native-tls = "0.1"
-# rifling = "0.4.0"
-# bollard = "0.3"
+actix-web = "3.3"
+actix-rt = "2.1"
+actix-cors = "0.5"
+actix-service = "1.0"
