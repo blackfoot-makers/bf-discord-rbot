@@ -12,22 +12,6 @@ use futures::Future;
 use serenity::{model::id::ChannelId, CacheAndHttp};
 use std::sync::Arc;
 
-// struct AuthMiddleware;
-// impl Middleware<AppState> for AuthMiddleware {
-//   fn start(&self, req: &HttpRequest<AppState>) -> actix_web::Result<Started> {
-//     // don't validate CORS pre-flight requests
-//     if req.method() == "OPTIONS" {
-//       return Ok(Started::Done);
-//     }
-
-//     // read the AUTHORIZATION header from the request
-//     // this can be any header you send with the request
-//     let token = req
-//       .headers()
-//       .get("AUTHORIZATION")
-//       .map(|value| value.to_str().ok())
-//       .ok_or(ServiceError::Unauthorised)?;
-
 pub struct Auth;
 
 // Middleware factory is `Transform` trait from actix-service crate
