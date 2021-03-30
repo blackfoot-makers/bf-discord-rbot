@@ -20,6 +20,7 @@ pub mod project_manager;
 pub mod renaming;
 pub mod threadcontrol;
 
+use log::info;
 use serenity::{http, prelude::TypeMapKey};
 use std::sync::Arc;
 use std::thread;
@@ -44,7 +45,7 @@ impl Features {
 
   /// Spawn a Thread per feature to run in background
   pub fn run(&mut self, http: &Arc<http::Http>) {
-    println!("Running featrues");
+    info!("Running featrues");
     // let http_clone = http.clone();
     // let tc_clone = self.thread_control.clone();
     // thread::spawn(move || event::check_events(http_clone, || ThreadControl::check(&tc_clone)));

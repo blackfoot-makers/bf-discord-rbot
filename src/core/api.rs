@@ -1,6 +1,7 @@
 use super::parse;
 use actix_cors::Cors;
 use actix_web::{http, middleware, web, App, HttpMessage, HttpRequest, HttpServer, Responder};
+use log::debug;
 use std::task::{Context, Poll};
 use std::{env, pin::Pin};
 
@@ -64,7 +65,8 @@ where
     } else {
       String::new()
     };
-    dbg!(token != self.apikey, &token, &self.apikey);
+    debug!("API token: {}", token);
+
     if req.method() != "OPTIONS" && token != self.apikey {
       return Box::pin(async { Err(actix_web::error::ErrorUnauthorized("Unauthorized")) });
     }
@@ -97,7 +99,6 @@ async fn send_message(
         .send_message(&cache_and_http.http, |m| m.content(message.unwrap()))
         .await
         .unwrap();
-      // cache_and_http.
       String::from("Done")
     }
     Err(_) => String::from("Unable to convert id to a discordid"),

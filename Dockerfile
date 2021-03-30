@@ -37,4 +37,4 @@ COPY --from=cargo-build /usr/local/bin/wait-for-it /bin/wait-for-it
 
 COPY ./migrations migrations
 
-CMD /bin/bash -c "wait-for-it localhost:5432 && diesel migration run && rbot-discord"
+CMD /bin/bash -c "wait-for-it ${DB_HOST}:5432 && diesel migration run && rbot-discord"

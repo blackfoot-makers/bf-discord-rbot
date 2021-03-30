@@ -3,10 +3,22 @@ version: "3"
 services:
   bot:
     build: .
-    network_mode: "host"
     container_name: "discord-rbot"
+    ports:
+      - 8080:8080
+    env_file: .env
+
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
     environment:
-      RUST_BACKTRACE: 1
-      RUST_LOG: info
-    # ports:
-    #     - 4567:4567
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: weirdAssPasword1
+      POSTGRES_DB: discordbot
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+volumes:
+  postgres:
