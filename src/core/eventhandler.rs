@@ -34,7 +34,7 @@ impl EventHandler for Handler {
   /// Event handlers are dispatched through a threadpool, and so multiple
   /// events can be dispatched simultaneously.
   async fn message(&self, ctx: Context, message: Message) {
-    let chan = message.channel(&ctx.cache).await.unwrap();
+    let chan = message.channel_id.to_channel(&ctx.http).await.unwrap();
     let chanid = chan.id().to_string();
     let chan_name = match &chan.guild() {
       Some(guildchan) => String::from(guildchan.name()),
