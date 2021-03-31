@@ -13,7 +13,7 @@ procedural_macros = { path = "./procedural_macros" }
 serenity = { version = "0.10.2", default-features = false, features = ["builder", "cache", "client", "gateway", "http", "model", "utils", "rustls_backend"]}
 diesel = { version = "1.4", features = ["postgres", "r2d2"] }
 tokio = { version = "1.4", features = ["macros", "rt-multi-thread"] }
-rocket = { git = "https://github.com/SergioBenitez/Rocket" }
+rocket = { git = "https://github.com/SergioBenitez/Rocket", ref="0.5.0-dev" }
 lazy_static = "1.4.0"
 serde = "1.0"
 serde_json = "1.0"
