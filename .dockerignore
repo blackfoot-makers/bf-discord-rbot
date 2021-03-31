@@ -1,3 +1,4 @@
 doc/
-target/
+vendor/
 docker-compose*
+target/debug/

@@ -9,7 +9,7 @@ RUN cargo install diesel_cli --no-default-features --features "postgres"
 RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -o /usr/local/bin/wait-for-it
 RUN chmod +x /usr/local/bin/wait-for-it
 
-COPY ./src src
+COPY . .
 RUN cargo install --path . --verbose
 
 # -----------------
