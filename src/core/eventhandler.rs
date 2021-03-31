@@ -18,13 +18,18 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{env, process, thread};
+use std::{
+  env, process,
+  sync::atomic::{AtomicBool, Ordering},
+};
 
 async fn getbotid(ctx: &Context) -> UserId {
   ctx.cache.current_user_id().await
 }
 /// Struct that old Traits Implementations to Handle the different events send by discord.
-struct Handler;
+struct Handler {
+  is_loop_running: AtomicBool,
+}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -140,6 +145,14 @@ impl EventHandler for Handler {
     // FIXME: This is cool but we never get a stoped event
     data.get_mut::<Features>().unwrap().thread_control.resume();
   }
+
+  async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
+    info!("Cache ready");
+    if !self.is_loop_running.load(Ordering::Relaxed) {
+      tokio::spawn(async move { api::run(ctx).await });
+      self.is_loop_running.swap(true, Ordering::Relaxed);
+    }
+  }
 }
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
@@ -159,7 +172,9 @@ pub async fn bot_connect() {
   // automatically prepend your bot token with "Bot ", which is a requirement
   // by Discord for bot users.
   let builder = Client::builder(token)
-    .event_handler(Handler)
+    .event_handler(Handler {
+      is_loop_running: AtomicBool::new(false),
+    })
     .intents(GatewayIntents::all());
   let mut client = builder.await.expect("Err creating client");
   {
@@ -167,11 +182,6 @@ pub async fn bot_connect() {
     data.insert::<Features>(Features::new());
     data.insert::<WaitingValidation>(WaitingValidation::default());
   }
-
-  let cache_arc = client.cache_and_http.clone();
-  thread::spawn(|| {
-    api::run(cache_arc).unwrap();
-  });
 
   // Finally, start a single shard, and start listening to events.
   // Shards will automatically attempt to reconnect, and will perform
