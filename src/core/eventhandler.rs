@@ -1,10 +1,10 @@
+use super::api;
 use super::process::{
   annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
   personal_attack, process_command, process_contains, process_tag_msg, split_args,
 };
 use super::validation::{check_validation, WaitingValidation};
 use crate::features::{invite_action, mecleanup, project_manager, Features};
-use futures::executor::block_on;
 use log::{error, info};
 use serenity::{
   async_trait,
@@ -18,13 +18,18 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{env, process};
+use std::{
+  env, process,
+  sync::atomic::{AtomicBool, Ordering},
+};
 
 async fn getbotid(ctx: &Context) -> UserId {
   ctx.cache.current_user_id().await
 }
 /// Struct that old Traits Implementations to Handle the different events send by discord.
-struct Handler;
+struct Handler {
+  is_loop_running: AtomicBool,
+}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -34,7 +39,7 @@ impl EventHandler for Handler {
   /// Event handlers are dispatched through a threadpool, and so multiple
   /// events can be dispatched simultaneously.
   async fn message(&self, ctx: Context, message: Message) {
-    let chan = message.channel(&ctx.cache).await.unwrap();
+    let chan = message.channel_id.to_channel(&ctx.http).await.unwrap();
     let chanid = chan.id().to_string();
     let chan_name = match &chan.guild() {
       Some(guildchan) => String::from(guildchan.name()),
@@ -140,6 +145,14 @@ impl EventHandler for Handler {
     // FIXME: This is cool but we never get a stoped event
     data.get_mut::<Features>().unwrap().thread_control.resume();
   }
+
+  async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
+    info!("Cache ready");
+    if !self.is_loop_running.load(Ordering::Relaxed) {
+      tokio::spawn(async move { api::run(ctx).await });
+      self.is_loop_running.swap(true, Ordering::Relaxed);
+    }
+  }
 }
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.
@@ -159,11 +172,13 @@ pub async fn bot_connect() {
   // automatically prepend your bot token with "Bot ", which is a requirement
   // by Discord for bot users.
   let builder = Client::builder(token)
-    .event_handler(Handler)
+    .event_handler(Handler {
+      is_loop_running: AtomicBool::new(false),
+    })
     .intents(GatewayIntents::all());
-  let mut client = block_on(builder).expect("Err creating client");
+  let mut client = builder.await.expect("Err creating client");
   {
-    let mut data = block_on(client.data.write());
+    let mut data = client.data.write().await;
     data.insert::<Features>(Features::new());
     data.insert::<WaitingValidation>(WaitingValidation::default());
   }
@@ -171,7 +186,7 @@ pub async fn bot_connect() {
   // Finally, start a single shard, and start listening to events.
   // Shards will automatically attempt to reconnect, and will perform
   // exponential backoff until it reconnects.
-  if let Err(why) = block_on(client.start()) {
+  if let Err(why) = client.start().await {
     error!("Client error: {:?}", why);
   }
 }
