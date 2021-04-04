@@ -83,7 +83,7 @@ async fn check_channels_activity(
       Ok(messages) => {
         if let Some(message) = messages.first() {
           let now = Local::now();
-          if now.num_days_from_ce() - message.timestamp.num_days_from_ce() > 30 {
+          if now.num_days_from_ce() - message.timestamp.num_days_from_ce() > 45 {
             display.push_str(&*format!(
               "[{}] last message: {}\n",
               channel.name(),

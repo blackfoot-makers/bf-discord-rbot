@@ -2,9 +2,13 @@ use super::api;
 use super::process::{
   annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
   personal_attack, process_command, process_contains, process_tag_msg, split_args,
+  trigger_inchannel,
 };
 use super::validation::{check_validation, WaitingValidation};
-use crate::features::{invite_action, mecleanup, project_manager, Features};
+use crate::{
+  constants,
+  features::{invite_action, mecleanup, project_manager, Features},
+};
 use log::{error, info};
 use serenity::{
   async_trait,
@@ -96,6 +100,7 @@ impl EventHandler for Handler {
     } else {
       process_contains(&message, &ctx).await;
     }
+    trigger_inchannel(&message, &ctx).await;
   }
 
   async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
@@ -106,17 +111,49 @@ impl EventHandler for Handler {
       .unwrap()
       .is_own(&ctx.cache)
       .await;
+
     if reaction.user_id.unwrap() != botid && isown {
-      check_validation(&ctx, &reaction).await;
-      project_manager::check_subscribe(&ctx, &reaction, false).await;
-      mecleanup::check_mecleanup(&ctx, &reaction).await;
+      let emoji = reaction.emoji.as_data();
+      match &*emoji {
+        "✅" => {
+          project_manager::check_subscribe(&ctx, &reaction, false).await;
+          check_validation(&ctx, &reaction, &emoji).await;
+        }
+        "❌" => {
+          check_validation(&ctx, &reaction, &emoji).await;
+        }
+        "🧹" => {
+          mecleanup::check_mecleanup(&ctx, &reaction).await;
+        }
+        _ => {}
+      }
+      if constants::NUMBERS.contains(&&*emoji) {
+        project_manager::check_subscribe_bottom_list(&ctx, &reaction, false, &emoji).await;
+      }
     }
   }
 
   async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
     let botid = getbotid(&ctx).await;
-    if reaction.user_id.unwrap() != botid {
-      project_manager::check_subscribe(&ctx, &reaction, true).await;
+    let isown = reaction
+      .message(&ctx.http)
+      .await
+      .unwrap()
+      .is_own(&ctx.cache)
+      .await;
+
+    if reaction.user_id.unwrap() != botid && isown {
+      let emoji = reaction.emoji.as_data();
+      #[allow(clippy::single_match)] // TODO: remove this when we have more eventualy
+      match &*emoji {
+        "✅" => {
+          project_manager::check_subscribe(&ctx, &reaction, true).await;
+        }
+        _ => {}
+      }
+      if constants::NUMBERS.contains(&&*emoji) {
+        project_manager::check_subscribe_bottom_list(&ctx, &reaction, true, &emoji).await;
+      }
     }
   }
 

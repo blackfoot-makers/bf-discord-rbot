@@ -58,6 +58,25 @@ impl Instance {
 
   db_add! { message_add, Message, Message, messages }
 
+  pub fn mesage_delete(&mut self, messages_id: Vec<i64>) -> Vec<Message> {
+    use super::schema::messages::dsl::*;
+    if messages_id.is_empty() {
+      return Vec::new();
+    }
+
+    let conn = self.get_connection();
+
+    let filter = messages.filter(id.eq_any(&messages_id)).or_filter(id.eq(0));
+    diesel::delete(filter)
+      .execute(&conn)
+      .expect("Diesel: Unable to delete messages");
+    let previous_bottom_list: Vec<Message> = self
+      .messages
+      .drain_filter(|msg| messages_id.contains(&msg.id))
+      .collect();
+    previous_bottom_list
+  }
+
   pub fn airtable_row_add(
     &mut self,
     aid: &str,
