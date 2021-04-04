@@ -161,6 +161,15 @@ lazy_static! {
       usage: "@BOT add <@user>",
       permission: Role::User,
     },
+    "project-clear-user" =>
+    Command {
+    exec: project_manager::remove_user_from_all,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT project-clear-user <User>",
+      permission: Role::Admin,
+    },
     "invite" =>
     Command {
       exec: invite_action::create,

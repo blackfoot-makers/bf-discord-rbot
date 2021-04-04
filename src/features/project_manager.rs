@@ -2,7 +2,7 @@ use crate::{
   constants,
   core::{
     commands::{CallBackParams, CallbackReturn},
-    parse,
+    parse::{self, discord_str_to_id},
     permissions::member_channel_read,
   },
 };
@@ -466,5 +466,41 @@ pub async fn check_subscribe_bottom_list(
     .create_permission(&ctx.http, &overwrite)
     .await
     .unwrap();
+  }
+}
+
+#[command]
+pub async fn remove_user_from_all(params: CallBackParams<'_>) -> CallbackReturn {
+  if let Ok((useid, _)) = discord_str_to_id(params.args[1], Some(DiscordIds::User)) {
+    let guild = params
+      .message
+      .guild(&params.context)
+      .await
+      .expect("Unable to get guild from cache");
+    let text_projects_channels: Vec<_> = guild
+      .channels
+      .iter()
+      .filter(|(_, chan)| {
+        chan.kind == ChannelType::Text
+          && match chan.category_id {
+            Some(chan) => chan == PROJECT_CATEGORY,
+            _ => false,
+          }
+      })
+      .collect();
+
+    for (channel_id, _) in text_projects_channels {
+      channel_id
+        .delete_permission(
+          &params.context.http,
+          PermissionOverwriteType::Member(UserId(useid)),
+        )
+        .await
+        .unwrap();
+    }
+
+    Ok(Some(String::from(":ok:")))
+  } else {
+    Ok(Some(String::from("Unable to parse userid")))
   }
 }
