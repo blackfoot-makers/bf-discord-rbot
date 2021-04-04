@@ -370,15 +370,21 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
 
   for channel_chunk in text_projects_channels.chunks(11) {
     let mut list_message = String::new();
+    let mut message_line = String::new();
     let mut list_channels = String::new();
     for (index, channel) in channel_chunk.iter().enumerate() {
-      list_message.push_str(&*format!(
-        "{} => {}\n",
-        constants::NUMBERS[index],
-        channel.1.name
-      ));
+      let project_item = &*format!("{} => {}", constants::NUMBERS[index], channel.1.name);
+      message_line.push_str(project_item);
+      if message_line.len() >= constants::PROJETCT_BOTTOM_LIST_LINE_MAX {
+        message_line.push('\n');
+        list_message.push_str(&*message_line);
+        message_line.clear();
+      } else {
+        message_line.push_str(&*"\t")
+      }
       list_channels.push_str(&*format!("{},", channel.1.id.0));
     }
+    list_message.push_str(&*message_line);
     list_channels.pop();
     let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
       .say(&context.http, list_message)
