@@ -66,13 +66,10 @@ impl Instance {
 
     let conn = self.get_connection();
 
-    let mut filter = messages.filter(id.eq(messages_id[0]));
-    for messageid in &messages_id[1..] {
-      filter = messages.filter(id.eq(*messageid));
-    }
+    let filter = messages.filter(id.eq_any(&messages_id)).or_filter(id.eq(0));
     diesel::delete(filter)
       .execute(&conn)
-      .expect("Diesel: Unable to save new role");
+      .expect("Diesel: Unable to delete messages");
     let previous_bottom_list: Vec<Message> = self
       .messages
       .drain_filter(|msg| messages_id.contains(&msg.id))
