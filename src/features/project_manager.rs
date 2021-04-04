@@ -1,10 +1,19 @@
-use crate::constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY};
-use crate::core::{
-  commands::{CallBackParams, CallbackReturn},
-  parse,
-  permissions::member_channel_read,
+use crate::{
+  constants,
+  core::{
+    commands::{CallBackParams, CallbackReturn},
+    parse,
+    permissions::member_channel_read,
+  },
 };
-use crate::database::{NewProject, INSTANCE};
+use crate::{
+  constants::discordids::{PROJECT_ANOUNCEMENT_CHANNEL, PROJECT_CATEGORY},
+  database,
+};
+use crate::{
+  core::parse::DiscordIds,
+  database::{NewProject, INSTANCE},
+};
 use chrono::{offset::Utc, DateTime};
 use futures::FutureExt;
 use log::error;
@@ -285,43 +294,170 @@ async fn check_containing(
 // }
 
 pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
-  let emoji_name = match &reaction.emoji {
-    ReactionType::Unicode(unicode) => Some(&*unicode),
-    _ => None,
-  };
-  if let Some(unicode) = emoji_name {
-    if ["✅"].contains(&&**unicode) {
-      let mut project_chanid = 0;
-      {
-        let db_instance = INSTANCE.read().unwrap();
-        if let Some((_index, project)) =
-          db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
-        {
-          project_chanid = project.channel_id;
-        }
-      }
-
-      if project_chanid > 0 {
-        if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
-          if removed {
-            channel
-              .delete_permission(
-                &ctx.http,
-                PermissionOverwriteType::Member(reaction.user_id.unwrap()),
-              )
-              .await
-              .unwrap();
-          } else {
-            let overwrite = member_channel_read(reaction.user_id.unwrap());
-            channel
-              .create_permission(&ctx.http, &overwrite)
-              .await
-              .unwrap();
-          }
-        } else {
-          error!("Unable to find project channel in cache");
-        }
-      }
+  let mut project_chanid = 0;
+  {
+    let db_instance = INSTANCE.read().unwrap();
+    if let Some((_index, project)) =
+      db_instance.projects_search(reaction.message_id.0 as i64, parse::DiscordIds::Message)
+    {
+      project_chanid = project.channel_id;
     }
+  }
+
+  if project_chanid > 0 {
+    if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
+      if removed {
+        channel
+          .delete_permission(
+            &ctx.http,
+            PermissionOverwriteType::Member(reaction.user_id.unwrap()),
+          )
+          .await
+          .unwrap();
+      } else {
+        let overwrite = member_channel_read(reaction.user_id.unwrap());
+        channel
+          .create_permission(&ctx.http, &overwrite)
+          .await
+          .unwrap();
+      }
+    } else {
+      error!("Unable to find project channel in cache");
+    }
+  }
+}
+
+pub async fn bottom_list_current(context: &Context, message: &Message) {
+  let previous_bottom_list_messages;
+  {
+    let mut db_instance = database::INSTANCE.write().unwrap();
+    let ids_previous_bottom_message = db_instance
+      .messages
+      .drain_filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
+      .map(|msg| msg.id)
+      .collect();
+    previous_bottom_list_messages = db_instance.mesage_delete(ids_previous_bottom_message);
+  }
+
+  for message in previous_bottom_list_messages {
+    ChannelId(message.channel as u64)
+      .message(&context.http, (message.id + 1) as u64)
+      .await
+      .unwrap()
+      .delete(&context.http)
+      .await
+      .unwrap();
+  }
+
+  let gid = message.guild_id.unwrap();
+  let cache = context.cache.clone();
+  let guild = cache
+    .guild(gid)
+    .await
+    .expect("Critical: Guild from message not found");
+  let text_projects_channels: Vec<_> = guild
+    .channels
+    .iter()
+    .filter(|(_, chan)| {
+      chan.kind == ChannelType::Text
+        && match chan.category_id {
+          Some(chan) => chan == PROJECT_CATEGORY,
+          _ => false,
+        }
+    })
+    .collect();
+
+  for channel_chunk in text_projects_channels.chunks(11) {
+    let mut list_message = String::new();
+    let mut list_channels = String::new();
+    for (index, channel) in channel_chunk.iter().enumerate() {
+      list_message.push_str(&*format!(
+        "{} => {}\n",
+        constants::NUMBERS[index],
+        channel.1.name
+      ));
+      list_channels.push_str(&*format!("{},", channel.1.id.0));
+    }
+    list_channels.pop();
+    let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
+      .say(&context.http, list_message)
+      .await
+      .unwrap();
+    for index in 0..channel_chunk.len() {
+      message
+        .react(
+          &context.http,
+          ReactionType::Unicode(format!("{}\u{fe0f}\u{20e3}", index)),
+        )
+        .await
+        .unwrap();
+    }
+
+    {
+      let mut db_instance = database::INSTANCE.write().unwrap();
+      let time: SystemTime = SystemTime::from(message.timestamp);
+      db_instance.message_add(database::Message {
+        //FIXME: Dark magic because i don't want to create another table in the db
+        id: *message.id.as_u64() as i64 - 1,
+        author: constants::TrackedAuthorIds::BottomedProjectList as i64,
+        content: list_channels,
+        channel: *message.channel_id.as_u64() as i64,
+        date: Some(time),
+      });
+    }
+  }
+}
+
+pub async fn check_subscribe_bottom_list(
+  ctx: &Context,
+  reaction: &Reaction,
+  removed: bool,
+  emoji: &str,
+) {
+  let channels_id = {
+    let db_instance = database::INSTANCE.write().unwrap();
+    // FIXME: MORE BLACKMAGICKERY should definitly do this correctly but for now its like this
+    db_instance
+      .messages
+      .iter()
+      .find(|msg| msg.id == reaction.message_id.0 as i64 - 1)
+      .unwrap()
+      .content
+      .clone()
+  };
+  let vec_channels_id: Vec<&str> = channels_id.split(',').collect();
+  let number = constants::NUMBERS
+    .iter()
+    .position(|number| number == &&*emoji)
+    .unwrap();
+
+  let channel_id = vec_channels_id.get(number);
+  if channel_id.is_none() {
+    // User added it's own reaction i suposed
+    return;
+  }
+
+  if removed {
+    ChannelId(
+      parse::discord_str_to_id(channel_id.unwrap(), Some(DiscordIds::Channel))
+        .unwrap()
+        .0,
+    )
+    .delete_permission(
+      &ctx.http,
+      PermissionOverwriteType::Member(reaction.user_id.unwrap()),
+    )
+    .await
+    .unwrap();
+  } else {
+    let overwrite = member_channel_read(reaction.user_id.unwrap());
+    ChannelId(
+      parse::discord_str_to_id(channel_id.unwrap(), Some(DiscordIds::Channel))
+        .unwrap()
+        .0,
+    )
+    .create_permission(&ctx.http, &overwrite)
+    .await
+    .unwrap();
   }
 }

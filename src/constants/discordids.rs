@@ -1,8 +1,7 @@
-#[cfg(not(feature="production"))]
+#[cfg(not(feature = "production"))]
 pub use development::*;
-#[cfg(feature="production")]
+#[cfg(feature = "production")]
 pub use production::*;
-
 
 pub mod production {
   pub const GUILD_ID: u64 = 464779118857420811;
@@ -15,7 +14,6 @@ pub mod production {
   pub const ANNOYED_CHAN_HERDINGCHATTE: u64 = 570275817804791809;
   pub const ANNOYED_CHAN_CYBERGOD: u64 = 588666452849065994;
   pub const ANNOYED_CHAN_TESTBOT: u64 = 555206410619584519;
-
 }
 
 pub mod development {

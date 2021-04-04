@@ -58,6 +58,28 @@ impl Instance {
 
   db_add! { message_add, Message, Message, messages }
 
+  pub fn mesage_delete(&mut self, messages_id: Vec<i64>) -> Vec<Message> {
+    use super::schema::messages::dsl::*;
+    if messages_id.is_empty() {
+      return Vec::new();
+    }
+
+    let conn = self.get_connection();
+
+    let mut filter = messages.filter(id.eq(messages_id[0]));
+    for messageid in &messages_id[1..] {
+      filter = messages.filter(id.eq(*messageid));
+    }
+    diesel::delete(filter)
+      .execute(&conn)
+      .expect("Diesel: Unable to save new role");
+    let previous_bottom_list: Vec<Message> = self
+      .messages
+      .drain_filter(|msg| messages_id.contains(&msg.id))
+      .collect();
+    previous_bottom_list
+  }
+
   pub fn airtable_row_add(
     &mut self,
     aid: &str,
