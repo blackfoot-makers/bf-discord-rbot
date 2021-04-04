@@ -333,7 +333,8 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
     let mut db_instance = database::INSTANCE.write().unwrap();
     let ids_previous_bottom_message = db_instance
       .messages
-      .drain_filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
+      .iter()
+      .filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
       .map(|msg| msg.id)
       .collect();
     previous_bottom_list_messages = db_instance.mesage_delete(ids_previous_bottom_message);
@@ -387,7 +388,7 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
       message
         .react(
           &context.http,
-          ReactionType::Unicode(format!("{}\u{fe0f}\u{20e3}", index)),
+          ReactionType::Unicode(String::from(constants::NUMBERS[index])),
         )
         .await
         .unwrap();
