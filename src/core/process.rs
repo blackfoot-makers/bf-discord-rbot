@@ -3,8 +3,8 @@ use super::commands::{
   CallBackParams, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 use super::permissions;
-use crate::{constants::discordids, database, features::project_manager};
 use crate::features::funny::ATTACKED;
+use crate::{constants::discordids, database, features::project_manager};
 use log::{debug, error};
 use serenity::{
   model::channel::Message,
@@ -278,7 +278,6 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
     None => error!("Channel not found in cache {}", message.channel_id),
   };
 }
-
 
 pub async fn trigger_inchannel(message: &Message, ctx: &Context) {
   if message.channel_id == discordids::PROJECT_ANOUNCEMENT_CHANNEL {

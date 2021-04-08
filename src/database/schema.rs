@@ -44,6 +44,16 @@ table! {
 }
 
 table! {
+    storage (id) {
+        id -> Int4,
+        datatype -> Int8,
+        dataid -> Nullable<Int8>,
+        data -> Varchar,
+        date -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     users (id) {
         id -> Int4,
         discordid -> Int8,
@@ -56,5 +66,6 @@ allow_tables_to_appear_in_same_query!(
     invites,
     messages,
     projects,
+    storage,
     users,
 );

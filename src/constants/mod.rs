@@ -18,5 +18,3 @@ pub const NUMBERS: [&str; 11] = [
   "9\u{fe0f}\u{20e3}",
   "🔟",
 ];
-
-pub const PROJETCT_BOTTOM_LIST_LINE_MAX: usize = 75;
