@@ -328,27 +328,7 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
 }
 
 pub async fn bottom_list_current(context: &Context, message: &Message) {
-  let previous_bottom_list_messages;
-  {
-    let mut db_instance = database::INSTANCE.write().unwrap();
-    let ids_previous_bottom_message = db_instance
-      .messages
-      .iter()
-      .filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
-      .map(|msg| msg.id)
-      .collect();
-    previous_bottom_list_messages = db_instance.mesage_delete(ids_previous_bottom_message);
-  }
-
-  for message in previous_bottom_list_messages {
-    ChannelId(message.channel as u64)
-      .message(&context.http, (message.id + 1) as u64)
-      .await
-      .unwrap()
-      .delete(&context.http)
-      .await
-      .unwrap();
-  }
+  delete_previous_bottom_message(context).await;
 
   let gid = message.guild_id.unwrap();
   let cache = context.cache.clone();
@@ -373,19 +353,18 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
     let mut message_line = String::new();
     let mut list_channels = String::new();
     for (index, channel) in channel_chunk.iter().enumerate() {
-      let project_item = &*format!("{} => {}", constants::NUMBERS[index], channel.1.name);
+      let project_item = &*format!("{}\t**{}**\n", constants::NUMBERS[index], channel.1.name);
       message_line.push_str(project_item);
-      if message_line.len() >= constants::PROJETCT_BOTTOM_LIST_LINE_MAX {
-        message_line.push('\n');
-        list_message.push_str(&*message_line);
-        message_line.clear();
-      } else {
-        message_line.push_str(&*"\t")
-      }
+      // if message_line.len() >= constants::PROJETCT_BOTTOM_LIST_LINE_MAX {
+      //   message_line.push('\n');
+      //   list_message.push_str(&*message_line);
+      //   message_line.clear();
+      // } else {
+      //   message_line.push_str(&*"\t")
+      // }
       list_channels.push_str(&*format!("{},", channel.1.id.0));
     }
     list_message.push_str(&*message_line);
-    list_channels.pop();
     let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
       .say(&context.http, list_message)
       .await
@@ -412,6 +391,29 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
         date: Some(time),
       });
     }
+  }
+}
+
+async fn delete_previous_bottom_message(context: &Context) {
+  let previous_bottom_list_messages;
+  {
+    let mut db_instance = database::INSTANCE.write().unwrap();
+    let ids_previous_bottom_message = db_instance
+      .messages
+      .iter()
+      .filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
+      .map(|msg| msg.id)
+      .collect();
+    previous_bottom_list_messages = db_instance.mesage_delete(ids_previous_bottom_message);
+  }
+  for message in previous_bottom_list_messages {
+    ChannelId(message.channel as u64)
+      .message(&context.http, (message.id + 1) as u64)
+      .await
+      .unwrap()
+      .delete(&context.http)
+      .await
+      .unwrap();
   }
 }
 
