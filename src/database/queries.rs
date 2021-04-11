@@ -1,5 +1,5 @@
 pub use super::models::*;
-use super::Instance;
+use super::{Instance, StorageDataType};
 use crate::core::parse::DiscordIds;
 use diesel::prelude::*;
 use std::error::Error;
@@ -195,5 +195,30 @@ impl Instance {
       self.invites.push(new_invite.clone());
       Ok((0, new_invite))
     }
+  }
+
+  db_load! { storage_load, Storage, storage}
+
+  db_add! { storage_add, NewStorage, Storage, storage }
+
+  pub fn find_storage_type(&self, storage_type: StorageDataType) -> Option<&Storage> {
+    let compare_storage = storage_type as i64;
+    self
+      .storage
+      .iter()
+      .find(|storage| storage.datatype == compare_storage)
+  }
+
+  pub fn storage_update(&mut self, storage_id: i32, new_data: &str) {
+    use super::schema::storage::dsl::*;
+
+    let conn = self.get_connection();
+
+    let newstorage = diesel::update(storage.find(storage_id))
+      .set(data.eq(new_data))
+      .get_result::<Storage>(&conn)
+      .expect("Diesel: Unable to update storage element");
+    self.storage.drain_filter(|s| s.id == storage_id);
+    self.storage.push(newstorage);
   }
 }

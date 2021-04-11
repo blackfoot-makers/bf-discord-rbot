@@ -1,0 +1,7 @@
+CREATE TABLE storage (
+  id SERIAL PRIMARY KEY,
+  datatype BIGINT NOT NULL,
+  dataid BIGINT,
+  data VARCHAR NOT NULL,
+  date TIMESTAMP
+);

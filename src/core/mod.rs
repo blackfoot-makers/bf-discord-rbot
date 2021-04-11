@@ -7,6 +7,7 @@ pub mod api;
 pub mod parse;
 pub mod permissions;
 pub mod process;
+pub mod slash_command;
 pub mod validation;
 
 use std::thread;

@@ -1,5 +1,5 @@
 //! Handle the connection with discord and it's events.
-use super::parse;
+use super::{parse, slash_command};
 use crate::database::{Role, INSTANCE};
 use crate::features::{
   archivage, frontline, funny, invite_action, ordering, project_manager, renaming,
@@ -96,6 +96,15 @@ lazy_static! {
       argument_max: 0,
       channel: None,
       usage: "@BOT users",
+      permission: Role::Admin,
+    },
+    "slash-command-set" =>
+    Command {
+      exec: slash_command::set,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT quit",
       permission: Role::Admin,
     },
     "promote" =>
@@ -244,7 +253,7 @@ lazy_static! {
     },
     "mom" =>
     Command {
-      exec: funny::witch_mom,
+      exec: funny::which_mom,
       argument_min: 0,
       argument_max: 0,
       channel: None,

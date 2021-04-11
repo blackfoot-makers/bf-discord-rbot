@@ -22,11 +22,13 @@ impl Instance {
       airtable: Vec::new(),
       projects: Vec::new(),
       invites: Vec::new(),
+      storage: Vec::new(),
     };
     instance.user_load();
     instance.message_load();
     instance.projects_load();
     instance.invites_load();
+    instance.storage_load();
     instance
   }
 
@@ -42,4 +44,10 @@ pub struct Instance {
   pub airtable: Vec<AirtableRow>,
   pub projects: Vec<Project>,
   pub invites: Vec<Invite>,
+  pub storage: Vec<Storage>,
+}
+
+#[derive(Debug, Clone)]
+pub enum StorageDataType {
+  Mom,
 }

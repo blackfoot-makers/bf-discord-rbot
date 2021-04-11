@@ -1,10 +1,10 @@
-use super::api;
 use super::process::{
   annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
   personal_attack, process_command, process_contains, process_tag_msg, split_args,
   trigger_inchannel,
 };
 use super::validation::{check_validation, WaitingValidation};
+use super::{api, slash_command};
 use crate::{
   constants,
   features::{invite_action, mecleanup, project_manager, Features},
@@ -15,10 +15,11 @@ use serenity::{
   client::bridge::gateway::GatewayIntents,
   model::{
     channel::{Message, Reaction},
-    event::ResumedEvent,
+    event::{MessageUpdateEvent, ResumedEvent},
     gateway::Ready,
     guild::Member,
     id::{GuildId, UserId},
+    interactions::Interaction,
   },
   prelude::*,
 };
@@ -170,6 +171,20 @@ impl EventHandler for Handler {
       feature.running = true;
       feature.run(&ctx.http);
     }
+  }
+
+  async fn message_update(
+    &self,
+    _ctx: Context,
+    _old_if_available: Option<Message>,
+    _new: Option<Message>,
+    _event: MessageUpdateEvent,
+  ) {
+    // TODO:
+  }
+
+  async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+    slash_command::handle_event(interaction, ctx).await;
   }
 
   async fn unknown(&self, _ctx: Context, name: String, raw: serde_json::value::Value) {

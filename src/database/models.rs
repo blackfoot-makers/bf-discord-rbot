@@ -95,4 +95,22 @@ pub struct NewInvite {
   pub used_count: i32,
 }
 
+#[derive(Queryable, Debug, Clone)]
+pub struct Storage {
+  pub id: i32,
+  pub datatype: i64,
+  pub dataid: Option<i64>,
+  pub data: String,
+  pub date: Option<std::time::SystemTime>,
+}
+
+#[derive(Insertable, Debug)]
+#[table_name = "storage"]
+pub struct NewStorage<'a> {
+  pub datatype: i64,
+  pub dataid: Option<i64>,
+  pub data: &'a str,
+  pub date: Option<std::time::SystemTime>,
+}
+
 pub use super::schema::*;
