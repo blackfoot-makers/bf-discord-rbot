@@ -335,7 +335,11 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
     let mut list_message = String::new();
     let mut list_channels = String::new();
     for (index, channel) in channel_chunk.iter().enumerate() {
-      let project_item = &*format!("{}\t{}\n", constants::NUMBERS[index], channel.1.mention());
+      let project_item = &*format!(
+        "{}\t**__{}__**\n",
+        constants::NUMBERS[index],
+        channel.1.mention()
+      );
       list_message.push_str(project_item);
 
       list_channels.push_str(&*format!("{},", channel.1.id.0));
