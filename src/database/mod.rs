@@ -50,4 +50,11 @@ pub struct Instance {
 #[derive(Debug, Clone)]
 pub enum StorageDataType {
   Mom,
+  ProjectBottomMessage,
+}
+
+impl From<StorageDataType> for i64 {
+  fn from(id: StorageDataType) -> Self {
+    id as i64
+  }
 }
