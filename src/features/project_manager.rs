@@ -329,42 +329,17 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
 
 pub async fn bottom_list_current(context: &Context, message: &Message) {
   delete_previous_bottom_message(context).await;
-
-  let gid = message.guild_id.unwrap();
-  let cache = context.cache.clone();
-  let guild = cache
-    .guild(gid)
-    .await
-    .expect("Critical: Guild from message not found");
-  let text_projects_channels: Vec<_> = guild
-    .channels
-    .iter()
-    .filter(|(_, chan)| {
-      chan.kind == ChannelType::Text
-        && match chan.category_id {
-          Some(chan) => chan == PROJECT_CATEGORY,
-          _ => false,
-        }
-    })
-    .collect();
+  let text_projects_channels = list_projects(message, context).await;
 
   for channel_chunk in text_projects_channels.chunks(11) {
     let mut list_message = String::new();
-    let mut message_line = String::new();
     let mut list_channels = String::new();
     for (index, channel) in channel_chunk.iter().enumerate() {
-      let project_item = &*format!("{}\t**{}**\n", constants::NUMBERS[index], channel.1.name);
-      message_line.push_str(project_item);
-      // if message_line.len() >= constants::PROJETCT_BOTTOM_LIST_LINE_MAX {
-      //   message_line.push('\n');
-      //   list_message.push_str(&*message_line);
-      //   message_line.clear();
-      // } else {
-      //   message_line.push_str(&*"\t")
-      // }
+      let project_item = &*format!("{}\t{}\n", constants::NUMBERS[index], channel.1.mention());
+      list_message.push_str(project_item);
+
       list_channels.push_str(&*format!("{},", channel.1.id.0));
     }
-    list_message.push_str(&*message_line);
     let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
       .say(&context.http, list_message)
       .await
@@ -382,16 +357,37 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
     {
       let mut db_instance = database::INSTANCE.write().unwrap();
       let time: SystemTime = SystemTime::from(message.timestamp);
-      db_instance.message_add(database::Message {
-        //FIXME: Dark magic because i don't want to create another table in the db
-        id: *message.id.as_u64() as i64 - 1,
-        author: constants::TrackedAuthorIds::BottomedProjectList as i64,
-        content: list_channels,
-        channel: *message.channel_id.as_u64() as i64,
+      db_instance.storage_add(database::NewStorage {
+        datatype: database::StorageDataType::ProjectBottomMessage.into(),
+        data: &*list_channels,
+        dataid: Some(*message.id.as_u64() as i64),
         date: Some(time),
       });
     }
   }
+}
+
+async fn list_projects<'a>(message: &Message, context: &Context) -> Vec<(ChannelId, GuildChannel)> {
+  let gid = message.guild_id.unwrap();
+  let cache = context.cache.clone();
+  let guild = cache
+    .guild(gid)
+    .await
+    .expect("Critical: Guild from message not found");
+  let text_projects_channels: Vec<_> = guild
+    .channels
+    .iter()
+    .filter(|(_, chan)| {
+      chan.kind == ChannelType::Text
+        && match chan.category_id {
+          Some(chan) => chan == PROJECT_CATEGORY,
+          _ => false,
+        }
+    })
+    .map(|e| (*e.0, e.1.clone()))
+    .collect();
+
+  text_projects_channels
 }
 
 async fn delete_previous_bottom_message(context: &Context) {
@@ -399,16 +395,16 @@ async fn delete_previous_bottom_message(context: &Context) {
   {
     let mut db_instance = database::INSTANCE.write().unwrap();
     let ids_previous_bottom_message = db_instance
-      .messages
+      .storage
       .iter()
-      .filter(|msg| msg.author == constants::TrackedAuthorIds::BottomedProjectList as i64)
-      .map(|msg| msg.id)
+      .filter(|stored| stored.datatype == database::StorageDataType::ProjectBottomMessage as i64)
+      .map(|stored| stored.id)
       .collect();
-    previous_bottom_list_messages = db_instance.mesage_delete(ids_previous_bottom_message);
+    previous_bottom_list_messages = db_instance.storage_delete(ids_previous_bottom_message);
   }
-  for message in previous_bottom_list_messages {
-    ChannelId(message.channel as u64)
-      .message(&context.http, (message.id + 1) as u64)
+  for stored in previous_bottom_list_messages {
+    ChannelId(constants::discordids::PROJECT_ANOUNCEMENT_CHANNEL)
+      .message(&context.http, stored.dataid.unwrap() as u64)
       .await
       .unwrap()
       .delete(&context.http)
@@ -425,30 +421,31 @@ pub async fn check_subscribe_bottom_list(
 ) {
   let channels_id = {
     let db_instance = database::INSTANCE.write().unwrap();
-    // FIXME: MORE BLACKMAGICKERY should definitly do this correctly but for now its like this
     db_instance
-      .messages
+      .storage
       .iter()
-      .find(|msg| msg.id == reaction.message_id.0 as i64 - 1)
+      .find(|stored| stored.dataid.unwrap() == reaction.message_id.0 as i64)
       .unwrap()
-      .content
+      .data
       .clone()
   };
   let vec_channels_id: Vec<&str> = channels_id.split(',').collect();
   let number = constants::NUMBERS
     .iter()
-    .position(|number| number == &&*emoji)
-    .unwrap();
-
-  let channel_id = vec_channels_id.get(number);
-  if channel_id.is_none() {
-    // User added it's own reaction i suposed
+    .position(|number| number == &&*emoji);
+  let channel_id = if let Some(number) = number {
+    if let Some(channel_id) = vec_channels_id.get(number) {
+      channel_id
+    } else {
+      return;
+    }
+  } else {
     return;
-  }
+  };
 
   if removed {
     ChannelId(
-      parse::discord_str_to_id(channel_id.unwrap(), Some(DiscordIds::Channel))
+      parse::discord_str_to_id(channel_id, Some(DiscordIds::Channel))
         .unwrap()
         .0,
     )
@@ -461,7 +458,7 @@ pub async fn check_subscribe_bottom_list(
   } else {
     let overwrite = member_channel_read(reaction.user_id.unwrap());
     ChannelId(
-      parse::discord_str_to_id(channel_id.unwrap(), Some(DiscordIds::Channel))
+      parse::discord_str_to_id(channel_id, Some(DiscordIds::Channel))
         .unwrap()
         .0,
     )

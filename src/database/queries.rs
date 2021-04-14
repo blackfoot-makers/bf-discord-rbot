@@ -58,6 +58,7 @@ impl Instance {
 
   db_add! { message_add, Message, Message, messages }
 
+  #[allow(dead_code)]
   pub fn mesage_delete(&mut self, messages_id: Vec<i64>) -> Vec<Message> {
     use super::schema::messages::dsl::*;
     if messages_id.is_empty() {
@@ -220,5 +221,24 @@ impl Instance {
       .expect("Diesel: Unable to update storage element");
     self.storage.drain_filter(|s| s.id == storage_id);
     self.storage.push(newstorage);
+  }
+
+  pub fn storage_delete(&mut self, storage_id: Vec<i32>) -> Vec<Storage> {
+    use super::schema::storage::dsl::*;
+    if storage_id.is_empty() {
+      return Vec::new();
+    }
+
+    let conn = self.get_connection();
+
+    let filter = storage.filter(id.eq_any(&storage_id)).or_filter(id.eq(0));
+    diesel::delete(filter)
+      .execute(&conn)
+      .expect("Diesel: Unable to delete storage");
+    let previous_bottom_list: Vec<Storage> = self
+      .storage
+      .drain_filter(|msg| storage_id.contains(&msg.id))
+      .collect();
+    previous_bottom_list
   }
 }
