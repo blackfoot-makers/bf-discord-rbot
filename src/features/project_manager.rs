@@ -344,6 +344,7 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
 
       list_channels.push_str(&*format!("{},", channel.1.id.0));
     }
+    list_channels.pop();
     let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
       .say(&context.http, list_message)
       .await
@@ -384,7 +385,7 @@ async fn list_projects<'a>(message: &Message, context: &Context) -> Vec<(Channel
     .filter(|(_, chan)| {
       chan.kind == ChannelType::Text
         && match chan.category_id {
-          Some(chan) => chan == PROJECT_CATEGORY,
+          Some(category) => category == PROJECT_CATEGORY && chan.id != PROJECT_ANOUNCEMENT_CHANNEL,
           _ => false,
         }
     })
@@ -448,6 +449,7 @@ pub async fn check_subscribe_bottom_list(
   };
 
   if removed {
+    debug!("Removing user from channel {}", channel_id);
     ChannelId(
       parse::discord_str_to_id(channel_id, Some(DiscordIds::Channel))
         .unwrap()
@@ -460,6 +462,7 @@ pub async fn check_subscribe_bottom_list(
     .await
     .unwrap();
   } else {
+    debug!("Adding user to channel {}", channel_id);
     let overwrite = member_channel_read(reaction.user_id.unwrap());
     ChannelId(
       parse::discord_str_to_id(channel_id, Some(DiscordIds::Channel))
