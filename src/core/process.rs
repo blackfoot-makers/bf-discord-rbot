@@ -279,8 +279,4 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
   };
 }
 
-pub async fn trigger_inchannel(message: &Message, ctx: &Context) {
-  if message.channel_id == discordids::PROJECT_ANOUNCEMENT_CHANNEL {
-    project_manager::bottom_list_current(ctx, message).await;
-  }
-}
+pub async fn trigger_inchannel(_: &Message, _: &Context) {}

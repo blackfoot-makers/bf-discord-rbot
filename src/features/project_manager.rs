@@ -284,15 +284,6 @@ async fn check_containing(
   }
 }
 
-// fn update_project(params: CallBackParams) -> CallbackReturn {
-//   let project_args = match project_creation_args(&params.args[1..]) {
-//     Ok(result) => result,
-//     Err(error) => return Ok(Some(error)),
-//   };
-
-//   Ok(Some(String::from(":ok:")))
-// }
-
 pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) {
   let mut project_chanid = 0;
   {
@@ -327,6 +318,7 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
   }
 }
 
+#[allow(dead_code)]
 pub async fn bottom_list_current(context: &Context, message: &Message) {
   delete_previous_bottom_message(context).await;
   let text_projects_channels = list_projects(message, context).await;
@@ -418,6 +410,7 @@ async fn delete_previous_bottom_message(context: &Context) {
   }
 }
 
+#[allow(dead_code)]
 pub async fn check_subscribe_bottom_list(
   ctx: &Context,
   reaction: &Reaction,

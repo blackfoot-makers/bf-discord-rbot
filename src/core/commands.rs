@@ -35,9 +35,9 @@ pub struct Command {
 const INTRODUCE: &str = "Hello, i am a BOT. i was designed to peek over you conversations and make very weird comments. i don't have any purpose yet, but you can ask me about the weather";
 const MOM_RFC: &str = "```\
 - It must be an insult or a degrading comment
-- To be validated the phrase incrimating and changing the mom being targeted has to be writed up in the #confidentiel channel vote for\
-- The insult toward a mom must be dirrect\
-- The mom is reseted after 1 week, and can also be reseted by insulting someone else mom with another computer that was left unlocked or by buing pastries\
+- To be validated the phrase incrimating and changing the mom being targeted has to be writed up in the #confidentiel channel vote for
+- The insult toward a mom must be dirrect
+- The mom is reseted after 1 week, and can also be reseted by insulting someone else mom with another computer that was left unlocked or by buying pastries
 ```";
 
 lazy_static! {

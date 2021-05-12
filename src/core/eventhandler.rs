@@ -128,9 +128,6 @@ impl EventHandler for Handler {
         }
         _ => {}
       }
-      if constants::NUMBERS.contains(&&*emoji) {
-        project_manager::check_subscribe_bottom_list(&ctx, &reaction, false, &emoji).await;
-      }
     }
   }
 
@@ -151,9 +148,6 @@ impl EventHandler for Handler {
           project_manager::check_subscribe(&ctx, &reaction, true).await;
         }
         _ => {}
-      }
-      if constants::NUMBERS.contains(&&*emoji) {
-        project_manager::check_subscribe_bottom_list(&ctx, &reaction, true, &emoji).await;
       }
     }
   }
