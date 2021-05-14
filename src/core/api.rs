@@ -46,7 +46,7 @@ async fn auth(
   channelid: &str,
   message: String,
   _apikey: ApiKey<'_>,
-  ctx: State<'_, Context>,
+  ctx: &State<Context>,
 ) -> String {
   let discordid = parse::discord_str_to_id(channelid, Some(DiscordIds::Channel));
   match discordid {
