@@ -10,7 +10,7 @@ RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for
 RUN chmod +x /usr/local/bin/wait-for-it
 
 COPY . .
-RUN cargo install --features "production" --path . --verbose
+RUN cargo install --features "production" --path . --verbose --frozen
 
 # -----------------
 # Final Stage
