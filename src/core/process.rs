@@ -3,8 +3,8 @@ use super::commands::{
   CallBackParams, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 use super::permissions;
+use crate::database;
 use crate::features::funny::ATTACKED;
-use crate::{constants::discordids, database, features::project_manager};
 use log::{debug, error};
 use serenity::{
   model::channel::Message,
@@ -279,8 +279,4 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
   };
 }
 
-pub async fn trigger_inchannel(message: &Message, ctx: &Context) {
-  if message.channel_id == discordids::PROJECT_ANOUNCEMENT_CHANNEL {
-    project_manager::bottom_list_current(ctx, message).await;
-  }
-}
+pub async fn trigger_inchannel(_: &Message, _: &Context) {}

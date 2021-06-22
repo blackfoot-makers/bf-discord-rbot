@@ -5,10 +5,7 @@ use super::process::{
 };
 use super::validation::{check_validation, WaitingValidation};
 use super::{api, slash_command};
-use crate::{
-  constants,
-  features::{invite_action, mecleanup, project_manager, Features},
-};
+use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
 use serenity::{
   async_trait,
@@ -128,9 +125,6 @@ impl EventHandler for Handler {
         }
         _ => {}
       }
-      if constants::NUMBERS.contains(&&*emoji) {
-        project_manager::check_subscribe_bottom_list(&ctx, &reaction, false, &emoji).await;
-      }
     }
   }
 
@@ -151,9 +145,6 @@ impl EventHandler for Handler {
           project_manager::check_subscribe(&ctx, &reaction, true).await;
         }
         _ => {}
-      }
-      if constants::NUMBERS.contains(&&*emoji) {
-        project_manager::check_subscribe_bottom_list(&ctx, &reaction, true, &emoji).await;
       }
     }
   }
