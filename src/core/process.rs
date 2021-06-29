@@ -6,6 +6,7 @@ use super::permissions;
 use crate::database;
 use crate::features::funny::ATTACKED;
 use log::{debug, error};
+use regex::Regex;
 use serenity::{
   model::channel::Message,
   model::id::{ChannelId, UserId},
@@ -123,37 +124,34 @@ pub async fn process_contains(message: &Message, ctx: &Context) {
   }
 }
 
+#[test]
+fn test_split_args() {
+  assert_eq!(vec!["test=\"test\""], split_args("test=\"test\""));
+  assert_eq!(vec!["test=test"], split_args("test=test"));
+  assert_eq!(
+    vec!["test=\"test jambon\""],
+    split_args("test=\"test jambon\"")
+  );
+  assert_eq!(vec!["test=\"test \""], split_args("test=\"test jambon\""));
+
+  assert_eq!(
+    vec![
+      r#"test="test jambon""#,
+      r#"dd"#,
+      r#""testos=1""#,
+      r#"ddd"#,
+      r#"d"#,
+      r#"dd"#,
+      r#"" d d d ""#
+    ],
+    split_args(r#"test="test jambon" dd "testos=1" ddd d dd " d d d " "#)
+  );
+}
+
+// FIXME: this works well but doesn't take escaping into account.
 pub fn split_args(input: &str) -> Vec<&str> {
-  let mut count = 0;
-  let mut escaped = false;
-  let message_split_quote: Vec<&str> = input
-    .split(|c| {
-      if c == '\\' {
-        escaped = !escaped;
-        false
-      } else if escaped {
-        escaped = false;
-        false
-      } else {
-        c == '"'
-      }
-    })
-    .collect();
-  let mut result: Vec<&str> = Vec::new();
-  for msg in message_split_quote {
-    if msg.is_empty() {
-      continue;
-    }
-    count += 1;
-    if (count % 2) == 0 {
-      result.push(msg);
-    } else {
-      let mut message_split_space: Vec<&str> =
-        msg.split(' ').filter(|spstr| !spstr.is_empty()).collect();
-      result.append(&mut message_split_space);
-    }
-  }
-  result
+  let regex_split = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
+  regex_split.find_iter(input).map(|m| m.as_str()).collect()
 }
 
 const CATS: [char; 12] = [

@@ -1344,6 +1344,7 @@ dependencies = [
  "pretty_env_logger",
  "procedural_macros",
  "rand 0.8.3",
+ "regex 1.5.4",
  "reqwest",
  "rocket",
  "serde",
