@@ -14,7 +14,7 @@ pub struct NewUser<'a> {
   pub role: &'a str,
 }
 
-#[derive(Insertable, Queryable, Debug)]
+#[derive(Insertable, Queryable, Debug, Serialize, Clone)]
 #[table_name = "messages"]
 pub struct Message {
   pub id: i64,
