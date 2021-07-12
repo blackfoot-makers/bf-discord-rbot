@@ -55,8 +55,10 @@ impl Instance {
   }
 
   db_load! {message_load, Message, messages}
+  db_load! {message_edits_load, MessageEdit, messages_edits}
 
   db_add! { message_add, Message, Message, messages }
+  db_add! { message_edit_add, MessageEdit, MessageEdit, messages_edits }
 
   #[allow(dead_code)]
   pub fn mesage_delete(&mut self, messages_id: Vec<i64>) -> Vec<Message> {

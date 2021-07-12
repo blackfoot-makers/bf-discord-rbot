@@ -7,6 +7,7 @@ use super::validation::{check_validation, WaitingValidation};
 use super::{api, slash_command};
 use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
+use serenity::model::id::ChannelId;
 use serenity::{
   async_trait,
   client::bridge::gateway::GatewayIntents,
@@ -41,18 +42,13 @@ impl EventHandler for Handler {
   /// Event handlers are dispatched through a threadpool, and so multiple
   /// events can be dispatched simultaneously.
   async fn message(&self, ctx: Context, message: Message) {
-    let chan = message.channel_id.to_channel(&ctx.http).await.unwrap();
-    let chanid = chan.id().to_string();
-    let chan_name = match &chan.guild() {
-      Some(guildchan) => String::from(guildchan.name()),
-      None => chanid,
-    };
+    let chan_name = get_channel_name(&message.channel_id, &ctx).await;
     info!(
       "[{}]({}) > {} says: {}",
       message.timestamp, chan_name, message.author.name, message.content
     );
 
-    database_update(&message);
+    database_update((&message).into(), false);
     archive_activity(&ctx, &message).await;
     if message.is_own(&ctx).await || message.content.is_empty() {
       return;
@@ -166,12 +162,22 @@ impl EventHandler for Handler {
 
   async fn message_update(
     &self,
-    _ctx: Context,
+    ctx: Context,
     _old_if_available: Option<Message>,
     _new: Option<Message>,
-    _event: MessageUpdateEvent,
+    event: MessageUpdateEvent,
   ) {
-    // TODO:
+    let chan_name = get_channel_name(&event.channel_id, &ctx).await;
+    let event_clone = event.clone();
+    info!(
+      "[{}]({}) > {} edited message with: {}",
+      event_clone.timestamp.unwrap(),
+      chan_name,
+      event_clone.author.unwrap_or_default().name,
+      event_clone.content.unwrap_or_default(),
+    );
+
+    database_update((&event).into(), true);
   }
 
   async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -196,6 +202,16 @@ impl EventHandler for Handler {
       self.is_loop_running.swap(true, Ordering::Relaxed);
     }
   }
+}
+
+async fn get_channel_name(channel_id: &ChannelId, ctx: &Context) -> String {
+  let chan = channel_id.to_channel(&ctx.http).await.unwrap();
+  let chanid = chan.id().to_string();
+  let chan_name = match &chan.guild() {
+    Some(guildchan) => String::from(guildchan.name()),
+    None => chanid,
+  };
+  chan_name
 }
 
 /// Get the discord token from `CREDENTIALS_FILE` and run the client.

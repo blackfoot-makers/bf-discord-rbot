@@ -24,6 +24,17 @@ pub struct Message {
   pub date: Option<std::time::SystemTime>,
 }
 
+#[derive(Insertable, Queryable, Debug, Serialize, Clone)]
+#[table_name = "messages_edits"]
+pub struct MessageEdit {
+  pub id: i32,
+  pub author: i64,
+  pub content: String,
+  pub channel: i64,
+  pub date: Option<std::time::SystemTime>,
+  pub parrent_message_id: i64,
+}
+
 #[derive(Copy, Clone, Display, EnumString, PartialEq, PartialOrd)]
 pub enum Role {
   Guest,

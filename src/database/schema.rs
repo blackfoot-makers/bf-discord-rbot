@@ -28,6 +28,17 @@ table! {
 }
 
 table! {
+    messages_edits (id) {
+        id -> Int4,
+        author -> Int8,
+        content -> Varchar,
+        channel -> Int8,
+        date -> Nullable<Timestamp>,
+        parrent_message_id -> Int8,
+    }
+}
+
+table! {
     projects (id) {
         id -> Int4,
         message_id -> Int8,
@@ -61,10 +72,13 @@ table! {
     }
 }
 
+joinable!(messages_edits -> messages (parrent_message_id));
+
 allow_tables_to_appear_in_same_query!(
     airtable,
     invites,
     messages,
+    messages_edits,
     projects,
     storage,
     users,

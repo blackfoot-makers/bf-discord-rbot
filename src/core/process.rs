@@ -6,6 +6,7 @@ use super::permissions;
 use crate::database;
 use crate::features::funny::ATTACKED;
 use log::{debug, error};
+use serenity::model::event::MessageUpdateEvent;
 use serenity::{
   model::channel::Message,
   model::id::{ChannelId, UserId},
@@ -236,20 +237,65 @@ pub async fn attacked(ctx: &Context, message: &Message) -> bool {
   false
 }
 
-pub fn database_update(message: &Message) {
-  let mut db_instance = database::INSTANCE.write().unwrap();
-  let author_id = *message.author.id.as_u64() as i64;
-  if !db_instance.users.iter().any(|e| e.discordid == author_id) {
-    db_instance.user_add(author_id, &*database::Role::Guest.to_string());
+impl Into<database::Message> for &Message {
+  fn into(self) -> database::Message {
+    let author_id = *self.author.id.as_u64() as i64;
+    let time: SystemTime = SystemTime::from(self.timestamp);
+
+    database::Message {
+      id: *self.id.as_u64() as i64,
+      author: author_id,
+      content: self.content.clone(),
+      channel: *self.channel_id.as_u64() as i64,
+      date: Some(time),
+    }
   }
-  let time: SystemTime = SystemTime::from(message.timestamp);
-  db_instance.message_add(database::Message {
-    id: *message.id.as_u64() as i64,
-    author: author_id,
-    content: message.content.clone(),
-    channel: *message.channel_id.as_u64() as i64,
-    date: Some(time),
-  });
+}
+
+impl Into<database::Message> for &MessageUpdateEvent {
+  fn into(self) -> database::Message {
+    let author_id = if let Some(author) = &self.author {
+      author.id.0 as i64
+    } else {
+      0
+    };
+    let time = if let Some(timestamp) = self.timestamp {
+      SystemTime::from(timestamp)
+    } else {
+      SystemTime::now()
+    };
+
+    database::Message {
+      id: *self.id.as_u64() as i64,
+      author: author_id,
+      content: self.content.as_ref().unwrap_or(&String::new()).clone(),
+      channel: *self.channel_id.as_u64() as i64,
+      date: Some(time),
+    }
+  }
+}
+
+pub fn database_update(message: database::Message, is_edit: bool) {
+  let mut db_instance = database::INSTANCE.write().unwrap();
+  if is_edit {
+    db_instance.message_edit_add(database::MessageEdit {
+      id: 0,
+      parrent_message_id: message.id,
+      author: message.author,
+      channel: message.channel,
+      content: message.content,
+      date: message.date,
+    });
+  } else {
+    if !db_instance
+      .users
+      .iter()
+      .any(|e| e.discordid == message.author)
+    {
+      db_instance.user_add(message.author, &*database::Role::Guest.to_string());
+    }
+    db_instance.message_add(message);
+  }
 }
 
 // TODO: This is only working for 1 server as channel is static
