@@ -41,7 +41,7 @@ pub async fn check_validation(ctx: &Context, reaction: &Reaction, emoji: &str) {
           format!(
             "<@{}> applied {}",
             reaction.user_id.unwrap(),
-            message_link(&reaction),
+            message_link(reaction),
           ),
         )
         .await

@@ -6,7 +6,6 @@ use super::permissions;
 use crate::database;
 use crate::features::funny::ATTACKED;
 use log::{debug, error};
-use regex::Regex;
 use serenity::{
   model::channel::Message,
   model::id::{ChannelId, UserId},
@@ -40,7 +39,7 @@ async fn allowed_channel(
   }
 }
 
-pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_command(message_split: &[String], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
     if *key == message_split[0] {
       if !allowed_channel(command.channel, message.channel_id, ctx).await {
@@ -77,15 +76,14 @@ pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Co
         };
 
       match result {
-        Ok(option) => {
-          if let Some(reply) = option {
-            if reply == ":ok:" {
-              message.react(&ctx.http, '✅').await.unwrap();
-            } else {
-              message.reply(&ctx.http, reply).await.unwrap();
-            }
+        Ok(Some(reply)) => {
+          if reply == ":ok:" {
+            message.react(&ctx.http, '✅').await.unwrap();
+          } else {
+            message.reply(&ctx.http, reply).await.unwrap();
           }
         }
+        Ok(None) => {}
         Err(err) => {
           message
             .reply(&ctx.http, "Bipboop this is broken <@173013989180178432>")
@@ -100,7 +98,7 @@ pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Co
   false
 }
 
-pub async fn process_tag_msg(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_tag_msg(message_split: &[String], message: &Message, ctx: &Context) -> bool {
   for (key, reaction) in TAG_MSG_LIST.iter() {
     if *key == message_split[0] {
       message.channel_id.say(&ctx.http, reaction).await.unwrap();
@@ -122,36 +120,6 @@ pub async fn process_contains(message: &Message, ctx: &Context) {
       message.react(ctx, *reaction).await.unwrap();
     }
   }
-}
-
-#[test]
-fn test_split_args() {
-  assert_eq!(vec!["test=\"test\""], split_args("test=\"test\""));
-  assert_eq!(vec!["test=test"], split_args("test=test"));
-  assert_eq!(
-    vec!["test=\"test jambon\""],
-    split_args("test=\"test jambon\"")
-  );
-  assert_eq!(vec!["test=\"test \""], split_args("test=\"test jambon\""));
-
-  assert_eq!(
-    vec![
-      r#"test="test jambon""#,
-      r#"dd"#,
-      r#""testos=1""#,
-      r#"ddd"#,
-      r#"d"#,
-      r#"dd"#,
-      r#"" d d d ""#
-    ],
-    split_args(r#"test="test jambon" dd "testos=1" ddd d dd " d d d " "#)
-  );
-}
-
-// FIXME: this works well but doesn't take escaping into account.
-pub fn split_args(input: &str) -> Vec<&str> {
-  let regex_split = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
-  regex_split.find_iter(input).map(|m| m.as_str()).collect()
 }
 
 const CATS: [char; 12] = [

@@ -16,12 +16,12 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
     Err(error) => return Ok(Some(error)),
   };
   let (targeted_user_id, _) =
-    parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User))?;
+    parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::User))?;
   let member = guild.member(http, UserId(targeted_user_id)).await;
   match member {
     Ok(member) => {
       member
-        .edit(http, |member| member.nickname(params.args[2]))
+        .edit(http, |member| member.nickname(&params.args[2]))
         .await?;
       Ok(Some(String::from("Rename done :)")))
     }
