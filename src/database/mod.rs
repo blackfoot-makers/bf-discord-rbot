@@ -19,6 +19,7 @@ impl Instance {
       connection: establish_connection(),
       users: Vec::new(),
       messages: Vec::new(),
+      messages_edits: Vec::new(),
       airtable: Vec::new(),
       projects: Vec::new(),
       invites: Vec::new(),
@@ -26,6 +27,7 @@ impl Instance {
     };
     instance.user_load();
     instance.message_load();
+    instance.message_edits_load();
     instance.projects_load();
     instance.invites_load();
     instance.storage_load();
@@ -45,6 +47,7 @@ pub struct Instance {
   pub projects: Vec<Project>,
   pub invites: Vec<Invite>,
   pub storage: Vec<Storage>,
+  pub messages_edits: Vec<MessageEdit>,
 }
 
 #[derive(Debug, Clone)]
