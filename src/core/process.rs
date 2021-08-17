@@ -278,8 +278,8 @@ impl Into<database::Message> for &MessageUpdateEvent {
 pub fn database_update(message: database::Message, is_edit: bool) {
   let mut db_instance = database::INSTANCE.write().unwrap();
   if is_edit {
-    db_instance.message_edit_add(database::MessageEdit {
-      id: 0,
+    db_instance.message_edit_add(database::NewMessageEdit {
+      id: None,
       parrent_message_id: message.id,
       author: message.author,
       channel: message.channel,
