@@ -55,7 +55,7 @@ impl EventHandler for Handler {
     };
     personal_attack(&ctx, &message).await;
     annoy_channel(&ctx, &message).await;
-    filter_outannoying_messages(&ctx, &message);
+    filter_outannoying_messages(&ctx, &message).await;
 
     //Check if i am tagged in the message else do the reactions
     // check for @me first so it's considered a command

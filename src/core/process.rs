@@ -157,14 +157,14 @@ pub async fn annoy_channel(ctx: &Context, message: &Message) {
 
 const FILTERED: [&str; 1] = ["🔥"];
 const PM: UserId = UserId(365228504817729539);
-pub fn filter_outannoying_messages(ctx: &Context, message: &Message) {
+pub async fn filter_outannoying_messages(ctx: &Context, message: &Message) {
   if message.author.id != PM {
     return;
   }
   for annoying in FILTERED.iter() {
     if message.content.replace(annoying, "").trim().is_empty() {
       println!("Has been filtered !");
-      let _ = message.delete(ctx);
+      let _ = message.delete(ctx).await;
     }
   }
 }
