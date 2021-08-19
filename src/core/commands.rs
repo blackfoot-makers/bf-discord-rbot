@@ -14,7 +14,7 @@ use serenity::{
 use std::{collections::HashMap, error::Error, process, str::FromStr};
 
 pub struct CallBackParams<'a> {
-  pub args: &'a [&'a str],
+  pub args: &'a [String],
   pub message: &'a Message,
   pub context: &'a Context,
 }
@@ -307,12 +307,12 @@ async fn print_help(_: CallBackParams) -> CallbackReturn {
 async fn promote_user(params: CallBackParams) -> CallbackReturn {
   let mut db_instance = INSTANCE.write().unwrap();
 
-  let role = match Role::from_str(params.args[2]) {
+  let role = match Role::from_str(&params.args[2]) {
     Err(_) => return Ok(Some(String::from("Role not found"))),
     Ok(role) => role,
   };
 
-  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::User)) {
+  match parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::User)) {
     Ok((userid, _)) => Ok(Some(db_instance.user_role_update(userid, role))),
     Err(error) => Ok(Some(error)),
   }
@@ -322,7 +322,7 @@ async fn promote_user(params: CallBackParams) -> CallbackReturn {
 async fn set_activity(params: CallBackParams) -> CallbackReturn {
   params
     .context
-    .set_activity(Activity::playing(params.args[1]))
+    .set_activity(Activity::playing(&params.args[1]))
     .await;
   let myname = &params.context.cache.current_user().await.name;
   Ok(Some(format!("{} is now {} !", myname, params.args[1])))
@@ -330,10 +330,10 @@ async fn set_activity(params: CallBackParams) -> CallbackReturn {
 
 #[command]
 async fn manual_send_message(params: CallBackParams) -> CallbackReturn {
-  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+  match parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Channel)) {
     Ok((chan_id, _)) => {
       ChannelId(chan_id)
-        .send_message(&params.context.http, |m| m.content(params.args[2]))
+        .send_message(&params.context.http, |m| m.content(&params.args[2]))
         .await
         .unwrap();
       Ok(Some(String::from(":ok:")))
@@ -346,8 +346,8 @@ async fn manual_send_message(params: CallBackParams) -> CallbackReturn {
 async fn modify_message(params: CallBackParams) -> CallbackReturn {
   let ((channel_id, _), (message_id, _)) = if params.args.len() == 4 {
     (
-      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?,
-      parse::discord_str_to_id(params.args[2], Some(parse::DiscordIds::Message))?,
+      parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Channel))?,
+      parse::discord_str_to_id(&params.args[2], Some(parse::DiscordIds::Message))?,
     )
   } else {
     (
@@ -355,7 +355,7 @@ async fn modify_message(params: CallBackParams) -> CallbackReturn {
         params.message.channel_id.0 as u64,
         parse::DiscordIds::Channel,
       ),
-      parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Message))?,
+      parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Message))?,
     )
   };
   let mut message = ChannelId(channel_id)

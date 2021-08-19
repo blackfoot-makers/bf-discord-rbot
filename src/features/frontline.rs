@@ -26,16 +26,19 @@ fn ftp_connect() -> FtpStream {
 
 #[command]
 pub async fn add_directory(params: CallBackParams) -> CallbackReturn {
-  let dir_target = String::from(params.args[1]);
+  let dir_target = &params.args[1];
   let mut ftp_stream = ftp_connect();
   let root = ftp_stream.nlst(None).expect("Unable to list ftp dir");
-  if !root.contains(&dir_target) {
+  if !root.contains(dir_target) {
     return Ok(Some(String::from(
       "I didn't find this directory in the ftp",
     )));
   }
 
-  DIRECTORY_WATCH.write().unwrap().insert(dir_target, 0);
+  DIRECTORY_WATCH
+    .write()
+    .unwrap()
+    .insert(dir_target.clone(), 0);
   Ok(Some(String::from(":ok:")))
 }
 

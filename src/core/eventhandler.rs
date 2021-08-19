@@ -1,10 +1,10 @@
 use super::process::{
   annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
-  personal_attack, process_command, process_contains, process_tag_msg, split_args,
-  trigger_inchannel,
+  personal_attack, process_command, process_contains, process_tag_msg, trigger_inchannel,
 };
 use super::validation::{check_validation, WaitingValidation};
 use super::{api, slash_command};
+use crate::core::parse::split_message_args;
 use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
 use serenity::model::id::ChannelId;
@@ -67,7 +67,7 @@ impl EventHandler for Handler {
         return;
       }
       let line = message.content.clone();
-      let mut message_split = split_args(&line);
+      let mut message_split = split_message_args(&line);
 
       // Check if there is only the tag : "@bot"
       if message_split.len() == 1 {

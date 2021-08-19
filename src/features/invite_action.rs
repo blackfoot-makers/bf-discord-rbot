@@ -90,11 +90,11 @@ fn parse_create_argument(
 pub async fn create(params: CallBackParams) -> CallbackReturn {
   let mut role = None;
   let mut channel = None;
-  if let Err(err) = parse_create_argument(params.args[2], &mut role, &mut channel) {
+  if let Err(err) = parse_create_argument(&params.args[2], &mut role, &mut channel) {
     return Ok(Some(err));
   }
   if params.args.len() == 4 {
-    if let Err(err) = parse_create_argument(params.args[3], &mut role, &mut channel) {
+    if let Err(err) = parse_create_argument(&params.args[3], &mut role, &mut channel) {
       return Ok(Some(err));
     }
   }
@@ -106,8 +106,8 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
     }
 
     db_instance
-      .invite_update(String::from(code), None, channel, role)
-      .expect(&*format!("Unable to update invite: {} =>", &code));
+      .invite_update(code.clone(), None, channel, role)
+      .expect(&*format!("Unable to update invite: {} =>", code));
   }
   Ok(Some(String::from("Done")))
 }

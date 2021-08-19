@@ -40,7 +40,7 @@ const ARGUMENT_LIST: [&str; 6] = [
   "contexte",
 ];
 
-pub fn project_creation_args<'a>(args: &'a [&str]) -> Result<HashMap<&'a str, &'a str>, String> {
+pub fn project_creation_args(args: &'_ [String]) -> Result<HashMap<&'_ str, &'_ str>, String> {
   let mut project_args: HashMap<&str, &str> = HashMap::new();
   for arg in args {
     let find = arg.find('=');
@@ -142,7 +142,7 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
     Ok(result) => result,
     Err(error) => return Ok(Some(error)),
   };
-  let mainguild = parse::get_main_guild(&params.context).await;
+  let mainguild = parse::get_main_guild(params.context).await;
   let http = &params.context.http;
   let newchan = mainguild
     .create_channel(http, |channel| {
@@ -165,7 +165,7 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
 #[command]
 pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
   let (project_chan_id, _) =
-    parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel))?;
+    parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Channel))?;
   let project_chan = ChannelId(project_chan_id);
   let project_args = match project_creation_args(&params.args[2..]) {
     Ok(result) => result,
@@ -183,7 +183,7 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
 
 #[command]
 pub async fn delete(params: CallBackParams) -> CallbackReturn {
-  match parse::discord_str_to_id(params.args[1], Some(parse::DiscordIds::Channel)) {
+  match parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Channel)) {
     Ok((target, _)) => {
       let resultcpy;
       {
@@ -223,7 +223,7 @@ async fn add_permission(
 #[command]
 pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   let cache = &params.context.cache;
-  let usertag = params.args[1];
+  let usertag = &params.args[1];
 
   match params
     .message
@@ -233,15 +233,16 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   {
     Channel::Guild(guildchannel) => {
       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
-        Ok((userid, _)) => add_permission(&params.context, &guildchannel, userid).await,
+        Ok((userid, _)) => add_permission(params.context, &guildchannel, userid).await,
         Err(_error) => {
           if let Some(guild) = &guildchannel.guild(cache).await {
             let member = guild.member_named(usertag);
-            if let Some(member) = member {
-              let userid = member.user.id.0;
-              add_permission(&params.context, &guildchannel, userid).await
-            } else {
-              check_containing(&params.context, guild, usertag, guildchannel).await
+            match member {
+              Some(member) => {
+                let userid = member.user.id.0;
+                add_permission(params.context, &guildchannel, userid).await
+              }
+              None => check_containing(params.context, guild, usertag, guildchannel).await,
             }
           } else {
             panic!("Unable to get guild from cache")
@@ -470,7 +471,7 @@ pub async fn check_subscribe_bottom_list(
 
 #[command]
 pub async fn remove_user_from_all(params: CallBackParams<'_>) -> CallbackReturn {
-  if let Ok((useid, _)) = discord_str_to_id(params.args[1], Some(DiscordIds::User)) {
+  if let Ok((useid, _)) = discord_str_to_id(&params.args[1], Some(DiscordIds::User)) {
     let guild = params
       .message
       .guild(&params.context)

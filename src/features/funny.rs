@@ -40,7 +40,7 @@ pub async fn mom_change_cmdless(user: &str, timestamp: DateTime<Utc>) -> Option<
 
 #[command]
 pub async fn mom_change(params: CallBackParams) -> CallbackReturn {
-  Ok(mom_change_cmdless(params.args[1], params.message.timestamp).await)
+  Ok(mom_change_cmdless(&params.args[1], params.message.timestamp).await)
 }
 
 pub async fn which_mom_cmdless() -> Option<String> {

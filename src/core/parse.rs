@@ -1,5 +1,6 @@
 use crate::constants::discordids;
 use log::error;
+use regex::Regex;
 use serenity::{
   model::{channel::Channel, guild::Guild},
   prelude::*,
@@ -25,7 +26,7 @@ pub async fn get_main_guild(context: &Context) -> Guild {
 pub async fn get_guild(
   channel: Channel,
   context: &Context,
-  gid: Option<&&str>,
+  gid: Option<&String>,
 ) -> Result<Guild, String> {
   match channel {
     Channel::Private(_) => match gid {
@@ -86,4 +87,57 @@ pub fn discord_str_to_id(
     }
     Ok((parsedid, discordtype))
   }
+}
+
+#[test]
+fn test_split_message_args() {
+  assert_eq!(
+    vec![r#"test=testas"#],
+    split_message_args(r#"test="testas""#)
+  );
+  assert_eq!(
+    vec![r#"test=\"test\""#],
+    split_message_args(r#"test=\"test\""#)
+  );
+  assert_eq!(vec!["test=test"], split_message_args("test=test"));
+  assert_eq!(
+    vec!["test=test jambon"],
+    split_message_args("test=\"test jambon\"")
+  );
+
+  assert_eq!(
+    vec![
+      r#"test=test jambon"#,
+      r#"dd"#,
+      r#"testos=1"#,
+      r#"ddd"#,
+      r#"d"#,
+      r#"dd"#,
+      r#" d d d "#
+    ],
+    split_message_args(r#"test="test jambon" dd "testos=1" ddd d dd " d d d " "#)
+  );
+}
+
+pub fn split_message_args(input: &str) -> Vec<String> {
+  let regex_split = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
+  regex_split
+    .find_iter(input)
+    .map(|m| {
+      let matche_str = m.as_str();
+      let mut escaped = false;
+      matche_str
+        .chars()
+        .filter(|c| {
+          let mut keep = true;
+          if c == &'"' && !escaped {
+            keep = false;
+          }
+          // This XOR is to account for escaped "\"
+          escaped = !escaped && c == &'\\';
+          keep
+        })
+        .collect()
+    })
+    .collect()
 }

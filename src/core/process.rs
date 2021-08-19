@@ -40,7 +40,7 @@ async fn allowed_channel(
   }
 }
 
-pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_command(message_split: &[String], message: &Message, ctx: &Context) -> bool {
   for (key, command) in COMMANDS_LIST.iter() {
     if *key == message_split[0] {
       if !allowed_channel(command.channel, message.channel_id, ctx).await {
@@ -77,15 +77,14 @@ pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Co
         };
 
       match result {
-        Ok(option) => {
-          if let Some(reply) = option {
-            if reply == ":ok:" {
-              message.react(&ctx.http, '✅').await.unwrap();
-            } else {
-              message.reply(&ctx.http, reply).await.unwrap();
-            }
+        Ok(Some(reply)) => {
+          if reply == ":ok:" {
+            message.react(&ctx.http, '✅').await.unwrap();
+          } else {
+            message.reply(&ctx.http, reply).await.unwrap();
           }
         }
+        Ok(None) => {}
         Err(err) => {
           message
             .reply(&ctx.http, "Bipboop this is broken <@173013989180178432>")
@@ -100,7 +99,7 @@ pub async fn process_command(message_split: &[&str], message: &Message, ctx: &Co
   false
 }
 
-pub async fn process_tag_msg(message_split: &[&str], message: &Message, ctx: &Context) -> bool {
+pub async fn process_tag_msg(message_split: &[String], message: &Message, ctx: &Context) -> bool {
   for (key, reaction) in TAG_MSG_LIST.iter() {
     if *key == message_split[0] {
       message.channel_id.say(&ctx.http, reaction).await.unwrap();
@@ -122,39 +121,6 @@ pub async fn process_contains(message: &Message, ctx: &Context) {
       message.react(ctx, *reaction).await.unwrap();
     }
   }
-}
-
-pub fn split_args(input: &str) -> Vec<&str> {
-  let mut count = 0;
-  let mut escaped = false;
-  let message_split_quote: Vec<&str> = input
-    .split(|c| {
-      if c == '\\' {
-        escaped = !escaped;
-        false
-      } else if escaped {
-        escaped = false;
-        false
-      } else {
-        c == '"'
-      }
-    })
-    .collect();
-  let mut result: Vec<&str> = Vec::new();
-  for msg in message_split_quote {
-    if msg.is_empty() {
-      continue;
-    }
-    count += 1;
-    if (count % 2) == 0 {
-      result.push(msg);
-    } else {
-      let mut message_split_space: Vec<&str> =
-        msg.split(' ').filter(|spstr| !spstr.is_empty()).collect();
-      result.append(&mut message_split_space);
-    }
-  }
-  result
 }
 
 const CATS: [char; 12] = [
