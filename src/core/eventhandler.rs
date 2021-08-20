@@ -1,12 +1,10 @@
-use super::process::{
-  annoy_channel, archive_activity, attacked, database_update, filter_outannoying_messages,
-  personal_attack, process_command, process_contains, process_tag_msg, trigger_inchannel,
-};
+use super::process::{archive_activity, database_update, getbotid};
 use super::validation::{check_validation, WaitingValidation};
 use super::{api, slash_command};
-use crate::core::parse::split_message_args;
+use crate::core::process::process_message;
 use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
+use serenity::http::CacheHttp;
 use serenity::model::id::ChannelId;
 use serenity::{
   async_trait,
@@ -16,7 +14,7 @@ use serenity::{
     event::{MessageUpdateEvent, ResumedEvent},
     gateway::Ready,
     guild::Member,
-    id::{GuildId, UserId},
+    id::GuildId,
     interactions::Interaction,
   },
   prelude::*,
@@ -26,10 +24,6 @@ use std::{
   sync::atomic::{AtomicBool, Ordering},
 };
 
-async fn getbotid(ctx: &Context) -> UserId {
-  ctx.cache.current_user_id().await
-}
-/// Struct that old Traits Implementations to Handle the different events send by discord.
 struct Handler {
   is_loop_running: AtomicBool,
 }
@@ -53,48 +47,52 @@ impl EventHandler for Handler {
     if message.is_own(&ctx).await || message.content.is_empty() {
       return;
     };
-    personal_attack(&ctx, &message).await;
-    annoy_channel(&ctx, &message).await;
-    filter_outannoying_messages(&ctx, &message).await;
+    process_message(ctx, message).await;
+  }
 
-    //Check if i am tagged in the message else do the reactions
-    // check for @me first so it's considered a command
-    let botid = getbotid(&ctx).await.0;
-    if message.content.starts_with(&*format!("<@!{}>", botid))
-      || message.content.starts_with(&*format!("<@{}>", botid))
-    {
-      if attacked(&ctx, &message).await {
-        return;
-      }
-      let line = message.content.clone();
-      let mut message_split = split_message_args(&line);
-
-      // Check if there is only the tag : "@bot"
-      if message_split.len() == 1 {
-        message
-          .channel_id
-          .say(&ctx.http, "What do you need ?")
-          .await
-          .unwrap();
-        return;
-      }
-      // Removing tag
-      message_split.remove(0);
-
-      // will go through commands.rs definitions to try and execute the request
-      if !process_tag_msg(&message_split, &message, &ctx).await
-        && !process_command(&message_split, &message, &ctx).await
-      {
-        message
-          .channel_id
-          .say(&ctx.http, "How about a proper request ?")
-          .await
-          .unwrap();
-      }
+  async fn message_update(
+    &self,
+    ctx: Context,
+    _old_if_available: Option<Message>,
+    new: Option<Message>,
+    event: MessageUpdateEvent,
+  ) {
+    let chan_name = get_channel_name(&event.channel_id, &ctx).await;
+    let event_clone = event.clone();
+    info!(
+      "[{}]({}) > {} edited message with: {}",
+      event_clone.timestamp.unwrap(),
+      chan_name,
+      event_clone.author.unwrap_or_default().name,
+      event_clone.content.unwrap_or_default(),
+    );
+    database_update((&event).into(), true);
+    let new_message = if let Some(message) = new {
+      message
     } else {
-      process_contains(&message, &ctx).await;
+      ctx
+        .http()
+        .get_message(event.channel_id.0, event.id.0)
+        .await
+        .unwrap()
+    };
+
+    if let Some(guild_channel) = ctx.cache.guild_channel(new_message.channel_id).await {
+      let messages_after = guild_channel
+        .messages(&ctx.http, |retriever| {
+          retriever.after(new_message.id).limit(1)
+        })
+        .await
+        .expect("Unable to retrieve guild_channel messages");
+      if !messages_after.is_empty() {
+        let botid = getbotid(&ctx).await;
+        let followup_message = messages_after.first().unwrap();
+        if followup_message.author.id == botid {
+          followup_message.delete(&ctx.http).await.unwrap();
+          process_message(ctx, new_message).await;
+        }
+      }
     }
-    trigger_inchannel(&message, &ctx).await;
   }
 
   async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
@@ -158,26 +156,6 @@ impl EventHandler for Handler {
       feature.running = true;
       feature.run(&ctx.http);
     }
-  }
-
-  async fn message_update(
-    &self,
-    ctx: Context,
-    _old_if_available: Option<Message>,
-    _new: Option<Message>,
-    event: MessageUpdateEvent,
-  ) {
-    let chan_name = get_channel_name(&event.channel_id, &ctx).await;
-    let event_clone = event.clone();
-    info!(
-      "[{}]({}) > {} edited message with: {}",
-      event_clone.timestamp.unwrap(),
-      chan_name,
-      event_clone.author.unwrap_or_default().name,
-      event_clone.content.unwrap_or_default(),
-    );
-
-    database_update((&event).into(), true);
   }
 
   async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
