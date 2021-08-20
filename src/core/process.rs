@@ -3,6 +3,7 @@ use super::commands::{
   CallBackParams, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 use super::permissions;
+use crate::core::parse::split_message_args;
 use crate::database;
 use crate::features::funny::ATTACKED;
 use log::{debug, error};
@@ -13,6 +14,55 @@ use serenity::{
   prelude::*,
 };
 use std::time::SystemTime;
+
+pub async fn getbotid(ctx: &Context) -> UserId {
+  ctx.cache.current_user_id().await
+}
+
+pub async fn process_message(ctx: Context, message: Message) {
+  personal_attack(&ctx, &message).await;
+  annoy_channel(&ctx, &message).await;
+  filter_outannoying_messages(&ctx, &message).await;
+
+  //Check if i am tagged in the message else do the reactions
+  // check for @me first so it's considered a command
+  let botid = getbotid(&ctx).await.0;
+  if message.content.starts_with(&*format!("<@!{}>", botid))
+    || message.content.starts_with(&*format!("<@{}>", botid))
+  {
+    if attacked(&ctx, &message).await {
+      return;
+    }
+    let line = message.content.clone();
+    let mut message_split = split_message_args(&line);
+
+    // Check if there is only the tag : "@bot"
+    if message_split.len() == 1 {
+      message
+        .channel_id
+        .say(&ctx.http, "What do you need ?")
+        .await
+        .unwrap();
+      return;
+    }
+    // Removing tag
+    message_split.remove(0);
+
+    // will go through commands.rs definitions to try and execute the request
+    if !process_tag_msg(&message_split, &message, &ctx).await
+      && !process_command(&message_split, &message, &ctx).await
+    {
+      message
+        .channel_id
+        .say(&ctx.http, "How about a proper request ?")
+        .await
+        .unwrap();
+    }
+  } else {
+    process_contains(&message, &ctx).await;
+  }
+  trigger_inchannel(&message, &ctx).await;
+}
 
 async fn allowed_channel(
   command_channel: Option<ChannelId>,
