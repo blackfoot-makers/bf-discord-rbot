@@ -27,10 +27,10 @@ impl<'r> FromRequest<'r> for ApiKey<'r> {
 
   async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
     fn is_valid(key: &str) -> bool {
-      key == *APIKEY
+      key == &*format!("Bearer {}", *APIKEY)
     }
 
-    match req.headers().get_one("api-key") {
+    match req.headers().get_one("Authorization") {
       None => Outcome::Failure((Status::Unauthorized, ApiKeyError::Missing)),
       Some(key) if is_valid(key) => Outcome::Success(ApiKey(key)),
       Some(_) => Outcome::Failure((Status::Unauthorized, ApiKeyError::Invalid)),
@@ -43,7 +43,7 @@ fn index() -> &'static str {
   "hello"
 }
 
-#[put("/message/<channelid>", data = "<message>")]
+#[post("/message/<channelid>", data = "<message>")]
 async fn send_message(
   channelid: &str,
   message: String,
