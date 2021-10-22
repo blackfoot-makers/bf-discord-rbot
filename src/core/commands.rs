@@ -278,13 +278,13 @@ lazy_static! {
       usage: "@BOT rename <@user> <new nickname> [<guild>]",
       permission: Role::User,
     },
-    "rename" =>
+    "emoji-add" =>
     Command {
       exec: emoji::add,
-      argument_min: 2,
-      argument_max: 3,
+      argument_min: 1,
+      argument_max: 1,
       channel: None,
-      usage: "@BOT rename <@user> <new nickname> [<guild>]",
+      usage: "@BOT emoji-add <custom emoji>",
       permission: Role::User,
     },
     "help" =>
