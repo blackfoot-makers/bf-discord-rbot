@@ -19,6 +19,7 @@ use serenity::{
   },
   prelude::*,
 };
+use std::time::SystemTime;
 use std::{
   env, process,
   sync::atomic::{AtomicBool, Ordering},
@@ -61,7 +62,9 @@ impl EventHandler for Handler {
     let event_clone = event.clone();
     info!(
       "[{}]({}) > {} edited message with: {}",
-      event_clone.timestamp.unwrap(),
+      event_clone
+        .timestamp
+        .unwrap_or_else(|| SystemTime::now().into()),
       chan_name,
       event_clone.author.unwrap_or_default().name,
       event_clone.content.unwrap_or_default(),

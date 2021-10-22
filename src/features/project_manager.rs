@@ -237,12 +237,11 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
         Err(_error) => {
           if let Some(guild) = &guildchannel.guild(cache).await {
             let member = guild.member_named(usertag);
-            match member {
-              Some(member) => {
-                let userid = member.user.id.0;
-                add_permission(params.context, &guildchannel, userid).await
-              }
-              None => check_containing(params.context, guild, usertag, guildchannel).await,
+            if let Some(member) = member {
+              let userid = member.user.id.0;
+              add_permission(params.context, &guildchannel, userid).await
+            } else {
+              check_containing(params.context, guild, usertag, guildchannel).await
             }
           } else {
             panic!("Unable to get guild from cache")

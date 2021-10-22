@@ -120,8 +120,10 @@ fn test_split_message_args() {
 }
 
 pub fn split_message_args(input: &str) -> Vec<String> {
-  let regex_split = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
-  regex_split
+  lazy_static! {
+    static ref REGEX_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
+  }
+  REGEX_SPLIT
     .find_iter(input)
     .map(|m| {
       let matche_str = m.as_str();
@@ -140,4 +142,17 @@ pub fn split_message_args(input: &str) -> Vec<String> {
         .collect()
     })
     .collect()
+}
+
+// <:pepe_cucumber:887736509292228668>
+pub fn emoji_str_convert(message: &str) -> Option<(&str, &str)> {
+  lazy_static! {
+    static ref REGEX_EMOJI: Regex = Regex::new(r#"<:(.*):([0-9]{18})>"#).unwrap();
+  }
+  REGEX_EMOJI.captures(message).map(|captures| {
+    (
+      captures.get(1).unwrap().as_str(),
+      captures.get(2).unwrap().as_str(),
+    )
+  })
 }
