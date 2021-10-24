@@ -142,7 +142,7 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
     Ok(result) => result,
     Err(error) => return Ok(Some(error)),
   };
-  let mainguild = parse::get_main_guild(params.context).await;
+  let mainguild = parse::main_guild_id();
   let http = &params.context.http;
   let newchan = mainguild
     .create_channel(http, |channel| {
@@ -365,14 +365,13 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
 }
 
 async fn list_projects<'a>(message: &Message, context: &Context) -> Vec<(ChannelId, GuildChannel)> {
-  let gid = message.guild_id.unwrap();
-  let cache = context.cache.clone();
-  let guild = cache
-    .guild(gid)
+  let guild_id = message
+    .guild_id
+    .expect("Message didn't not contain any guildid");
+  let text_projects_channels: Vec<_> = guild_id
+    .channels(&context.http)
     .await
-    .expect("Critical: Guild from message not found");
-  let text_projects_channels: Vec<_> = guild
-    .channels
+    .unwrap()
     .iter()
     .filter(|(_, chan)| {
       chan.kind == ChannelType::Text
@@ -471,13 +470,14 @@ pub async fn check_subscribe_bottom_list(
 #[command]
 pub async fn remove_user_from_all(params: CallBackParams<'_>) -> CallbackReturn {
   if let Ok((useid, _)) = discord_str_to_id(&params.args[1], Some(DiscordIds::User)) {
-    let guild = params
+    let channels = params
       .message
-      .guild(&params.context)
+      .guild_id
+      .expect("Unable to find guildid in message")
+      .channels(&params.context.http)
       .await
-      .expect("Unable to get guild from cache");
-    let text_projects_channels: Vec<_> = guild
-      .channels
+      .unwrap();
+    let text_projects_channels: Vec<_> = channels
       .iter()
       .filter(|(_, chan)| {
         chan.kind == ChannelType::Text

@@ -1,5 +1,4 @@
 use procedural_macros::command;
-use reqwest::Request;
 
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
@@ -24,11 +23,11 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
       base64::encode(response_body)
     );
 
-    params
+    let guild = params
       .message
-      .guild(&params.context.cache)
-      .await
-      .expect("Unable to fetch guild from cache")
+      .guild_id
+      .expect("Guildid wasn't found in the message");
+    guild
       .create_emoji(&params.context.http, &*emoji_name, &*base64_img)
       .await?;
     Ok(Some(String::from(":ok:")))
