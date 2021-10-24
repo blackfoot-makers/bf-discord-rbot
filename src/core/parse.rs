@@ -145,15 +145,15 @@ pub fn split_message_args(input: &str) -> Vec<String> {
 }
 
 // <:pepe_cucumber:887736509292228668>
-pub fn emoji_str_convert(emoji_str: &str) -> Option<(&str, &str)> {
-  println!("emoji_str: {}", emoji_str);
+pub fn emoji_str_convert(emoji_str: &str) -> Option<(bool, &str, &str)> {
   lazy_static! {
-    static ref REGEX_EMOJI: Regex = Regex::new(r#"<:(.*):([0-9]{18})>"#).unwrap();
+    static ref REGEX_EMOJI: Regex = Regex::new(r#"<(a?):(.*):([0-9]{18})>"#).unwrap();
   }
   REGEX_EMOJI.captures(emoji_str).map(|captures| {
     (
-      captures.get(1).unwrap().as_str(),
+      captures.get(1).is_some(),
       captures.get(2).unwrap().as_str(),
+      captures.get(3).unwrap().as_str(),
     )
   })
 }
