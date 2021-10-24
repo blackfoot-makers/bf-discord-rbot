@@ -11,6 +11,7 @@
 pub mod airtable;
 // pub mod event;
 pub mod archivage;
+pub mod emoji;
 pub mod frontline;
 pub mod funny;
 pub mod invite_action;

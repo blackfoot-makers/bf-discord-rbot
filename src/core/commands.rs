@@ -2,7 +2,7 @@
 use super::{parse, slash_command};
 use crate::database::{Role, INSTANCE};
 use crate::features::{
-  archivage, frontline, funny, invite_action, ordering, project_manager, renaming,
+  archivage, emoji, frontline, funny, invite_action, ordering, project_manager, renaming,
 };
 use procedural_macros::command;
 use serenity::{futures::future::BoxFuture, FutureExt};
@@ -276,6 +276,15 @@ lazy_static! {
       argument_max: 3,
       channel: None,
       usage: "@BOT rename <@user> <new nickname> [<guild>]",
+      permission: Role::User,
+    },
+    "emoji-add" =>
+    Command {
+      exec: emoji::add,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT emoji-add <custom emoji>",
       permission: Role::User,
     },
     "help" =>

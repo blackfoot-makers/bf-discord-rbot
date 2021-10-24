@@ -1335,6 +1335,7 @@ dependencies = [
 name = "rbot-discord"
 version = "0.3.0"
 dependencies = [
+ "base64 0.13.0",
  "chrono 0.4.19",
  "diesel",
  "dotenv",
