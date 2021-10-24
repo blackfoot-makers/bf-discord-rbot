@@ -2,7 +2,10 @@ use crate::constants::discordids;
 use log::error;
 use regex::Regex;
 use serenity::{
-  model::{channel::Channel, guild::Guild},
+  model::{
+    channel::Channel,
+    id::{ChannelId, GuildId},
+  },
   prelude::*,
 };
 use strum_macros::Display;
@@ -15,37 +18,28 @@ pub enum DiscordIds {
   User,
 }
 
-pub async fn get_main_guild(context: &Context) -> Guild {
-  context
-    .cache
-    .guild(discordids::GUILD_ID)
-    .await
-    .expect("Unable to find main guild")
+pub fn main_guild_id() -> GuildId {
+  GuildId(discordids::GUILD_ID)
 }
 
 pub async fn get_guild(
-  channel: Channel,
+  channel_id: ChannelId,
   context: &Context,
   gid: Option<&String>,
-) -> Result<Guild, String> {
+) -> Result<GuildId, String> {
+  let channel = channel_id.to_channel(&context.http).await.unwrap();
   match channel {
     Channel::Private(_) => match gid {
-      Some(gid) => {
-        let id = match gid.parse::<u64>() {
-          Ok(id) => id,
-          Err(parse_error) => {
-            error!("{}", parse_error);
-            return Err(String::from("Invalid guild id"));
-          }
-        };
-        match context.cache.guild(id).await {
-          Some(guild) => Ok(guild),
-          None => Err(format!("Guild: {} not found", gid)),
+      Some(gid) => match gid.parse::<u64>() {
+        Ok(id) => Ok(GuildId(id)),
+        Err(parse_error) => {
+          error!("{}", parse_error);
+          Err(String::from("Invalid guild id"))
         }
-      }
-      None => Ok(get_main_guild(context).await),
+      },
+      None => Ok(main_guild_id()),
     },
-    Channel::Guild(guildchan) => Ok(guildchan.guild(&context.cache).await.unwrap()),
+    Channel::Guild(guildchan) => Ok(guildchan.guild_id),
     _ => Err(String::from("This doesn't work in this channel")),
   }
 }

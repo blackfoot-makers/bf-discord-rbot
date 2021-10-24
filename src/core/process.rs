@@ -253,39 +253,39 @@ pub async fn attacked(ctx: &Context, message: &Message) -> bool {
   false
 }
 
-impl Into<database::Message> for &Message {
-  fn into(self) -> database::Message {
-    let author_id = *self.author.id.as_u64() as i64;
-    let time: SystemTime = SystemTime::from(self.timestamp);
+impl From<&Message> for database::Message {
+  fn from(val: &Message) -> Self {
+    let author_id = *val.author.id.as_u64() as i64;
+    let time: SystemTime = SystemTime::from(val.timestamp);
 
     database::Message {
-      id: *self.id.as_u64() as i64,
+      id: *val.id.as_u64() as i64,
       author: author_id,
-      content: self.content.clone(),
-      channel: *self.channel_id.as_u64() as i64,
+      content: val.content.clone(),
+      channel: *val.channel_id.as_u64() as i64,
       date: Some(time),
     }
   }
 }
 
-impl Into<database::Message> for &MessageUpdateEvent {
-  fn into(self) -> database::Message {
-    let author_id = if let Some(author) = &self.author {
+impl From<&MessageUpdateEvent> for database::Message {
+  fn from(val: &MessageUpdateEvent) -> Self {
+    let author_id = if let Some(author) = &val.author {
       author.id.0 as i64
     } else {
       0
     };
-    let time = if let Some(timestamp) = self.timestamp {
+    let time = if let Some(timestamp) = val.timestamp {
       SystemTime::from(timestamp)
     } else {
       SystemTime::now()
     };
 
     database::Message {
-      id: *self.id.as_u64() as i64,
+      id: *val.id.as_u64() as i64,
       author: author_id,
-      content: self.content.as_ref().unwrap_or(&String::new()).clone(),
-      channel: *self.channel_id.as_u64() as i64,
+      content: val.content.as_ref().unwrap_or(&String::new()).clone(),
+      channel: *val.channel_id.as_u64() as i64,
       date: Some(time),
     }
   }

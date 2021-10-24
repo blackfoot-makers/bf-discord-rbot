@@ -8,10 +8,9 @@ use serenity::model::id::UserId;
 
 #[command]
 pub async fn rename(params: CallBackParams) -> CallbackReturn {
-  let cache = &params.context.cache;
   let http = &params.context.http;
-  let channel = params.message.channel(&cache).await.unwrap();
-  let guild = match parse::get_guild(channel, params.context, params.args.get(3)).await {
+  let channel_id = params.message.channel_id;
+  let guild = match parse::get_guild(channel_id, params.context, params.args.get(3)).await {
     Ok(guild) => guild,
     Err(error) => return Ok(Some(error)),
   };
@@ -29,7 +28,8 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
       error!("Rename: member not found: {}", error);
       Ok(Some(format!(
         "User {} not found in guild: {}",
-        targeted_user_id, guild.name,
+        targeted_user_id,
+        guild.name(&params.context.cache).await.unwrap(),
       )))
     }
   }
