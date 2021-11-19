@@ -20,6 +20,9 @@ pub async fn getbotid(ctx: &Context) -> UserId {
 }
 
 pub async fn process_message(ctx: Context, message: Message) {
+  if is_user_blocked(&ctx, &message).await {
+    return;
+  };
   personal_attack(&ctx, &message).await;
   annoy_channel(&ctx, &message).await;
   filter_outannoying_messages(&ctx, &message).await;
@@ -251,6 +254,15 @@ pub async fn attacked(ctx: &Context, message: &Message) -> bool {
     return true;
   }
   false
+}
+
+pub async fn is_user_blocked(_: &Context, message: &Message) -> bool {
+  let db_instance = database::INSTANCE.read().unwrap();
+  let blocked_users = db_instance.filter_storage_type(database::StorageDataType::Blocked);
+  let user_id = message.author.id.0;
+  return blocked_users
+    .iter()
+    .any(|x| x.dataid.unwrap() == user_id as i64);
 }
 
 impl From<&Message> for database::Message {

@@ -212,6 +212,15 @@ impl Instance {
       .find(|storage| storage.datatype == compare_storage)
   }
 
+  pub fn filter_storage_type(&self, storage_type: StorageDataType) -> Vec<&Storage> {
+    let compare_storage = storage_type as i64;
+    self
+      .storage
+      .iter()
+      .filter(|storage| storage.datatype == compare_storage)
+      .collect()
+  }
+
   pub fn storage_update(&mut self, storage_id: i32, new_data: &str) {
     use super::schema::storage::dsl::*;
 
