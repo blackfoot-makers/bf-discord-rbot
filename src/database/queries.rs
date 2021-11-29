@@ -200,7 +200,7 @@ impl Instance {
     }
   }
 
-  db_load! { storage_load, Storage, storage}
+  db_load! { storage_load, Storage, storage }
 
   db_add! { storage_add, NewStorage, Storage, storage }
 

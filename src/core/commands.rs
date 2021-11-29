@@ -311,11 +311,15 @@ lazy_static! {
 #[command]
 async fn block_user(params: CallBackParams) -> CallbackReturn {
   let mut db_instance = INSTANCE.write().unwrap();
-  let user_id = params.message.author.id;
+
+  let user_id = match parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::User)) {
+    Ok((userid, _)) => userid,
+    Err(error) => return Ok(Some(error)),
+  };
 
   db_instance.storage_add(NewStorage {
     date: None,
-    dataid: Some(user_id.0 as i64),
+    dataid: Some(user_id as i64),
     datatype: StorageDataType::Blocked as i64,
     data: "",
   });
