@@ -54,6 +54,7 @@ pub struct Instance {
 pub enum StorageDataType {
   Mom,
   ProjectBottomMessage,
+  Blocked,
 }
 
 impl From<StorageDataType> for i64 {

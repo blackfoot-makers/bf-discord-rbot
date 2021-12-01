@@ -1,6 +1,6 @@
 //! Handle the connection with discord and it's events.
 use super::{parse, slash_command};
-use crate::database::{Role, INSTANCE};
+use crate::database::{NewStorage, Role, StorageDataType, INSTANCE};
 use crate::features::{
   archivage, emoji, frontline, funny, invite_action, ordering, project_manager, renaming,
 };
@@ -287,6 +287,15 @@ lazy_static! {
       usage: "@BOT emoji-add <custom emoji>",
       permission: Role::User,
     },
+    "block" =>
+    Command {
+      exec: block_user,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT block <user>",
+      permission: Role::Admin,
+    },
     "help" =>
     Command {
       exec: print_help,
@@ -297,6 +306,33 @@ lazy_static! {
       permission: Role::Guest,
     }
   ];
+}
+
+#[command]
+async fn block_user(params: CallBackParams) -> CallbackReturn {
+  let mut db_instance = INSTANCE.write().unwrap();
+
+  let user_id = match parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::User)) {
+    Ok((userid, _)) => userid,
+    Err(error) => return Ok(Some(error)),
+  };
+
+  db_instance.storage_add(NewStorage {
+    date: None,
+    dataid: Some(user_id as i64),
+    datatype: StorageDataType::Blocked as i64,
+    data: "",
+  });
+  Ok(Some(String::from(":ok:")))
+}
+
+#[derive(Queryable, Debug, Clone)]
+pub struct Storage {
+  pub id: i32,
+  pub datatype: i64,
+  pub dataid: Option<i64>,
+  pub data: String,
+  pub date: Option<std::time::SystemTime>,
 }
 
 #[command]

@@ -200,7 +200,7 @@ impl Instance {
     }
   }
 
-  db_load! { storage_load, Storage, storage}
+  db_load! { storage_load, Storage, storage }
 
   db_add! { storage_add, NewStorage, Storage, storage }
 
@@ -210,6 +210,15 @@ impl Instance {
       .storage
       .iter()
       .find(|storage| storage.datatype == compare_storage)
+  }
+
+  pub fn filter_storage_type(&self, storage_type: StorageDataType) -> Vec<&Storage> {
+    let compare_storage = storage_type as i64;
+    self
+      .storage
+      .iter()
+      .filter(|storage| storage.datatype == compare_storage)
+      .collect()
   }
 
   pub fn storage_update(&mut self, storage_id: i32, new_data: &str) {
