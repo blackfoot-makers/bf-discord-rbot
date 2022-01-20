@@ -44,11 +44,14 @@ mod database;
 mod features;
 
 use dotenv::dotenv;
+use std::env;
 use std::io::{self, Write};
 use std::str::FromStr;
 
 /// We run the core and we loop on a basic cmd.
 fn main() {
+  env::set_var("RUST_LOG", "rbot_discord");
+  env::set_var("RUST_BACKTRACE", "1");
   dotenv().ok();
   pretty_env_logger::init();
 
