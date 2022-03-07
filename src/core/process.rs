@@ -13,6 +13,7 @@ use serenity::{
   model::id::{ChannelId, UserId},
   prelude::*,
 };
+use std::process::exit;
 use std::time::SystemTime;
 
 pub async fn getbotid(ctx: &Context) -> UserId {
@@ -304,8 +305,20 @@ impl From<&MessageUpdateEvent> for database::Message {
 }
 
 pub fn database_update(message: database::Message, is_edit: bool) {
-  let mut db_instance = database::INSTANCE.write().unwrap();
-  if is_edit {
+  let mut db_instance = match database::INSTANCE.write() {
+    Ok(instance) => instance,
+    Err(poison_error) => {
+      error!("Unable to unlock RWLock for db instance, {}", poison_error);
+      exit(1)
+    }
+  };
+
+  if is_edit
+    && db_instance
+      .messages
+      .iter()
+      .any(|db_message| message.id == db_message.id)
+  {
     db_instance.message_edit_add(database::NewMessageEdit {
       id: None,
       parrent_message_id: message.id,
