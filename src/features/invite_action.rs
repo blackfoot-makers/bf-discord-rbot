@@ -109,5 +109,5 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
       .invite_update(code.clone(), None, channel, role)
       .expect(&*format!("Unable to update invite: {} =>", code));
   }
-  Ok(Some(String::from("Done")))
+  Ok(Some(String::from(":ok:")))
 }

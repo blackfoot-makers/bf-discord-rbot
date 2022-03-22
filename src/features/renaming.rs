@@ -22,7 +22,7 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
       member
         .edit(http, |member| member.nickname(&params.args[2]))
         .await?;
-      Ok(Some(String::from("Rename done :)")))
+      Ok(Some(String::from(":ok:")))
     }
     Err(error) => {
       error!("Rename: member not found: {}", error);

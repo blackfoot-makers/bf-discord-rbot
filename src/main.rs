@@ -45,90 +45,12 @@ mod features;
 
 use dotenv::dotenv;
 use std::env;
-use std::io::{self, Write};
-use std::str::FromStr;
 
-/// We run the core and we loop on a basic cmd.
 fn main() {
-  env::set_var("RUST_LOG", "rbot_discord");
-  env::set_var("RUST_BACKTRACE", "1");
+  env::set_var("RUST_BACKTRACE", "full");
+  env::set_var("RUST_LOG", "rbot_discord,rocket");
   dotenv().ok();
   pretty_env_logger::init();
 
-  let join_handle = core::run();
-
-  loop {
-    let mut input = String::new();
-    match io::stdin().read_line(&mut input) {
-      Ok(n) => {
-        // If the is no stdin just wait for core::run
-        if n == 0 {
-          join_handle.join().unwrap();
-          break;
-        }
-
-        input.pop();
-        if input == "quit" {
-          break;
-        // } else if input == "users" {
-        //   let db_instance = database::INSTANCE.write().unwrap();
-        //   println!("Users: {:?}", db_instance.users);
-        // } else if input == "messages" {
-        //   let db_instance = database::INSTANCE.write().unwrap();
-        //   println!("messages: {:?}", db_instance.messages);
-        // } else if input == "deploy" {
-        //     let http = core::process::HTTP_STATIC.read().clone().unwrap();
-        //     features::docker::deploy_test(
-        //         String::from("GreeFine"),
-        //         String::from("CI-Preview-Exemple"),
-        //         String::from("master"),
-        //         http,
-        //     );
-        // } else if input == "channels" {
-        //     let _ = features::ordering::guild_chanels_ordering(
-        //         serenity::model::id::GuildId(339372728366923776),
-        //     );
-        // } else if input == "chan" {
-        //   let mut channel = String::new();
-        //   let mut position = String::new();
-        //   print!("channel?(id) >");
-        //   io::stdout().flush().unwrap();
-        //   io::stdin().read_line(&mut channel).unwrap();
-        //   channel.pop();
-        //   let chanid = channel.parse::<u64>().unwrap();
-
-        //   print!("position?(number) >");
-        //   io::stdout().flush().unwrap();
-        //   io::stdin().read_line(&mut position).unwrap();
-        //   position.pop();
-        //   let positionnum = position.parse::<u64>().unwrap();
-
-        //   features::ordering::move_channels(chanid, positionnum);
-        } else if input == "promote" {
-          let mut who = String::new();
-          let mut rolestring = String::new();
-          print!("Who?(id) >");
-          io::stdout().flush().unwrap();
-          io::stdin().read_line(&mut who).unwrap();
-          who.pop();
-          let userid = who.parse::<u64>().unwrap();
-
-          print!("role?(string) >");
-          io::stdout().flush().unwrap();
-          io::stdin().read_line(&mut rolestring).unwrap();
-          rolestring.pop();
-          let role = match database::Role::from_str(&*rolestring) {
-            Err(_) => return println!("Role not found"),
-            Ok(role) => role,
-          };
-
-          let mut db_instance = database::INSTANCE.write().unwrap();
-          println!("Promoting =>{}", db_instance.user_role_update(userid, role));
-        } else {
-          println!("Invalid input [{}]", input);
-        }
-      }
-      Err(error) => println!("error: {}", error),
-    }
-  }
+  let _ = core::run().join().unwrap();
 }
