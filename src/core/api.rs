@@ -54,7 +54,7 @@ async fn send_message(
   match discordid {
     Ok((id, _)) => {
       ChannelId(id).say(&ctx.http, message).await.unwrap();
-      String::from("done")
+      String::from(":ok:")
     }
     Err(_) => {
       format!("Unable to parse channelid: {}", channelid)
@@ -90,9 +90,14 @@ async fn get_channel_message(
 pub async fn run(ctx: Context) {
   const ADDRESS: &str = "0.0.0.0";
   const PORT: u32 = 8080;
+  let shutdown: rocket::config::Shutdown = rocket::config::Shutdown {
+    ctrlc: false,
+    ..Default::default()
+  };
   let figment = rocket::Config::figment()
     .merge(("port", PORT))
-    .merge(("address", ADDRESS));
+    .merge(("address", ADDRESS))
+    .merge(("shutdown", shutdown));
   let cors = CorsOptions::default()
     .allowed_origins(AllowedOrigins::all())
     .allowed_methods(
