@@ -59,9 +59,28 @@ pub async fn is_user_allowed(
   (dbrole >= expected, dbrole)
 }
 
-pub fn member_channel_read(user: UserId) -> PermissionOverwrite {
-  let allow = Permissions::READ_MESSAGES;
-  let deny = Permissions::empty();
+pub enum ReadState {
+  Allow,
+  Deny,
+}
+
+pub fn member_channel_read(user: UserId, state: ReadState) -> PermissionOverwrite {
+  let (allow, deny) = if matches!(state, ReadState::Allow) {
+    (Permissions::READ_MESSAGES, Permissions::empty())
+  } else {
+    (Permissions::empty(), Permissions::READ_MESSAGES)
+  };
+
+  PermissionOverwrite {
+    deny,
+    allow,
+    kind: PermissionOverwriteType::Member(user),
+  }
+}
+
+pub fn member_channel_notread(user: UserId) -> PermissionOverwrite {
+  let allow = Permissions::empty();
+  let deny = Permissions::READ_MESSAGES;
   PermissionOverwrite {
     deny,
     allow,

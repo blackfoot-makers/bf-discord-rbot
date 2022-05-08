@@ -3,7 +3,7 @@ use crate::{
   core::{
     commands::{CallBackParams, CallbackReturn},
     parse::{self, discord_str_to_id},
-    permissions::member_channel_read,
+    permissions::{member_channel_read, ReadState},
   },
 };
 use crate::{
@@ -75,7 +75,7 @@ fn project_init<'fut>(
     let system_time = SystemTime::now();
     let datetime: DateTime<Utc> = system_time.into();
 
-    let overwrite = member_channel_read(message.author.id);
+    let overwrite = member_channel_read(message.author.id, ReadState::Allow);
     project_chan.create_permission(http, &overwrite).await?;
 
     let client = project_args.get("client").unwrap_or(&"");
@@ -207,12 +207,13 @@ pub async fn delete(params: CallBackParams) -> CallbackReturn {
   }
 }
 
-async fn add_permission(
+async fn create_read_permission(
   context: &Context,
   guildchannel: &GuildChannel,
   userid: u64,
-) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
-  let overwrite = member_channel_read(UserId(userid));
+  state: ReadState,
+) -> Result<Option<String>, String> {
+  let overwrite = member_channel_read(UserId(userid), state);
   guildchannel
     .create_permission(&context.http, &overwrite)
     .await
@@ -220,8 +221,10 @@ async fn add_permission(
   Ok(Some(format!("Added <@{}> Welcome !", userid)))
 }
 
-#[command]
-pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
+pub async fn user_view(
+  params: CallBackParams<'_>,
+  state: ReadState,
+) -> Result<Option<String>, String> {
   let cache = &params.context.cache;
   let usertag = &params.args[1];
 
@@ -233,13 +236,15 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   {
     Channel::Guild(guildchannel) => {
       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
-        Ok((userid, _)) => add_permission(params.context, &guildchannel, userid).await,
+        Ok((userid, _)) => {
+          create_read_permission(params.context, &guildchannel, userid, state).await
+        }
         Err(_error) => {
           if let Some(guild) = &guildchannel.guild(cache).await {
             let member = guild.member_named(usertag);
             if let Some(member) = member {
               let userid = member.user.id.0;
-              add_permission(params.context, &guildchannel, userid).await
+              create_read_permission(params.context, &guildchannel, userid, state).await
             } else {
               check_containing(params.context, guild, usertag, guildchannel).await
             }
@@ -255,17 +260,68 @@ pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
   }
 }
 
+#[command]
+pub async fn remove_user(params: CallBackParams<'_>) -> CallbackReturn<'_> {
+  user_view(params, ReadState::Deny)
+    .await
+    .map_err(|e| Box::new(e.into()))
+}
+
+#[command]
+pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn<'_> {
+  user_view(params, ReadState::Allow)
+    .await
+    .map_err(|e| Box::new(e.into()))
+}
+
+// #[command]
+// pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
+//   let cache = &params.context.cache;
+//   let usertag = &params.args[1];
+
+//   match params
+//     .message
+//     .channel(cache)
+//     .await
+//     .expect("Channel of message wasn't found")
+//   {
+//     Channel::Guild(guildchannel) => {
+//       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
+//         Ok((userid, _)) => {
+//           create_read_permission(params.context, &guildchannel, userid, ReadState::Allow).await
+//         }
+//         Err(_error) => {
+//           if let Some(guild) = &guildchannel.guild(cache).await {
+//             let member = guild.member_named(usertag);
+//             if let Some(member) = member {
+//               let userid = member.user.id.0;
+//               create_read_permission(params.context, &guildchannel, userid).await
+//             } else {
+//               check_containing(params.context, guild, usertag, guildchannel).await
+//             }
+//           } else {
+//             panic!("Unable to get guild from cache")
+//           }
+//         }
+//       }
+//     }
+//     _ => Ok(Some(String::from(
+//       "This command is restricted to a guild channel",
+//     ))),
+//   }
+// }
+
 async fn check_containing(
   context: &Context,
   guild: &Guild,
   usertag: &str,
   guildchannel: GuildChannel,
-) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
+) -> Result<Option<String>, String> {
   let members = guild.members_containing(usertag, false, false).await;
   if !members.is_empty() {
     if members.len() == 1 {
       let userid = members[0].0.user.id.0;
-      add_permission(context, &guildchannel, userid).await
+      create_read_permission(context, &guildchannel, userid, ReadState::Allow).await
     } else {
       let membernames: String = members
         .iter()
@@ -306,7 +362,7 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
           .await
           .unwrap();
       } else {
-        let overwrite = member_channel_read(reaction.user_id.unwrap());
+        let overwrite = member_channel_read(reaction.user_id.unwrap(), ReadState::Allow);
         channel
           .create_permission(&ctx.http, &overwrite)
           .await
@@ -455,7 +511,7 @@ pub async fn check_subscribe_bottom_list(
     .unwrap();
   } else {
     debug!("Adding user to channel {}", channel_id);
-    let overwrite = member_channel_read(reaction.user_id.unwrap());
+    let overwrite = member_channel_read(reaction.user_id.unwrap(), ReadState::Allow);
     ChannelId(
       parse::discord_str_to_id(channel_id, Some(DiscordIds::Channel))
         .unwrap()

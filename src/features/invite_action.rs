@@ -33,7 +33,7 @@ pub async fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut 
     }
   }
 
-  println!("DEBUG invite found: {:#?}", single_used_invite);
+  debug!("invite found: {:#?}", single_used_invite);
   if let Some(invite) = single_used_invite {
     if let Some(role) = invite.actionrole {
       member
@@ -42,7 +42,8 @@ pub async fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut 
         .unwrap();
     }
     if let Some(channel) = invite.actionchannel {
-      let overwrite = member_channel_read(member.user.id);
+      let overwrite =
+        member_channel_read(member.user.id, crate::core::permissions::ReadState::Allow);
       ChannelId(channel as u64)
         .create_permission(&ctx.http, &overwrite)
         .await
