@@ -89,7 +89,7 @@ async fn webhook_from_gcp(alert: Json<GCPAlert>, ctx: &State<Context>) -> String
     .say(
       &ctx.http,
       format!(
-        "{}: {}\n{}\n```json{:#?}```",
+        "{}: {}\n{}\n```json\n{:#?}\n```",
         alert.0.incident.scoping_project_id,
         alert.0.incident.summary,
         alert.0.incident.url,
