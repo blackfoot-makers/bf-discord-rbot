@@ -29,7 +29,7 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
       Ok(Some(format!(
         "User {} not found in guild: {}",
         targeted_user_id,
-        guild.name(&params.context.cache).await.unwrap(),
+        guild.name(&params.context.cache).unwrap(),
       )))
     }
   }

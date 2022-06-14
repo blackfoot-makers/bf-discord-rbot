@@ -52,5 +52,5 @@ fn main() {
   dotenv().ok();
   pretty_env_logger::init();
 
-  let _ = core::run().join().unwrap();
+  core::run();
 }

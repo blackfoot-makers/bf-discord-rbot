@@ -10,9 +10,7 @@ pub mod process;
 pub mod slash_command;
 pub mod validation;
 
-use std::thread;
-
 /// Spawn thread to run core functions.
-pub fn run() -> thread::JoinHandle<()> {
-  thread::spawn(eventhandler::bot_connect)
+pub fn run() {
+  eventhandler::bot_connect();
 }

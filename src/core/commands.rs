@@ -170,6 +170,15 @@ lazy_static! {
       usage: "@BOT add <@user>",
       permission: Role::User,
     },
+    "remove" =>
+    Command {
+      exec: project_manager::remove_user,
+      argument_min: 1,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT remove <@user>",
+      permission: Role::User,
+    },
     "project-clear-user" =>
     Command {
     exec: project_manager::remove_user_from_all,
@@ -369,7 +378,7 @@ async fn set_activity(params: CallBackParams) -> CallbackReturn {
     .context
     .set_activity(Activity::playing(&params.args[1]))
     .await;
-  let myname = &params.context.cache.current_user().await.name;
+  let myname = &params.context.cache.current_user().name;
   Ok(Some(format!("{} is now {} !", myname, params.args[1])))
 }
 
@@ -406,7 +415,7 @@ async fn modify_message(params: CallBackParams) -> CallbackReturn {
   let mut message = ChannelId(channel_id)
     .message(&params.context.http, message_id)
     .await?;
-  if message.is_own(&params.context.cache).await {
+  if message.is_own(&params.context.cache) {
     message
       .edit(&params.context.http, |message| {
         message.content(params.args.last().unwrap())

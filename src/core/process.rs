@@ -17,7 +17,7 @@ use std::process::exit;
 use std::time::SystemTime;
 
 pub async fn getbotid(ctx: &Context) -> UserId {
-  ctx.cache.current_user_id().await
+  ctx.cache.current_user_id()
 }
 
 pub async fn process_message(ctx: Context, message: Message) {
@@ -269,7 +269,7 @@ pub async fn is_user_blocked(_: &Context, message: &Message) -> bool {
 impl From<&Message> for database::Message {
   fn from(val: &Message) -> Self {
     let author_id = *val.author.id.as_u64() as i64;
-    let time: SystemTime = SystemTime::from(val.timestamp);
+    let time: SystemTime = SystemTime::from(*val.timestamp);
 
     database::Message {
       id: *val.id.as_u64() as i64,
@@ -289,7 +289,7 @@ impl From<&MessageUpdateEvent> for database::Message {
       0
     };
     let time = if let Some(timestamp) = val.timestamp {
-      SystemTime::from(timestamp)
+      SystemTime::from(*timestamp)
     } else {
       SystemTime::now()
     };
@@ -342,12 +342,12 @@ pub fn database_update(message: database::Message, is_edit: bool) {
 // TODO: This is only working for 1 server as channel is static
 use crate::constants::discordids::{ARCHIVE_CATEGORY, PROJECT_CATEGORY};
 pub async fn archive_activity(ctx: &Context, message: &Message) {
-  match message.channel(&ctx.cache).await {
-    Some(channel) => {
+  match message.channel(&ctx.http).await {
+    Ok(channel) => {
       let channelid = channel.id().0;
       match channel.guild() {
         Some(mut channel) => {
-          if let Some(category) = channel.category_id {
+          if let Some(category) = channel.parent_id {
             if category == ARCHIVE_CATEGORY {
               channel
                 .edit(&ctx.http, |edit| edit.category(ChannelId(PROJECT_CATEGORY)))
@@ -362,7 +362,7 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
         None => debug!("Channel {} isn't in a guild", channelid),
       };
     }
-    None => error!("Channel not found in cache {}", message.channel_id),
+    Err(_) => error!("Channel not found in cache {}", message.channel_id),
   };
 }
 

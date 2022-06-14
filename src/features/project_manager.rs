@@ -29,7 +29,7 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{collections::HashMap, error::Error, sync::Arc, time::SystemTime};
+use std::{collections::HashMap, error::Error, fmt::Display, sync::Arc, time::SystemTime};
 
 const ARGUMENT_LIST: [&str; 6] = [
   "codex",
@@ -225,12 +225,12 @@ pub async fn user_view(
   params: CallBackParams<'_>,
   state: ReadState,
 ) -> Result<Option<String>, String> {
-  let cache = &params.context.cache;
+  let cache_http = &params.context;
   let usertag = &params.args[1];
 
   match params
     .message
-    .channel(cache)
+    .channel(cache_http)
     .await
     .expect("Channel of message wasn't found")
   {
@@ -240,7 +240,7 @@ pub async fn user_view(
           create_read_permission(params.context, &guildchannel, userid, state).await
         }
         Err(_error) => {
-          if let Some(guild) = &guildchannel.guild(cache).await {
+          if let Some(guild) = &guildchannel.guild(cache_http) {
             let member = guild.member_named(usertag);
             if let Some(member) = member {
               let userid = member.user.id.0;
@@ -260,56 +260,30 @@ pub async fn user_view(
   }
 }
 
+#[derive(Debug)]
+struct StringError(String);
+
+impl Display for StringError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.0)
+  }
+}
+
+impl Error for StringError {}
+
 #[command]
 pub async fn remove_user(params: CallBackParams<'_>) -> CallbackReturn<'_> {
   user_view(params, ReadState::Deny)
     .await
-    .map_err(|e| Box::new(e.into()))
+    .map_err(|s| Box::new(StringError(s)) as Box<dyn Error + Sync + Send>)
 }
 
 #[command]
 pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn<'_> {
   user_view(params, ReadState::Allow)
     .await
-    .map_err(|e| Box::new(e.into()))
+    .map_err(|s| Box::new(StringError(s)) as Box<dyn Error + Sync + Send>)
 }
-
-// #[command]
-// pub async fn add_user(params: CallBackParams<'_>) -> CallbackReturn {
-//   let cache = &params.context.cache;
-//   let usertag = &params.args[1];
-
-//   match params
-//     .message
-//     .channel(cache)
-//     .await
-//     .expect("Channel of message wasn't found")
-//   {
-//     Channel::Guild(guildchannel) => {
-//       match parse::discord_str_to_id(usertag, Some(parse::DiscordIds::User)) {
-//         Ok((userid, _)) => {
-//           create_read_permission(params.context, &guildchannel, userid, ReadState::Allow).await
-//         }
-//         Err(_error) => {
-//           if let Some(guild) = &guildchannel.guild(cache).await {
-//             let member = guild.member_named(usertag);
-//             if let Some(member) = member {
-//               let userid = member.user.id.0;
-//               create_read_permission(params.context, &guildchannel, userid).await
-//             } else {
-//               check_containing(params.context, guild, usertag, guildchannel).await
-//             }
-//           } else {
-//             panic!("Unable to get guild from cache")
-//           }
-//         }
-//       }
-//     }
-//     _ => Ok(Some(String::from(
-//       "This command is restricted to a guild channel",
-//     ))),
-//   }
-// }
 
 async fn check_containing(
   context: &Context,
@@ -352,7 +326,7 @@ pub async fn check_subscribe(ctx: &Context, reaction: &Reaction, removed: bool) 
   }
 
   if project_chanid > 0 {
-    if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64).await {
+    if let Some(channel) = ctx.cache.guild_channel(project_chanid as u64) {
       if removed {
         channel
           .delete_permission(
@@ -409,7 +383,7 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
 
     {
       let mut db_instance = database::INSTANCE.write().unwrap();
-      let time: SystemTime = SystemTime::from(message.timestamp);
+      let time: SystemTime = SystemTime::from(*message.timestamp);
       db_instance.storage_add(database::NewStorage {
         datatype: database::StorageDataType::ProjectBottomMessage.into(),
         data: &*list_channels,
@@ -431,7 +405,7 @@ async fn list_projects<'a>(message: &Message, context: &Context) -> Vec<(Channel
     .iter()
     .filter(|(_, chan)| {
       chan.kind == ChannelType::Text
-        && match chan.category_id {
+        && match chan.parent_id {
           Some(category) => category == PROJECT_CATEGORY && chan.id != PROJECT_ANOUNCEMENT_CHANNEL,
           _ => false,
         }
@@ -537,7 +511,7 @@ pub async fn remove_user_from_all(params: CallBackParams<'_>) -> CallbackReturn 
       .iter()
       .filter(|(_, chan)| {
         chan.kind == ChannelType::Text
-          && match chan.category_id {
+          && match chan.parent_id {
             Some(chan) => chan == PROJECT_CATEGORY,
             _ => false,
           }

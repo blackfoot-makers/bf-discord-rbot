@@ -108,7 +108,7 @@ pub async fn run(ctx: Context) {
     )
     .allow_credentials(true);
 
-  rocket::custom(figment)
+  let _ = rocket::custom(figment)
     .manage(ctx)
     .mount("/", routes![index])
     .mount("/auth", routes![send_message, get_channel_message])

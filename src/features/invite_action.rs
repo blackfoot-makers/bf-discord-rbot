@@ -9,13 +9,13 @@ use procedural_macros::command;
 use serenity::{
   model::{
     guild::Member,
-    id::{ChannelId, GuildId, RoleId},
+    id::{ChannelId, RoleId},
   },
   prelude::*,
 };
 
-pub async fn on_new_member_check(ctx: Context, guild_id: &GuildId, member: &mut Member) {
-  let invites = guild_id.invites(&ctx.http).await.unwrap();
+pub async fn on_new_member_check(ctx: Context, member: &mut Member) {
+  let invites = member.guild_id.invites(&ctx.http).await.unwrap();
   let mut single_used_invite = None;
   {
     let mut db_instance = INSTANCE.write().unwrap();

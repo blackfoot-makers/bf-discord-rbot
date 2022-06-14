@@ -12,7 +12,8 @@ use serenity::{
   },
   prelude::*,
 };
-use std::collections::HashMap;
+
+use super::archivage::filter_guild_channel;
 
 #[command]
 pub async fn ordering_channel_command(params: CallBackParams) -> CallbackReturn {
@@ -34,24 +35,24 @@ pub async fn ordering_channel_command(params: CallBackParams) -> CallbackReturn 
 }
 
 fn ordering_channels_type(
-  channels: &mut HashMap<ChannelId, GuildChannel>,
+  channels: &[GuildChannel],
   chantype: ChannelType,
   category: u64,
 ) -> (String, Vec<ChannelId>) {
   let mut channels: Vec<_> = channels
     .iter()
-    .filter(|(_, chan)| {
+    .filter(|chan| {
       chan.kind == chantype
-        && match chan.category_id {
+        && match chan.parent_id {
           Some(chan) => chan == category,
           None => category == 0,
         }
     })
     .collect();
-  channels.sort_by(|chan, chan2| chan.1.name.cmp(&chan2.1.name));
+  channels.sort_by(|chan, chan2| chan.name.cmp(&chan2.name));
   let mut display = String::new();
   let mut ordered_channels: Vec<ChannelId> = Vec::new();
-  for (index, (_, channel)) in channels.iter().enumerate() {
+  for (index, channel) in channels.iter().enumerate() {
     if channel.position != index as i64 {
       display.push_str(&*format!(
         "[{}] {} => {}\n",
@@ -68,7 +69,7 @@ fn ordering_channels_type(
 async fn ordering_channels_type_apply(new_order: Vec<ChannelId>, context: &Context) {
   let cache = &context.cache;
   for (index, channelid) in new_order.iter().enumerate() {
-    let mut channel = cache.guild_channel(channelid).await.unwrap();
+    let mut channel = cache.guild_channel(channelid).unwrap();
     if channel.position != index as i64 {
       if let Err(why) = channel
         .edit(&context.http, |chan| chan.position(index as u64))
@@ -87,12 +88,12 @@ pub async fn guild_chanels_ordering<'fut>(
   context: &Context,
 ) -> Option<(String, ValidationCallback)> {
   let cache = &context.cache;
-  let ordering = match cache.guild(gid).await {
-    Some(mut guild) => {
-      let channels = &mut guild.channels;
+  let ordering = match cache.guild(gid) {
+    Some(guild) => {
+      let channels = filter_guild_channel(guild.channels);
       (
-        ordering_channels_type(channels, ChannelType::Text, category),
-        ordering_channels_type(channels, ChannelType::Voice, category),
+        ordering_channels_type(&channels, ChannelType::Text, category),
+        ordering_channels_type(&channels, ChannelType::Voice, category),
       )
     }
     None => panic!("Guild not found"),

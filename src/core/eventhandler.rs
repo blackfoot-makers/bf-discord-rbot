@@ -6,9 +6,9 @@ use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
 use serenity::http::CacheHttp;
 use serenity::model::id::ChannelId;
+use serenity::model::Timestamp;
 use serenity::{
   async_trait,
-  client::bridge::gateway::GatewayIntents,
   model::{
     channel::{Message, Reaction},
     event::{MessageUpdateEvent, ResumedEvent},
@@ -19,7 +19,6 @@ use serenity::{
   },
   prelude::*,
 };
-use std::time::SystemTime;
 use std::{
   env, process,
   sync::atomic::{AtomicBool, Ordering},
@@ -45,7 +44,7 @@ impl EventHandler for Handler {
 
     database_update((&message).into(), false);
     archive_activity(&ctx, &message).await;
-    if message.is_own(&ctx).await || message.content.is_empty() {
+    if message.is_own(&ctx) || message.content.is_empty() {
       return;
     };
     process_message(ctx, message).await;
@@ -62,9 +61,7 @@ impl EventHandler for Handler {
     let event_clone = event.clone();
     info!(
       "[{}]({}) > {} edited message with: {}",
-      event_clone
-        .timestamp
-        .unwrap_or_else(|| SystemTime::now().into()),
+      event_clone.timestamp.unwrap_or_else(Timestamp::now),
       chan_name,
       event_clone.author.unwrap_or_default().name,
       event_clone.content.unwrap_or_default(),
@@ -80,7 +77,7 @@ impl EventHandler for Handler {
         .unwrap()
     };
 
-    if let Some(guild_channel) = ctx.cache.guild_channel(new_message.channel_id).await {
+    if let Some(guild_channel) = ctx.cache.guild_channel(new_message.channel_id) {
       let messages_after = guild_channel
         .messages(&ctx.http, |retriever| {
           retriever.after(new_message.id).limit(1)
@@ -104,8 +101,7 @@ impl EventHandler for Handler {
       .message(&ctx.http)
       .await
       .unwrap()
-      .is_own(&ctx.cache)
-      .await;
+      .is_own(&ctx.cache);
 
     if reaction.user_id.unwrap() != botid && isown {
       let emoji = reaction.emoji.as_data();
@@ -131,8 +127,7 @@ impl EventHandler for Handler {
       .message(&ctx.http)
       .await
       .unwrap()
-      .is_own(&ctx.cache)
-      .await;
+      .is_own(&ctx.cache);
 
     if reaction.user_id.unwrap() != botid && isown {
       let emoji = reaction.emoji.as_data();
@@ -146,8 +141,8 @@ impl EventHandler for Handler {
     }
   }
 
-  async fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
-    invite_action::on_new_member_check(ctx, &guild_id, &mut new_member).await;
+  async fn guild_member_addition(&self, ctx: Context, mut new_member: Member) {
+    invite_action::on_new_member_check(ctx, &mut new_member).await;
   }
 
   async fn ready(&self, ctx: Context, ready: Ready) {
@@ -211,11 +206,9 @@ pub async fn bot_connect() {
   // Create a new instance of the Client, logging in as a bot. This will
   // automatically prepend your bot token with "Bot ", which is a requirement
   // by Discord for bot users.
-  let builder = Client::builder(token)
-    .event_handler(Handler {
-      is_loop_running: AtomicBool::new(false),
-    })
-    .intents(GatewayIntents::all());
+  let builder = Client::builder(token, GatewayIntents::all()).event_handler(Handler {
+    is_loop_running: AtomicBool::new(false),
+  });
   let mut client = builder.await.expect("Err creating client");
   {
     let mut data = client.data.write().await;

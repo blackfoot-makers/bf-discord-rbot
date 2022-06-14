@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
@@ -9,12 +11,11 @@ use log::error;
 use procedural_macros::command;
 use serenity::{
   model::{
-    channel::{ChannelType, GuildChannel},
+    channel::{Channel, ChannelType, GuildChannel},
     id::{ChannelId, GuildId},
   },
   prelude::*,
 };
-use std::collections::HashMap;
 
 #[command]
 pub async fn archive_channels_command(params: CallBackParams) -> CallbackReturn {
@@ -41,7 +42,7 @@ use crate::constants::discordids::ARCHIVE_CATEGORY;
 pub async fn move_channels_to_archive(chanids: Vec<u64>, context: &Context) {
   let cache = &context.cache;
   for chanid in chanids {
-    match cache.guild_channel(ChannelId(chanid)).await {
+    match cache.guild_channel(ChannelId(chanid)) {
       Some(mut channel) => {
         if let Err(why) = channel
           .edit(&context.http, |chan| {
@@ -58,16 +59,26 @@ pub async fn move_channels_to_archive(chanids: Vec<u64>, context: &Context) {
   }
 }
 
+pub fn filter_guild_channel(channels: HashMap<ChannelId, Channel>) -> Vec<GuildChannel> {
+  channels
+    .into_iter()
+    .filter_map(|(_, c)| match c {
+      Channel::Guild(x) => Some(x),
+      _ => None,
+    })
+    .collect()
+}
+
 async fn check_channels_activity(
-  channels: &mut HashMap<ChannelId, GuildChannel>,
+  channels: Vec<GuildChannel>,
   category: u64,
   context: &Context,
 ) -> (String, Vec<u64>) {
   let channels: Vec<_> = channels
     .iter()
-    .filter(|(_, chan)| {
+    .filter(|chan| {
       chan.kind == ChannelType::Text
-        && match chan.category_id {
+        && match chan.parent_id {
           Some(chan) => chan == category,
           None => category == 0,
         }
@@ -75,7 +86,7 @@ async fn check_channels_activity(
     .collect();
   let mut display = String::new();
   let mut unactive_channels: Vec<u64> = Vec::new();
-  for (_, channel) in channels.iter() {
+  for channel in channels.iter() {
     match channel
       .messages(&context.http, |retriever| retriever.limit(1))
       .await
@@ -106,9 +117,9 @@ pub async fn guild_chanels_archivage<'fut>(
   context: &Context,
 ) -> Option<(String, ValidationCallback)> {
   let cache = context.cache.clone();
-  let unactive_channels = match cache.guild(gid).await {
-    Some(mut guild) => {
-      let channels = &mut guild.channels;
+  let unactive_channels = match cache.guild(gid) {
+    Some(guild) => {
+      let channels = filter_guild_channel(guild.channels);
       check_channels_activity(channels, category, context).await
     }
     None => {

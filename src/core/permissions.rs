@@ -33,7 +33,7 @@ pub async fn is_user_allowed(
   }
   // Only checking/updating for user or guests
   if dbrole <= database::Role::User {
-    if let Channel::Guild(guildchan) = message.channel(&context.cache).await.unwrap() {
+    if let Channel::Guild(guildchan) = message.channel(&context.http).await.unwrap() {
       let has_discord_role = message
         .author
         .has_role(
@@ -66,21 +66,11 @@ pub enum ReadState {
 
 pub fn member_channel_read(user: UserId, state: ReadState) -> PermissionOverwrite {
   let (allow, deny) = if matches!(state, ReadState::Allow) {
-    (Permissions::READ_MESSAGES, Permissions::empty())
+    (Permissions::VIEW_CHANNEL, Permissions::empty())
   } else {
-    (Permissions::empty(), Permissions::READ_MESSAGES)
+    (Permissions::empty(), Permissions::VIEW_CHANNEL)
   };
 
-  PermissionOverwrite {
-    deny,
-    allow,
-    kind: PermissionOverwriteType::Member(user),
-  }
-}
-
-pub fn member_channel_notread(user: UserId) -> PermissionOverwrite {
-  let allow = Permissions::empty();
-  let deny = Permissions::READ_MESSAGES;
   PermissionOverwrite {
     deny,
     allow,
