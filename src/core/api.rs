@@ -1,3 +1,4 @@
+use crate::constants::discordids::DEVOPS_CHANNEL;
 use crate::core::parse;
 use crate::database::{self, Message};
 use parse::DiscordIds;
@@ -6,6 +7,7 @@ use rocket::request::{FromRequest, Outcome, Request};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_cors::{AllowedOrigins, CorsOptions};
+use serde_derive::Deserialize;
 use serenity::{client::Context, model::id::ChannelId};
 use std::env;
 
@@ -62,6 +64,43 @@ async fn send_message(
   }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct GCPAlert {
+  pub version: String,
+  pub incident: Incident,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Incident {
+  pub incident_id: String,
+  pub scoping_project_id: String,
+  pub url: String,
+  pub started_at: i64,
+  pub ended_at: i64,
+  pub state: String,
+  pub summary: String,
+  pub resource_type_display_name: String,
+  pub resource_display_name: String,
+}
+
+#[post("/webhook/gcp_alert", format = "json", data = "<alert>")]
+async fn webhook_from_gcp(alert: Json<GCPAlert>, ctx: &State<Context>) -> String {
+  ChannelId(DEVOPS_CHANNEL)
+    .say(
+      &ctx.http,
+      format!(
+        "{}: {}\n{}\n```json{:#?}```",
+        alert.0.incident.scoping_project_id,
+        alert.0.incident.summary,
+        alert.0.incident.url,
+        alert.0
+      ),
+    )
+    .await
+    .unwrap();
+  String::from("")
+}
+
 #[get("/channel/<channelid>")]
 async fn get_channel_message(
   channelid: &str,
@@ -111,7 +150,10 @@ pub async fn run(ctx: Context) {
   let _ = rocket::custom(figment)
     .manage(ctx)
     .mount("/", routes![index])
-    .mount("/auth", routes![send_message, get_channel_message])
+    .mount(
+      "/auth",
+      routes![send_message, get_channel_message, webhook_from_gcp],
+    )
     .attach(cors.to_cors().unwrap())
     .launch()
     .await
