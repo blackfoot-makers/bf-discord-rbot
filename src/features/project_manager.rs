@@ -213,12 +213,17 @@ async fn create_read_permission(
   userid: u64,
   state: ReadState,
 ) -> Result<Option<String>, String> {
+  let message = if let &ReadState::Allow = &state {
+    Ok(Some(format!("Added <@{}> Welcome !", userid)))
+  } else {
+    Ok(Some(format!("Removed <@{}>", userid)))
+  };
   let overwrite = member_channel_read(UserId(userid), state);
   guildchannel
     .create_permission(&context.http, &overwrite)
     .await
     .unwrap();
-  Ok(Some(format!("Added <@{}> Welcome !", userid)))
+  message
 }
 
 pub async fn user_view(
