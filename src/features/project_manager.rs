@@ -464,7 +464,7 @@ pub async fn check_subscribe_bottom_list(
   let vec_channels_id: Vec<&str> = channels_id.split(',').collect();
   let number = constants::NUMBERS
     .iter()
-    .position(|number| number == &&*emoji);
+    .position(|number| number == &emoji);
   let channel_id = if let Some(number) = number {
     if let Some(channel_id) = vec_channels_id.get(number) {
       channel_id

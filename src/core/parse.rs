@@ -10,7 +10,7 @@ use serenity::{
 };
 use strum_macros::Display;
 
-#[derive(PartialEq, Debug, Display)]
+#[derive(PartialEq, Eq, Debug, Display)]
 pub enum DiscordIds {
   Message,
   Channel,

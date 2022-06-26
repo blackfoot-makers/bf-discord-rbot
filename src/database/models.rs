@@ -1,3 +1,4 @@
+#![allow(clippy::extra_unused_lifetimes)]
 use strum_macros::{Display, EnumString};
 
 #[derive(Queryable, Debug)]
@@ -45,7 +46,7 @@ pub struct NewMessageEdit {
   pub parrent_message_id: i64,
 }
 
-#[derive(Copy, Clone, Display, EnumString, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Display, EnumString, PartialEq, Eq, PartialOrd)]
 pub enum Role {
   Guest,
   User,

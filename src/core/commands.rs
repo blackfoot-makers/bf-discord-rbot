@@ -2,7 +2,7 @@
 use super::{parse, slash_command};
 use crate::database::{NewStorage, Role, StorageDataType, INSTANCE};
 use crate::features::{
-  archivage, emoji, frontline, funny, invite_action, ordering, project_manager, renaming,
+  archivage, emoji, funny, invite_action, ordering, project_manager, renaming,
 };
 use procedural_macros::command;
 use serenity::{futures::future::BoxFuture, FutureExt};
@@ -215,15 +215,15 @@ lazy_static! {
       usage: "@BOT ordering [<category>]",
       permission: Role::Admin,
     },
-    "frontline-add-directory" =>
-    Command {
-      exec: frontline::add_directory,
-      argument_min: 1,
-      argument_max: 1,
-      channel: None,
-      usage: "@BOT frontline-add-directory  \"<directory>\"",
-      permission: Role::User,
-    },
+    // "frontline-add-directory" =>
+    // Command {
+    //   exec: frontline::add_directory,
+    //   argument_min: 1,
+    //   argument_max: 1,
+    //   channel: None,
+    //   usage: "@BOT frontline-add-directory  \"<directory>\"",
+    //   permission: Role::User,
+    // },
     // "reminder" =>
     // Command {
     //   exec: Event::add_reminder,
