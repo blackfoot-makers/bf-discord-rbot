@@ -57,6 +57,11 @@ impl EventHandler for Handler {
     new: Option<Message>,
     event: MessageUpdateEvent,
   ) {
+    // Skip embeds as we do not deal with this kind of messages
+    if event.embeds.is_some() && !event.embeds.as_ref().unwrap().is_empty() {
+      return;
+    }
+
     let chan_name = get_channel_name(&event.channel_id, &ctx).await;
     let event_clone = event.clone();
     info!(

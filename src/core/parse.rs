@@ -113,10 +113,10 @@ fn test_split_message_args() {
   );
 }
 
+lazy_static! {
+  static ref REGEX_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
+}
 pub fn split_message_args(input: &str) -> Vec<String> {
-  lazy_static! {
-    static ref REGEX_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
-  }
   REGEX_SPLIT
     .find_iter(input)
     .map(|m| {

@@ -3,9 +3,9 @@ use super::commands::{
   CallBackParams, COMMANDS_LIST, CONTAIN_MSG_LIST, CONTAIN_REACTION_LIST, TAG_MSG_LIST,
 };
 use super::permissions;
-use crate::core::parse::split_message_args;
 use crate::database;
 use crate::features::funny::ATTACKED;
+use crate::{core::parse::split_message_args, features::gitlab_preview::gitlab_url_preview};
 use log::{debug, error};
 use serenity::model::event::MessageUpdateEvent;
 use serenity::{
@@ -66,6 +66,9 @@ pub async fn process_message(ctx: Context, message: Message) {
     process_contains(&message, &ctx).await;
   }
   trigger_inchannel(&message, &ctx).await;
+  if let Err(err) = gitlab_url_preview(&message, &ctx).await {
+    error!("gitlab preview failed: {}", err);
+  };
 }
 
 async fn allowed_channel(

@@ -14,6 +14,7 @@
 pub mod archivage;
 pub mod emoji;
 pub mod funny;
+pub mod gitlab_preview;
 pub mod invite_action;
 pub mod mecleanup;
 pub mod ordering;
