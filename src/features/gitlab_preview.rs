@@ -20,7 +20,7 @@ lazy_static! {
   static ref REQWEST_CLIENT_GITLAB: Client = build_client();
   static ref REGEX_URL_PARSE: Regex =
     Regex::new(r#"^https://lab\.blackfoot\.io/((.*)/-|(.*))/?"#).unwrap();
-  static ref REGEX_MERGE_ID: Regex = Regex::new(r#"/merge_requests/([0-9]{1,4})/"#).unwrap();
+  static ref REGEX_MERGE_ID: Regex = Regex::new(r#"/merge_requests/([0-9]{1,4})"#).unwrap();
   static ref PROJECTS_MR_CACHE: Arc<RwLock<TProjectMrCache>> =
     Arc::new(RwLock::new(HashMap::new()));
 }
