@@ -102,7 +102,7 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
   {
     let mut db_instance = INSTANCE.write().unwrap();
     let code = &params.args[1].replace("https://discord.gg/", "");
-    if code.len() != 8 {
+    if code.len() >= 8 {
       return Ok(Some(format!("Invite code: {}, isn't valid", code)));
     }
 
