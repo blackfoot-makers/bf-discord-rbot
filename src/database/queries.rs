@@ -252,4 +252,7 @@ impl Instance {
       .collect();
     previous_bottom_list
   }
+
+  db_load! {events_load, Event, events}
+  db_add! {event_add, NewEvent, Event, events}
 }
