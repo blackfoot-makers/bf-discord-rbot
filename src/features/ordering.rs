@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
   parse,
@@ -54,12 +56,14 @@ fn ordering_channels_type(
   let mut ordered_channels: Vec<ChannelId> = Vec::new();
   for (index, channel) in channels.iter().enumerate() {
     if channel.position != index as i64 {
-      display.push_str(&*format!(
-        "[{}] {} => {}\n",
+      writeln!(
+        display,
+        "[{}] {} => {}",
         channel.name(),
         channel.position,
         index
-      ));
+      )
+      .expect("unable to append in string");
     }
     ordered_channels.push(channel.id);
   }

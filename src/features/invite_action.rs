@@ -22,7 +22,7 @@ pub async fn on_new_member_check(ctx: Context, member: &mut Member) {
     for invite in invites {
       let (invitediff, dbinvite) = db_instance
         .invite_update(invite.code.clone(), Some(invite.uses as i32), None, None)
-        .expect(&*format!("Unable to update invite: {} =>", &invite.code));
+        .unwrap_or_else(|_| panic!("Unable to update invite: {} =>", &invite.code));
       if invitediff > 0 {
         if single_used_invite.is_some() || invitediff > 1 {
           return warn!("One or more invite used at a time, couldn't check for action");
@@ -108,7 +108,7 @@ pub async fn create(params: CallBackParams) -> CallbackReturn {
 
     db_instance
       .invite_update(code.clone(), None, channel, role)
-      .expect(&*format!("Unable to update invite: {} =>", code));
+      .unwrap_or_else(|_| panic!("Unable to update invite: {} =>", code));
   }
   Ok(Some(String::from(":ok:")))
 }

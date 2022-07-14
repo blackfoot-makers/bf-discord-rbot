@@ -1,3 +1,11 @@
+use std::{
+  collections::HashMap,
+  error::Error,
+  fmt::{Display, Write},
+  sync::Arc,
+  time::SystemTime,
+};
+
 use crate::{
   constants,
   core::{
@@ -29,7 +37,6 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{collections::HashMap, error::Error, fmt::Display, sync::Arc, time::SystemTime};
 
 const ARGUMENT_LIST: [&str; 6] = [
   "codex",
@@ -369,7 +376,7 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
       );
       list_message.push_str(project_item);
 
-      list_channels.push_str(&*format!("{},", channel.1.id.0));
+      write!(list_channels, "{},", channel.1.id.0).expect("unable to append in string");
     }
     list_channels.pop();
     let message = ChannelId(PROJECT_ANOUNCEMENT_CHANNEL)
@@ -391,7 +398,7 @@ pub async fn bottom_list_current(context: &Context, message: &Message) {
       let time: SystemTime = SystemTime::from(*message.timestamp);
       db_instance.storage_add(database::NewStorage {
         datatype: database::StorageDataType::ProjectBottomMessage.into(),
-        data: &*list_channels,
+        data: &list_channels,
         dataid: Some(*message.id.as_u64() as i64),
         date: Some(time),
       });

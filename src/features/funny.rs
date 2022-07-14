@@ -17,7 +17,7 @@ pub async fn attack_lauch(params: CallBackParams) -> CallbackReturn {
   ATTACKED.write().await.clear();
 
   let tag = format!("<@{}", &params.args[1][3..]);
-  ATTACKED.write().await.push_str(&*tag);
+  ATTACKED.write().await.push_str(&tag);
   Ok(Some(format!("Prepare yourself {} !", params.args[1])))
 }
 

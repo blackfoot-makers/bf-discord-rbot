@@ -1,4 +1,6 @@
 //! Handle the connection with discord and it's events.
+use std::{collections::HashMap, error::Error, fmt::Write, process, str::FromStr};
+
 use super::{parse, slash_command};
 use crate::database::{NewStorage, Role, StorageDataType, INSTANCE};
 use crate::features::{
@@ -11,7 +13,6 @@ use serenity::{
   model::{gateway::Activity, id::ChannelId},
   prelude::*,
 };
-use std::{collections::HashMap, error::Error, process, str::FromStr};
 
 pub struct CallBackParams<'a> {
   pub args: &'a [String],
@@ -349,10 +350,11 @@ async fn print_help(_: CallBackParams) -> CallbackReturn {
   let mut result =
     String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
   for (key, command) in COMMANDS_LIST.iter() {
-    result.push_str(&*format!(
+    writeln!(
+      result,
       "{} => Usage: {} | {{{}}}\n",
       key, command.usage, command.permission
-    ))
+    );
   }
   Ok(Some(result))
 }

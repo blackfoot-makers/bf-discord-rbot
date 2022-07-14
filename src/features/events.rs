@@ -10,7 +10,7 @@ use std::{thread, time};
 
 const SLEEP_TIME_SECS: u64 = 120;
 /// Every X minutes check if an event should be sent
-pub fn check_events_loop(http: Arc<http::Http>) {
+pub async fn check_events_loop(http: Arc<http::Http>) {
   loop {
     let events = {
       let db_instance = INSTANCE.read().unwrap();
@@ -22,7 +22,10 @@ pub fn check_events_loop(http: Arc<http::Http>) {
       if time_since_trigger > Duration::seconds(0)
         && time_since_trigger < Duration::seconds(SLEEP_TIME_SECS as i64 + 5)
       {
-        ChannelId(event.channel as u64).say(http, event.content);
+        ChannelId(event.channel as u64)
+          .say(http.clone(), event.content)
+          .await
+          .expect("unable to send event");
       }
     }
 
