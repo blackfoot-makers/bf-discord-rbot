@@ -4,5 +4,5 @@ CREATE TABLE events (
   author BIGINT NOT NULL,
   content VARCHAR NOT NULL,
   channel BIGINT NOT NULL,
-  triger_date TIMESTAMP NOT NULL
+  trigger_date TIMESTAMP NOT NULL
 )

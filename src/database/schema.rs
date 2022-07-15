@@ -13,7 +13,7 @@ table! {
         author -> Int8,
         content -> Varchar,
         channel -> Int8,
-        triger_date -> Timestamp,
+        trigger_date -> Timestamp,
     }
 }
 

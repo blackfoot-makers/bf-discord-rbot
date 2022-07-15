@@ -142,16 +142,16 @@ pub struct Event {
   pub author: i64,
   pub content: String,
   pub channel: i64,
-  pub triger_date: NaiveDateTime,
+  pub trigger_date: NaiveDateTime,
 }
 
 #[derive(Insertable, Debug)]
 #[table_name = "events"]
 pub struct NewEvent<'a> {
-  author: i64,
-  content: &'a str,
-  channel: i64,
-  triger_date: NaiveDateTime,
+  pub author: i64,
+  pub content: &'a str,
+  pub channel: i64,
+  pub trigger_date: NaiveDateTime,
 }
 
 pub use super::schema::*;
