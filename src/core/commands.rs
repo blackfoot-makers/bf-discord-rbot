@@ -225,7 +225,7 @@ lazy_static! {
       argument_min: 2,
       argument_max: 2,
       channel: None,
-      usage: "@BOT reminder <WHEN ex: 1minute,1m,10h,5days> <CONTENT>",
+      usage: "@BOT remindme <WHEN ex: 1minute,1m,10h,5days> <CONTENT>",
       permission: Role::User,
     },
     "attack" =>
@@ -333,11 +333,11 @@ pub struct Storage {
 #[command]
 async fn print_help(_: CallBackParams) -> CallbackReturn {
   let mut result =
-    String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
-  let mut commands_name: Vec<&&str> = dbg!(COMMANDS_LIST.iter().map(|c| c.0).collect());
+    String::from("Available commands: \nNAME => USAGE (<Args> [Optionals])| PERMISSION\n");
+  let mut commands_name: Vec<&&str> = COMMANDS_LIST.iter().map(|c| c.0).collect();
   commands_name.sort();
 
-  for name in dbg!(commands_name) {
+  for name in commands_name {
     let command = &COMMANDS_LIST[name];
     writeln!(
       result,

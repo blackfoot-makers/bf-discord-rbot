@@ -5,13 +5,17 @@ use crate::{
 use chrono::{prelude::*, Duration};
 use procedural_macros::command;
 use regex::Regex;
-use serenity::{http, model::id::ChannelId};
+use serenity::{
+  http,
+  model::id::{ChannelId, UserId},
+  prelude::Mentionable,
+};
 use std::sync::Arc;
 use std::{thread, time};
 
 lazy_static! {
   static ref TIME_INPUT_REGEX: Regex =
-    Regex::new(r#"^([0-9]{1,3})(m(inutes?)?|h(ours?)?|d(ay?s)?)$"#)
+    Regex::new(r#"^^([0-9]{1,3})((m(inutes?)?)|(h(ours?)?)|(d(ays?)?))$"#)
       .expect("unable to create regex");
 }
 
@@ -63,7 +67,7 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
   }
 }
 
-const SLEEP_TIME_SECS: u64 = 120;
+const SLEEP_TIME_SECS: u64 = 60;
 /// Every X minutes check if an event should be sent
 pub async fn check_events_loop(http: Arc<http::Http>) {
   loop {
@@ -74,13 +78,33 @@ pub async fn check_events_loop(http: Arc<http::Http>) {
     let now = Utc::now().naive_utc();
     for event in events {
       let time_since_trigger = now - event.trigger_date;
-      if time_since_trigger > Duration::seconds(0)
-        && time_since_trigger < Duration::seconds(SLEEP_TIME_SECS as i64 + 5)
-      {
-        ChannelId(event.channel as u64)
-          .say(http.clone(), event.content)
-          .await
-          .expect("unable to send event");
+      let event_id = event.id;
+
+      if time_since_trigger > Duration::seconds(0) {
+        let http_clone = http.clone();
+        // I don't known why i need to do this
+        // The other threads just seem to die if i don't spawn here (the bot even disconnect)
+        // And it needs awaiting because other wise when there multiple spawn only one is executed
+        tokio::spawn(async move {
+          ChannelId(event.channel as u64)
+            .say(
+              http_clone,
+              format!(
+                "{} {}",
+                UserId(event.author as u64).mention(),
+                event.content
+              ),
+            )
+            .await
+            .expect("unable to send event");
+        })
+        .await
+        .unwrap();
+
+        {
+          let mut db_instance = INSTANCE.write().unwrap();
+          db_instance.event_delete(event_id);
+        }
       }
     }
 

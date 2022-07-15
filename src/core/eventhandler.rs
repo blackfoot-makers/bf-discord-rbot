@@ -42,6 +42,8 @@ impl EventHandler for Handler {
       message.timestamp, chan_name, message.author.name, message.content
     );
 
+    #[allow(clippy::needless_borrow)]
+    // Here clippy is wrong, we actually need to ref message before calling into
     database_update((&message).into(), false);
     archive_activity(&ctx, &message).await;
     if message.is_own(&ctx) || message.content.is_empty() {
@@ -71,6 +73,8 @@ impl EventHandler for Handler {
       event_clone.author.unwrap_or_default().name,
       event_clone.content.unwrap_or_default(),
     );
+    #[allow(clippy::needless_borrow)]
+    // Here clippy is wrong, we actually need to ref message before calling into
     database_update((&event).into(), true);
     let new_message = if let Some(message) = new {
       message

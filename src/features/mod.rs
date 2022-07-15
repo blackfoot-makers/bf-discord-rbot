@@ -23,7 +23,7 @@ pub mod renaming;
 pub mod threadcontrol;
 
 use serenity::{http, prelude::TypeMapKey};
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 use threadcontrol::ThreadControl;
 
 pub struct Features {
@@ -43,16 +43,10 @@ impl Features {
     }
   }
 
-  /// Spawn a Thread per feature to run in background
+  /// Spawn a tokio sub routine per feature to run in background
   pub fn run(&mut self, http: &Arc<http::Http>) {
-    // info!("Running featrues");
+    info!("Running features");
     let http_clone = http.clone();
-    thread::spawn(move || events::check_events_loop(http_clone));
-    // let http_clone = http.clone();
-    // let tc_clone = self.thread_control.clone();
-    // thread::spawn(|| airtable::check(http_clone, move || ThreadControl::check(&tc_clone)));
-    // let http_clone = http.clone();
-    // let tc_clone = self.thread_control.clone();
-    // thread::spawn(|| frontline::check(http_clone, move || ThreadControl::check(&tc_clone)));
+    tokio::spawn(async { events::check_events_loop(http_clone).await });
   }
 }
