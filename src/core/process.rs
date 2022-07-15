@@ -336,7 +336,7 @@ pub fn database_update(message: database::Message, is_edit: bool) {
       .iter()
       .any(|e| e.discordid == message.author)
     {
-      db_instance.user_add(message.author, &*database::Role::Guest.to_string());
+      db_instance.user_add(message.author, &database::Role::Guest.to_string());
     }
     db_instance.message_add(message);
   }
@@ -355,10 +355,7 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
               channel
                 .edit(&ctx.http, |edit| edit.category(ChannelId(PROJECT_CATEGORY)))
                 .await
-                .expect(&*format!(
-                  "Unable to edit channel:{} to unarchive",
-                  channel.id
-                ));
+                .unwrap_or_else(|_| panic!("Unable to edit channel:{} to unarchive", channel.id));
             }
           }
         }

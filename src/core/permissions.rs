@@ -23,7 +23,7 @@ pub async fn is_user_allowed(
       .user_search(*message.author.id.as_u64())
       .unwrap();
 
-    dbrole = match database::Role::from_str(&*user.role) {
+    dbrole = match database::Role::from_str(&user.role) {
       Err(e) => {
         println!("Error {}", e);
         return (false, database::Role::Guest);
