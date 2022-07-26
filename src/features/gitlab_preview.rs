@@ -138,9 +138,9 @@ async fn display_preview(
           embed.field("description", &project.description, false);
         }
         if let Some(image) = &project.avatar_url {
-          embed.image(image);
+          embed.image(format!("https://lab.blackfoot.io{}", image));
         } else if let Some(image) = &project.namespace.avatar_url {
-          embed.image(image);
+          embed.image(format!("https://lab.blackfoot.io{}", image));
         }
         if let Some(merge_request) = merge_request {
           embed
