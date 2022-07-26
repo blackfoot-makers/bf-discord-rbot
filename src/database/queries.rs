@@ -18,12 +18,10 @@ impl Instance {
   }
 
   pub fn user_search_mut(&mut self, discordid: u64) -> Option<&mut User> {
-    for user in self.users.iter_mut() {
-      if user.discordid == discordid as i64 {
-        return Some(user);
-      }
-    }
-    None
+    self
+      .users
+      .iter_mut()
+      .find(|user| user.discordid == discordid as i64)
   }
 
   pub fn user_role_update(&mut self, discord_id: u64, new_role: Role) -> String {
@@ -46,12 +44,10 @@ impl Instance {
   }
 
   pub fn user_search(&self, discordid: u64) -> Option<&User> {
-    for user in self.users.iter() {
-      if user.discordid == discordid as i64 {
-        return Some(user);
-      }
-    }
-    None
+    self
+      .users
+      .iter()
+      .find(|&user| user.discordid == discordid as i64)
   }
 
   db_load! {message_load, Message, messages}
@@ -156,12 +152,7 @@ impl Instance {
   db_load! {invites_load, Invite, invites}
 
   pub fn invite_search(&mut self, code: &str) -> Option<&mut Invite> {
-    for invite in self.invites.iter_mut() {
-      if invite.code == code {
-        return Some(invite);
-      }
-    }
-    None
+    self.invites.iter_mut().find(|invite| invite.code == code)
   }
 
   pub fn invite_update(
@@ -251,5 +242,23 @@ impl Instance {
       .drain_filter(|msg| storage_id.contains(&msg.id))
       .collect();
     previous_bottom_list
+  }
+
+  db_load! {events_load, Event, events}
+  db_add! {event_add, NewEvent, Event, events}
+
+  pub fn event_delete(&mut self, event_id: i32) {
+    use super::schema::events::dsl::*;
+
+    let conn = self.get_connection();
+
+    let filter = events.filter(id.eq(&event_id));
+    diesel::delete(filter)
+      .execute(&conn)
+      .expect("Diesel: Unable to delete storage");
+    let event_pos = self.events.iter().position(|e| e.id == event_id);
+    if let Some(pos) = event_pos {
+      self.events.remove(pos);
+    }
   }
 }

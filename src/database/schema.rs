@@ -8,6 +8,16 @@ table! {
 }
 
 table! {
+    events (id) {
+        id -> Int4,
+        author -> Int8,
+        content -> Varchar,
+        channel -> Int8,
+        trigger_date -> Timestamp,
+    }
+}
+
+table! {
     invites (id) {
         id -> Int4,
         code -> Varchar,
@@ -76,6 +86,7 @@ joinable!(messages_edits -> messages (parrent_message_id));
 
 allow_tables_to_appear_in_same_query!(
     airtable,
+    events,
     invites,
     messages,
     messages_edits,

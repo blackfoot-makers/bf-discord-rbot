@@ -28,7 +28,7 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
       .guild_id
       .expect("Guildid wasn't found in the message");
     guild
-      .create_emoji(&params.context.http, emoji_name, &*base64_img)
+      .create_emoji(&params.context.http, emoji_name, &base64_img)
       .await?;
     Ok(Some(String::from(":ok:")))
   } else {

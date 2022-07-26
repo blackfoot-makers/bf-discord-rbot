@@ -24,6 +24,7 @@ impl Instance {
       projects: Vec::new(),
       invites: Vec::new(),
       storage: Vec::new(),
+      events: Vec::new(),
     };
     instance.user_load();
     instance.message_load();
@@ -31,6 +32,7 @@ impl Instance {
     instance.projects_load();
     instance.invites_load();
     instance.storage_load();
+    instance.events_load();
     instance
   }
 
@@ -48,6 +50,7 @@ pub struct Instance {
   pub invites: Vec<Invite>,
   pub storage: Vec<Storage>,
   pub messages_edits: Vec<MessageEdit>,
+  pub events: Vec<Event>,
 }
 
 #[derive(Debug, Clone)]

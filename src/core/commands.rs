@@ -1,8 +1,13 @@
 //! Handle the connection with discord and it's events.
+use std::{collections::HashMap, error::Error, fmt::Write, process, str::FromStr};
+
 use super::{parse, slash_command};
-use crate::database::{NewStorage, Role, StorageDataType, INSTANCE};
 use crate::features::{
   archivage, emoji, funny, invite_action, ordering, project_manager, renaming,
+};
+use crate::{
+  database::{NewStorage, Role, StorageDataType, INSTANCE},
+  features::events,
 };
 use procedural_macros::command;
 use serenity::{futures::future::BoxFuture, FutureExt};
@@ -11,7 +16,6 @@ use serenity::{
   model::{gateway::Activity, id::ChannelId},
   prelude::*,
 };
-use std::{collections::HashMap, error::Error, process, str::FromStr};
 
 pub struct CallBackParams<'a> {
   pub args: &'a [String],
@@ -215,33 +219,15 @@ lazy_static! {
       usage: "@BOT ordering [<category>]",
       permission: Role::Admin,
     },
-    // "frontline-add-directory" =>
-    // Command {
-    //   exec: frontline::add_directory,
-    //   argument_min: 1,
-    //   argument_max: 1,
-    //   channel: None,
-    //   usage: "@BOT frontline-add-directory  \"<directory>\"",
-    //   permission: Role::User,
-    // },
-    // "reminder" =>
-    // Command {
-    //   exec: Event::add_reminder,
-    //   argument_min: 4,
-    //   argument_max: 5,
-    //   channel: None,
-    //   usage: "@BOT reminder <NAME> <DATE(MONTH-DAY:HOURS:MINUTES)> >MESSAGE> <CHANNEL> [<REPEAT(delay in minutes)>]",
-    //   permission: Role::User,
-    // },
-    // "countdown" =>
-    // Command {
-    //   exec: Event::add_countdown,
-    //   argument_min: 6,
-    //   argument_max: 6,
-    //   channel: None,
-    //   usage: "@BOT countdown <NAME> <START_DATE(MONTH-DAY:HOURS)> <END_DATE(MONTH-DAY:HOURS)> <DELAY_OF_REPETITION(minutes)> <MESSAGE CHANNEL>",
-    //   permission: Role::User,
-    // },
+    "remindme" =>
+    Command {
+      exec: events::remind_me,
+      argument_min: 2,
+      argument_max: 2,
+      channel: None,
+      usage: "@BOT remindme <WHEN ex: 1minute,1m,10h,5days> <CONTENT>",
+      permission: Role::User,
+    },
     "attack" =>
     Command {
       exec: funny::attack_lauch,
@@ -347,12 +333,18 @@ pub struct Storage {
 #[command]
 async fn print_help(_: CallBackParams) -> CallbackReturn {
   let mut result =
-    String::from("Available commands: \nNAME => USAGE (<Args> [Optional])| PERMISSION\n");
-  for (key, command) in COMMANDS_LIST.iter() {
-    result.push_str(&*format!(
-      "{} => Usage: {} | {{{}}}\n",
-      key, command.usage, command.permission
-    ))
+    String::from("Available commands: \nNAME => USAGE (<Args> [Optionals])| PERMISSION\n");
+  let mut commands_name: Vec<&&str> = COMMANDS_LIST.iter().map(|c| c.0).collect();
+  commands_name.sort();
+
+  for name in commands_name {
+    let command = &COMMANDS_LIST[name];
+    writeln!(
+      result,
+      "{} => Usage: {} | {{{}}}",
+      name, command.usage, command.permission
+    )
+    .expect("unable to append string");
   }
   Ok(Some(result))
 }

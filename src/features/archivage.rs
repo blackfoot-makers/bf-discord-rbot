@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Write};
 
 use crate::core::{
   commands::{CallBackParams, CallbackReturn},
@@ -95,11 +95,13 @@ async fn check_channels_activity(
         if let Some(message) = messages.first() {
           let now = Local::now();
           if now.num_days_from_ce() - message.timestamp.num_days_from_ce() > 45 {
-            display.push_str(&*format!(
-              "[{}] last message: {}\n",
+            writeln!(
+              display,
+              "[{}] last message: {}",
               channel.name(),
               message.timestamp
-            ));
+            )
+            .expect("unable to append string");
             unactive_channels.push(channel.id.0);
           }
         }

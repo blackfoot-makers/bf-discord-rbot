@@ -1,4 +1,5 @@
 #![allow(clippy::extra_unused_lifetimes)]
+use chrono::NaiveDateTime;
 use strum_macros::{Display, EnumString};
 
 #[derive(Queryable, Debug)]
@@ -133,6 +134,24 @@ pub struct NewStorage<'a> {
   pub dataid: Option<i64>,
   pub data: &'a str,
   pub date: Option<std::time::SystemTime>,
+}
+
+#[derive(Queryable, Debug, Clone)]
+pub struct Event {
+  pub id: i32,
+  pub author: i64,
+  pub content: String,
+  pub channel: i64,
+  pub trigger_date: NaiveDateTime,
+}
+
+#[derive(Insertable, Debug)]
+#[table_name = "events"]
+pub struct NewEvent<'a> {
+  pub author: i64,
+  pub content: &'a str,
+  pub channel: i64,
+  pub trigger_date: NaiveDateTime,
 }
 
 pub use super::schema::*;

@@ -69,7 +69,7 @@ pub async fn handle_event(interaction: Interaction, ctx: Context) {
       let system_time_now = SystemTime::now();
 
       let mom_result =
-        funny::mom_change_cmdless(&*format!("<@{}>", newuser), system_time_now.into()).await;
+        funny::mom_change_cmdless(&format!("<@{}>", newuser), system_time_now.into()).await;
 
       command
         .create_interaction_response(&ctx.http, |res| {
