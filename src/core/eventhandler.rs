@@ -10,12 +10,12 @@ use serenity::model::Timestamp;
 use serenity::{
   async_trait,
   model::{
+    application::interaction::Interaction,
     channel::{Message, Reaction},
     event::{MessageUpdateEvent, ResumedEvent},
     gateway::Ready,
     guild::Member,
     id::GuildId,
-    interactions::Interaction,
   },
   prelude::*,
 };

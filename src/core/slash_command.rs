@@ -6,10 +6,11 @@ use procedural_macros::command;
 use serenity::{
   client::Context,
   model::{
-    id::GuildId,
-    interactions::{
-      application_command::ApplicationCommandOptionType, Interaction, InteractionResponseType,
+    application::{
+      command::CommandOptionType,
+      interaction::{Interaction, InteractionResponseType},
     },
+    id::GuildId,
   },
 };
 
@@ -32,7 +33,7 @@ pub async fn set(params: CallBackParams) -> CallbackReturn {
             .create_option(|o| {
               o.name("user")
                 .description("Who is the new target")
-                .kind(ApplicationCommandOptionType::User)
+                .kind(CommandOptionType::User)
                 .required(true)
             })
         })
