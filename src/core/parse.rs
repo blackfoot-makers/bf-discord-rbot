@@ -114,11 +114,23 @@ fn test_split_message_args() {
 }
 
 lazy_static! {
-  static ref REGEX_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
+  static ref MESSAGE_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
 }
 pub fn split_message_args(input: &str) -> Vec<String> {
-  REGEX_SPLIT
-    .find_iter(input)
+  let list_of_quotations = vec!['“', '”', '‘', '’', '«', '»', '„', '“'];
+
+  let input_clean: String = input
+    .chars()
+    .map(|c| {
+      if list_of_quotations.contains(&c) {
+        '"'
+      } else {
+        c
+      }
+    })
+    .collect();
+  MESSAGE_SPLIT
+    .find_iter(&input_clean)
     .map(|m| {
       let matche_str = m.as_str();
       let mut escaped = false;
@@ -129,7 +141,6 @@ pub fn split_message_args(input: &str) -> Vec<String> {
           if c == &'"' && !escaped {
             keep = false;
           }
-          // This XOR is to account for escaped "\"
           escaped = !escaped && c == &'\\';
           keep
         })
