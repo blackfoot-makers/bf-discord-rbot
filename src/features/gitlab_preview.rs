@@ -138,8 +138,8 @@ async fn display_preview(
     .send_message(context, |m| {
       m.add_embed(|e| {
         let embed = e
-          .title(&url)
-          .url(&url)
+          .title(url)
+          .url(url)
           .footer(|f| f.text("Gitlab Preview"))
           .color(Colour::ORANGE);
         if !project.description.is_empty() {
