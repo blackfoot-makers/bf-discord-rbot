@@ -127,13 +127,19 @@ async fn display_preview(
   project: &Project,
   merge_request: Option<MergeRequest>,
 ) -> Result<Message, serenity::Error> {
+  let url = REGEX_URL_PARSE
+    .captures(&message.content)
+    .unwrap()
+    .get(0)
+    .unwrap()
+    .as_str();
   message
     .channel_id
     .send_message(context, |m| {
       m.add_embed(|e| {
         let embed = e
-          .title(&project.web_url)
-          .url(&project.web_url)
+          .title(&url)
+          .url(&url)
           .footer(|f| f.text("Gitlab Preview"))
           .color(Colour::ORANGE);
         if !project.description.is_empty() {
