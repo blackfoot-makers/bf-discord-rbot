@@ -19,6 +19,9 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
   let member = guild.member(http, UserId(targeted_user_id)).await;
   match member {
     Ok(member) => {
+      if params.args[2].len() > 32 {
+        return Ok(Some("The new nickname is too long.".to_string()));
+      }
       member
         .edit(http, |member| member.nickname(&params.args[2]))
         .await?;
