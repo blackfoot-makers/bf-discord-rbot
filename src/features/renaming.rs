@@ -8,6 +8,9 @@ use serenity::model::id::UserId;
 
 #[command]
 pub async fn rename(params: CallBackParams) -> CallbackReturn {
+  if params.args[2].len() > 32 {
+    return Ok(Some("The new nickname is too long.".to_string()));
+  }
   let http = &params.context.http;
   let channel_id = params.message.channel_id;
   let guild = match parse::get_guild(channel_id, params.context, params.args.get(3)).await {
@@ -19,9 +22,6 @@ pub async fn rename(params: CallBackParams) -> CallbackReturn {
   let member = guild.member(http, UserId(targeted_user_id)).await;
   match member {
     Ok(member) => {
-      if params.args[2].len() > 32 {
-        return Ok(Some("The new nickname is too long.".to_string()));
-      }
       member
         .edit(http, |member| member.nickname(&params.args[2]))
         .await?;
