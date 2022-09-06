@@ -10,6 +10,7 @@
 // pub mod frontline;
 // pub mod airtable;
 
+pub mod anyone;
 pub mod archivage;
 pub mod emoji;
 pub mod events;

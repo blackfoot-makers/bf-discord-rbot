@@ -2,6 +2,7 @@
 use std::{collections::HashMap, error::Error, fmt::Write, process, str::FromStr};
 
 use super::{parse, slash_command};
+use crate::features::anyone::anyone;
 use crate::features::{
   archivage, emoji, funny, invite_action, ordering, project_manager, renaming,
 };
@@ -299,6 +300,15 @@ lazy_static! {
       channel: None,
       usage: "@BOT help",
       permission: Role::Guest,
+    },
+    "anyone" =>
+    Command {
+      exec: anyone,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT anyone <message>",
+      permission: Role::User,
     }
   ];
 }
