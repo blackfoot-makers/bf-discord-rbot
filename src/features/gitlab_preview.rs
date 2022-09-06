@@ -19,6 +19,8 @@ type TProjectMrCache = HashMap<i64, (Vec<MergeRequest>, NaiveDateTime)>;
 lazy_static! {
   static ref REQWEST_CLIENT_GITLAB: Client = build_client();
   static ref REGEX_URL_PARSE: Regex =
+    Regex::new(r#"https://lab\.blackfoot\.io/(([A-z-/]+)/-[A-z-/1-9]+$|([A-z-/1-9]+$))"#).unwrap();
+  static ref REGEX_URL_PARSE_START: Regex =
     Regex::new(r#"^https://lab\.blackfoot\.io/(([A-z-/]+)/-[A-z-/1-9]+$|([A-z-/1-9]+$))"#).unwrap();
   static ref REGEX_MERGE_ID: Regex = Regex::new(r#"/merge_requests/([0-9]{1,4})"#).unwrap();
   static ref PROJECTS_MR_CACHE: Arc<RwLock<TProjectMrCache>> =
@@ -124,24 +126,33 @@ async fn display_preview(
   message: &Message,
   project: &Project,
   merge_request: Option<MergeRequest>,
-) {
+) -> Result<Message, serenity::Error> {
+  let url = REGEX_URL_PARSE
+    .captures(&message.content)
+    .unwrap()
+    .get(0)
+    .unwrap()
+    .as_str();
   message
     .channel_id
     .send_message(context, |m| {
       m.add_embed(|e| {
         let embed = e
-          .title(&message.content)
-          .url(&message.content)
+          .title(url)
+          .url(url)
           .footer(|f| f.text("Gitlab Preview"))
           .color(Colour::ORANGE);
         if !project.description.is_empty() {
           embed.field("description", &project.description, false);
         }
-        if let Some(image) = &project.avatar_url {
-          embed.image(format!("https://lab.blackfoot.io{}", image));
-        } else if let Some(image) = &project.namespace.avatar_url {
-          embed.image(format!("https://lab.blackfoot.io{}", image));
-        }
+        // We can't get the image and send it to discord because they are private
+        // This is how the images was guess in previous version
+        // if let Some(image) = &project.avatar_url {
+        //   embed.image(format!("https://lab.blackfoot.io{}", image));
+        // } else if let Some(image) = &project.namespace.avatar_url {
+        //   embed.image(format!("https://lab.blackfoot.io{}", image));
+        // }
+        embed.image("https://lab.blackfoot.io/assets/gitlab_logo-7ae504fe4f68fdebb3c2034e36621930cd36ea87924c11ff65dbcb8ed50dca58.png");
         if let Some(merge_request) = merge_request {
           embed
             .title(&merge_request.title)
@@ -155,7 +166,6 @@ async fn display_preview(
       })
     })
     .await
-    .expect("unable to send embed preview message");
 }
 
 pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<(), Error> {
@@ -192,9 +202,6 @@ pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<
     .find(|p| p.path_with_namespace.contains(&project_to_find));
 
   if let Some(project) = found_project_url {
-    if let Err(err) = message.delete(context).await {
-      error!("deleting message previewed failed: {}", err);
-    }
     let mut merge_request = None;
     let should_update;
     if let Some(merge_id) = merge_id {
@@ -221,7 +228,15 @@ pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<
       };
       merge_request = merge_requests.find(|mr| mr.iid == merge_id);
     }
-    display_preview(context, message, project, merge_request).await;
+    if display_preview(context, message, project, merge_request)
+      .await
+      .is_ok()
+      && REGEX_URL_PARSE_START.is_match(&message.content)
+    {
+      if let Err(err) = message.delete(context).await {
+        error!("deleting message previewed failed: {}", err);
+      }
+    }
   };
   Ok(())
 }
