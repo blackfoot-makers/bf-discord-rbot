@@ -13,14 +13,11 @@ use serenity::{
   prelude::Mentionable,
 };
 
-fn get_random_user(users: Vec<Member>) -> Member {
+fn get_random_user(mut users: Vec<Member>) -> Member {
   let user_role = RoleId::from(USER_ROLE);
+  users.retain(|user| user.roles.contains(&user_role));
   let random_index = rand::thread_rng().gen_range(0..users.len());
-  if !users[random_index].roles.contains(&user_role) {
-    get_random_user(users)
-  } else {
-    users[random_index].clone()
-  }
+  users[random_index].clone()
 }
 
 #[command]
