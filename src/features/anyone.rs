@@ -24,7 +24,7 @@ fn get_random_user(mut users: Vec<Member>) -> Member {
 pub async fn anyone(params: CallBackParams) -> CallbackReturn {
   let http = &params.context.http;
   let channel_id = params.message.channel_id;
-  let guild = match parse::get_guild(channel_id, params.context, params.args.get(3)).await {
+  let guild = match parse::get_guild(channel_id, params.context, None).await {
     Ok(guild) => guild,
     Err(error) => return Ok(Some(error)),
   };
