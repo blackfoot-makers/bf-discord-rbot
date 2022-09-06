@@ -152,7 +152,7 @@ async fn display_preview(
         // } else if let Some(image) = &project.namespace.avatar_url {
         //   embed.image(format!("https://lab.blackfoot.io{}", image));
         // }
-        embed.image("https://assets.stickpng.com/images/5847f997cef1014c0b5e48c1.png");
+        embed.image("https://lab.blackfoot.io/assets/gitlab_logo-7ae504fe4f68fdebb3c2034e36621930cd36ea87924c11ff65dbcb8ed50dca58.png");
         if let Some(merge_request) = merge_request {
           embed
             .title(&merge_request.title)
