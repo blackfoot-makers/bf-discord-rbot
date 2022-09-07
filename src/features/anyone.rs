@@ -46,7 +46,7 @@ pub async fn anyone(params: CallBackParams) -> CallbackReturn {
   params
     .message
     .channel_id
-    .send_message(http, |m| m.content(format!("{}", content)))
+    .send_message(http, |m| m.content(content))
     .await
     .unwrap();
   Ok(Some(String::from(":ok:")))
