@@ -39,12 +39,14 @@ pub async fn anyone(params: CallBackParams) -> CallbackReturn {
     }
   };
   let random_user = get_random_user(users);
+  let content = match params.args.len() {
+    1 => format!("{} is the chosen one", random_user.mention()),
+    _ => format!("{} {}", random_user.mention(), params.args[1]),
+  };
   params
     .message
     .channel_id
-    .send_message(http, |m| {
-      m.content(format!("{} {}", random_user.mention(), params.args[1]))
-    })
+    .send_message(http, |m| m.content(format!("{}", content)))
     .await
     .unwrap();
   Ok(Some(String::from(":ok:")))
