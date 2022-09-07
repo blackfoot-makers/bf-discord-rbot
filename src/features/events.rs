@@ -53,6 +53,9 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       return Ok(Some("missing time denominator".to_string()));
     }
     let content = &params.args[2];
+    if content.len() > 1900 {
+      return Ok(Some("Your message is too long".to_string()));
+    }
     let now = Utc::now().naive_local();
     let mut db_instance = INSTANCE.write().unwrap();
     db_instance.event_add(NewEvent {
