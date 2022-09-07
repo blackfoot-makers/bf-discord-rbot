@@ -228,14 +228,14 @@ pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<
       };
       merge_request = merge_requests.find(|mr| mr.iid == merge_id);
     }
-    if display_preview(context, message, project, merge_request)
-      .await
-      .is_ok()
-      && REGEX_URL_PARSE_START.is_match(&message.content)
-    {
-      if let Err(err) = message.delete(context).await {
-        error!("deleting message previewed failed: {}", err);
+    match display_preview(context, message, project, merge_request).await {
+      Ok(_) => {
+        if REGEX_URL_PARSE_START.is_match(&message.content)
+        && let Err(err) = message.delete(context).await {
+          error!("deleting message previewed failed: {}", err);
+        }
       }
+      Err(err) => error!("Error building gitlab prewiew failed: {}", err),
     }
   };
   Ok(())
