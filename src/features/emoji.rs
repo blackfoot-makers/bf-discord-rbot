@@ -1,8 +1,12 @@
 use procedural_macros::command;
+use serenity::model::prelude::GuildId;
 
-use crate::core::{
-  commands::{CallBackParams, CallbackReturn},
-  parse::emoji_str_convert,
+use crate::{
+  constants::discordids::GUILD_ID,
+  core::{
+    commands::{CallBackParams, CallbackReturn},
+    parse::emoji_str_convert,
+  },
 };
 
 #[command]
@@ -23,7 +27,10 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
       base64::encode(response_body)
     );
 
-    let guild = params.message.guild(params.context).unwrap().id;
+    let guild = match params.message.guild(params.context) {
+      Some(guild) => guild.id,
+      None => GuildId(GUILD_ID),
+    };
     guild
       .create_emoji(&params.context.http, emoji_name, &base64_img)
       .await?;
