@@ -53,6 +53,9 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       return Ok(Some("missing time denominator".to_string()));
     }
     let content = &params.args[2];
+    if content.len() > 1900 {
+      return Ok(Some("Your message is too long".to_string()));
+    }
     let now = Utc::now().naive_local();
     let mut db_instance = INSTANCE.write().unwrap();
     db_instance.event_add(NewEvent {
@@ -68,7 +71,7 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
 }
 
 const SLEEP_TIME_SECS: u64 = 60;
-/// Every X minutes check if an event should be sent
+/// Every X seconds check if an event should be sent
 pub async fn check_events_loop(http: Arc<http::Http>) {
   loop {
     let events = {
@@ -85,7 +88,7 @@ pub async fn check_events_loop(http: Arc<http::Http>) {
         // I don't known why i need to do this
         // The other threads just seem to die if i don't spawn here (the bot even disconnect)
         // And it needs awaiting because other wise when there multiple spawn only one is executed
-        tokio::spawn(async move {
+        let spawn_result = tokio::spawn(async move {
           ChannelId(event.channel as u64)
             .say(
               http_clone,
@@ -98,9 +101,10 @@ pub async fn check_events_loop(http: Arc<http::Http>) {
             .await
             .expect("unable to send event");
         })
-        .await
-        .unwrap();
-
+        .await;
+        if let Err(e) = spawn_result {
+          error!("error spawning event: {}", e);
+        }
         {
           let mut db_instance = INSTANCE.write().unwrap();
           db_instance.event_delete(event_id);
