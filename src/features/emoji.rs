@@ -23,10 +23,7 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
       base64::encode(response_body)
     );
 
-    let guild = params
-      .message
-      .guild_id
-      .expect("Guildid wasn't found in the message");
+    let guild = params.message.guild(params.context).unwrap().id;
     guild
       .create_emoji(&params.context.http, emoji_name, &base64_img)
       .await?;
