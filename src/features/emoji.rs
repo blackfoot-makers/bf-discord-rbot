@@ -27,10 +27,7 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
       base64::encode(response_body)
     );
 
-    let guild = match params.message.guild(params.context) {
-      Some(guild) => guild.id,
-      None => GuildId(GUILD_ID),
-    };
+    let guild = params.message.guild_id.unwrap_or(GuildId(GUILD_ID));
     guild
       .create_emoji(&params.context.http, emoji_name, &base64_img)
       .await?;
