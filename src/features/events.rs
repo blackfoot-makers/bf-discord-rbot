@@ -14,9 +14,10 @@ use std::sync::Arc;
 use std::{thread, time};
 
 lazy_static! {
-  static ref TIME_INPUT_REGEX: Regex =
-    Regex::new(r#"^^([0-9]{1,3})((m(inutes?)?)|(h(ours?)?)|(d(ays?)?))$"#)
-      .expect("unable to create regex");
+  static ref TIME_INPUT_REGEX: Regex = Regex::new(
+    r#"^([0-9]{1,4})((m(inutes?)?)|(h(ours?)?)|(d(ays?)?(([0-9]{2})[:h]([0-9]{2})?)?))$"#
+  )
+  .expect("unable to create regex");
 }
 
 #[command]
@@ -31,38 +32,55 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       .parse::<u16>()
       .expect("unable to parse number value from regex");
 
-    let mut duration: Option<Duration> = None;
+    let mut trigger_date: Option<NaiveDateTime> = None;
+    let now = chrono::offset::Local::now().naive_local();
     for i in [3, 5, 7] {
       if captures.get(i).is_some() {
         match i {
           3 => {
-            duration = Some(Duration::minutes(number.into()));
+            trigger_date = Some(now + Duration::minutes(number.into()));
           }
           5 => {
-            duration = Some(Duration::hours(number.into()));
+            trigger_date = Some(now + Duration::hours(number.into()));
           }
           7 => {
-            duration = Some(Duration::days(number.into()));
+            if let Some(hours) = captures.get(10) {
+              let hours = hours.as_str().parse().expect("unable to parse hours");
+              if let Some(minutes) = captures.get(11) {
+                let minutes = minutes.as_str().parse().expect("unable to parse hours");
+                trigger_date = Some(
+                  now
+                    .with_hour(hours)
+                    .unwrap()
+                    .with_minute(minutes)
+                    .expect("unable to parse minutes")
+                    + Duration::days(number.into()),
+                );
+              } else {
+                trigger_date = Some(now.with_hour(hours).unwrap() + Duration::days(number.into()));
+              }
+            } else {
+              trigger_date = Some(now + Duration::days(number.into()));
+            }
           }
           _ => panic!("captures matches missing case"),
         }
         break;
       }
     }
-    if duration.is_none() {
+    if trigger_date.is_none() {
       return Ok(Some("missing time denominator".to_string()));
     }
     let content = &params.args[2];
     if content.len() > 1900 {
       return Ok(Some("Your message is too long".to_string()));
     }
-    let now = Utc::now().naive_local();
     let mut db_instance = INSTANCE.write().unwrap();
     db_instance.event_add(NewEvent {
       author: params.message.author.id.0 as i64,
       channel: params.message.channel_id.0 as i64,
       content,
-      trigger_date: now + duration.unwrap(),
+      trigger_date: trigger_date.unwrap(),
     });
     Ok(Some(":ok:".to_string()))
   } else {
@@ -73,12 +91,13 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
 const SLEEP_TIME_SECS: u64 = 60;
 /// Every X seconds check if an event should be sent
 pub async fn check_events_loop(http: Arc<http::Http>) {
+  info!("running events loop");
   loop {
     let events = {
       let db_instance = INSTANCE.read().unwrap();
       db_instance.events.clone()
     };
-    let now = Utc::now().naive_utc();
+    let now = chrono::offset::Local::now().naive_local();
     for event in events {
       let time_since_trigger = now - event.trigger_date;
       let event_id = event.id;
