@@ -3,6 +3,7 @@ use crate::{
   database::{NewEvent, INSTANCE},
 };
 use chrono::{prelude::*, Duration};
+use chrono_tz::Europe::Paris;
 use procedural_macros::command;
 use regex::Regex;
 use serenity::{
@@ -33,7 +34,7 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       .expect("unable to parse number value from regex");
 
     let mut trigger_date: Option<NaiveDateTime> = None;
-    let now = chrono::offset::Local::now().naive_local();
+    let now = Paris.from_utc_datetime(&Utc::now().naive_utc()).naive_utc();
     for i in [3, 5, 7] {
       if captures.get(i).is_some() {
         match i {
@@ -97,7 +98,7 @@ pub async fn check_events_loop(http: Arc<http::Http>) {
       let db_instance = INSTANCE.read().unwrap();
       db_instance.events.clone()
     };
-    let now = chrono::offset::Local::now().naive_local();
+    let now = Paris.from_utc_datetime(&Utc::now().naive_utc()).naive_utc();
     for event in events {
       let time_since_trigger = now - event.trigger_date;
       let event_id = event.id;
