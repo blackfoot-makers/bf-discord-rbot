@@ -53,20 +53,15 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
           7 => {
             if let Some(hours) = captures.get(10) {
               let hours = hours.as_str().parse().expect("unable to parse hours");
-              if let Some(minutes) = captures.get(11) {
-                let minutes = minutes.as_str().parse().expect("unable to parse hours");
-                trigger_date = Some(
-                  now_paris
-                    .with_hour(hours)
-                    .unwrap()
-                    .with_minute(minutes)
-                    .expect("unable to parse minutes")
-                    + Duration::days(number.into()),
-                );
-              } else {
-                trigger_date =
-                  Some(now_paris.with_hour(hours).unwrap() + Duration::days(number.into()));
-              }
+              let minutes = captures.get(11).map_or(0, |c| c.as_str().parse().unwrap());
+              trigger_date = Some(
+                now_paris
+                  .with_hour(hours)
+                  .unwrap()
+                  .with_minute(minutes)
+                  .unwrap()
+                  + Duration::days(number.into()),
+              );
             } else {
               trigger_date = Some(now_paris + Duration::days(number.into()));
             }
