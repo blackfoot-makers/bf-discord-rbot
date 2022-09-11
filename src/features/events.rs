@@ -33,16 +33,22 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       .parse::<u16>()
       .expect("unable to parse number value from regex");
 
-    let mut trigger_date: Option<NaiveDateTime> = None;
-    let now = Paris.from_utc_datetime(&Utc::now().naive_utc()).naive_utc();
+    let mut trigger_date: Option<DateTime<_>> = None;
+    // Using paris time so we convert correctly when setting hours or minutes
+    // Paris.with_hour(10) => NaiveDateTime.hour == 8 because of Tz +2
+    let now_paris = Paris.from_utc_datetime(&Utc::now().naive_utc());
     for i in [3, 5, 7] {
       if captures.get(i).is_some() {
         match i {
           3 => {
-            trigger_date = Some(now + Duration::minutes(number.into()));
+            trigger_date = Some(
+              now_paris
+                .checked_add_signed(Duration::minutes(number.into()))
+                .unwrap(),
+            );
           }
           5 => {
-            trigger_date = Some(now + Duration::hours(number.into()));
+            trigger_date = Some(now_paris + Duration::hours(number.into()));
           }
           7 => {
             if let Some(hours) = captures.get(10) {
@@ -50,7 +56,7 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
               if let Some(minutes) = captures.get(11) {
                 let minutes = minutes.as_str().parse().expect("unable to parse hours");
                 trigger_date = Some(
-                  now
+                  now_paris
                     .with_hour(hours)
                     .unwrap()
                     .with_minute(minutes)
@@ -58,10 +64,11 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
                     + Duration::days(number.into()),
                 );
               } else {
-                trigger_date = Some(now.with_hour(hours).unwrap() + Duration::days(number.into()));
+                trigger_date =
+                  Some(now_paris.with_hour(hours).unwrap() + Duration::days(number.into()));
               }
             } else {
-              trigger_date = Some(now + Duration::days(number.into()));
+              trigger_date = Some(now_paris + Duration::days(number.into()));
             }
           }
           _ => panic!("captures matches missing case"),
@@ -81,7 +88,7 @@ pub async fn remind_me(params: CallBackParams) -> CallbackReturn {
       author: params.message.author.id.0 as i64,
       channel: params.message.channel_id.0 as i64,
       content,
-      trigger_date: trigger_date.unwrap(),
+      trigger_date: trigger_date.unwrap().naive_utc(),
     });
     Ok(Some(":ok:".to_string()))
   } else {
@@ -98,7 +105,8 @@ pub async fn check_events_loop(http: Arc<http::Http>) {
       let db_instance = INSTANCE.read().unwrap();
       db_instance.events.clone()
     };
-    let now = Paris.from_utc_datetime(&Utc::now().naive_utc()).naive_utc();
+    // Here we do not take Paris time as it's already stored as Utc in the database
+    let now = Utc::now().naive_utc();
     for event in events {
       let time_since_trigger = now - event.trigger_date;
       let event_id = event.id;

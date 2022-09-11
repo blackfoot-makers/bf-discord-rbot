@@ -54,3 +54,14 @@ fn main() {
 
   core::run();
 }
+
+#[test]
+fn test_tz() {
+  use chrono::{TimeZone, Timelike};
+  use chrono_tz::Europe::Paris;
+
+  let paris = dbg!(Paris.from_utc_datetime(&dbg!(chrono::Utc::now().naive_utc())));
+
+  let paris = paris.with_hour(10);
+  let _utc_10hfr = dbg!(paris.unwrap().naive_utc());
+}
