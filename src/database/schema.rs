@@ -85,12 +85,12 @@ table! {
 joinable!(messages_edits -> messages (parrent_message_id));
 
 allow_tables_to_appear_in_same_query!(
-  airtable,
-  events,
-  invites,
-  messages,
-  messages_edits,
-  projects,
-  storage,
-  users,
+    airtable,
+    events,
+    invites,
+    messages,
+    messages_edits,
+    projects,
+    storage,
+    users,
 );
