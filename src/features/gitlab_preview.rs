@@ -19,9 +19,12 @@ type TProjectMrCache = HashMap<i64, (Vec<MergeRequest>, NaiveDateTime)>;
 lazy_static! {
   static ref REQWEST_CLIENT_GITLAB: Client = build_client();
   static ref REGEX_URL_PARSE: Regex =
-    Regex::new(r#"https://lab.blackfoot.io/(([A-z-/]+)/-[A-z-/0-9]+|([A-z-/0-9]+))"#).unwrap();
-  static ref REGEX_URL_PARSE_ONLY: Regex =
-    Regex::new(r#"^https://lab.blackfoot.io/(([A-z-/]+)/-[A-z-/0-9]+|([A-z-/0-9]+))$"#).unwrap();
+    Regex::new(r#"https://lab.blackfoot.io/(([A-z-/]+)/-[A-z-/0-9]+|([A-z-/0-9]+))(#[0-9,A-z]*)?"#)
+      .unwrap();
+  static ref REGEX_URL_PARSE_ONLY: Regex = Regex::new(
+    r#"^https://lab.blackfoot.io/(([A-z-/]+)/-[A-z-/0-9]+|([A-z-/0-9]+))(#[0-9,A-z]*)?$"#
+  )
+  .unwrap();
   static ref REGEX_MERGE_ID: Regex = Regex::new(r#"/merge_requests/([0-9]{1,4})"#).unwrap();
   static ref PROJECTS_MR_CACHE: Arc<RwLock<TProjectMrCache>> =
     Arc::new(RwLock::new(HashMap::new()));
