@@ -65,7 +65,8 @@ lazy_static! {
     "kéké" => "https://media.giphy.com/media/26ufju9mygxXmfjos/giphy.gif",
     "bad bot" => "😎",
     "hello there" => "https://i.kym-cdn.com/photos/images/newsfeed/001/475/420/c62.gif",
-    "ok boomer" => "Ok millennial"
+    "ok boomer" => "Ok millennial",
+    "fedora" => "https://camo.githubusercontent.com/98c193cbace1f9ce312fdf8e1e54da111ca6fc1481a460fe7a4be75be4cc4caf/68747470733a2f2f63646e2e646973636f72646170702e636f6d2f6174746163686d656e74732f3537333533313630333730343437393734352f3930363632353736323936393431393832362f494d475f32303231313130365f3230323634332e6a7067"
   ];
   pub static ref CONTAIN_REACTION_LIST: HashMap<&'static str, char> = hashmap![
     "👊" => '👊',
