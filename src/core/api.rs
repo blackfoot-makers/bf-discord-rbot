@@ -1,11 +1,15 @@
-use crate::constants::discordids::DEVOPS_CHANNEL;
-use crate::core::parse;
-use crate::database::{self, Message};
+use crate::{
+  constants::discordids::DEVOPS_CHANNEL,
+  core::parse,
+  database::{self, Message},
+};
 use parse::DiscordIds;
-use rocket::http::{Method, Status};
-use rocket::request::{FromRequest, Outcome, Request};
-use rocket::serde::json::Json;
-use rocket::State;
+use rocket::{
+  http::{Method, Status},
+  request::{FromRequest, Outcome, Request},
+  serde::json::Json,
+  State,
+};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use serde_derive::Deserialize;
 use serenity::{client::Context, model::id::ChannelId};
@@ -51,16 +55,24 @@ async fn send_message(
   message: String,
   _apikey: ApiKey<'_>,
   ctx: &State<Context>,
-) -> String {
+) -> (Status, String) {
+  if message.len() > 2000 {
+    error!("Too Long Message ({})", message.len());
+    return (
+      Status::BadRequest,
+      format!("Too Long Message ({})", message.len()),
+    );
+  }
   let discordid = parse::discord_str_to_id(channelid, Some(DiscordIds::Channel));
   match discordid {
     Ok((id, _)) => {
       ChannelId(id).say(&ctx.http, message).await.unwrap();
-      String::from(":ok:")
+      (Status::Ok, ":ok:".to_string())
     }
-    Err(_) => {
-      format!("Unable to parse channelid: {}", channelid)
-    }
+    Err(_) => (
+      Status::BadRequest,
+      format!("Unable to parse channelid: {}", channelid),
+    ),
   }
 }
 
