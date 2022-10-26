@@ -52,6 +52,9 @@ async fn send_message(
   _apikey: ApiKey<'_>,
   ctx: &State<Context>,
 ) -> String {
+  if message.len() > 2000 {
+    return format!("Too Long Message ({})", message.len());
+  }
   let discordid = parse::discord_str_to_id(channelid, Some(DiscordIds::Channel));
   match discordid {
     Ok((id, _)) => {
