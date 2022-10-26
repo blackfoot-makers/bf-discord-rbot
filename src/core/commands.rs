@@ -408,10 +408,7 @@ async fn modify_message(params: CallBackParams) -> CallbackReturn {
     )
   } else {
     (
-      (
-        params.message.channel_id.0 as u64,
-        parse::DiscordIds::Channel,
-      ),
+      (params.message.channel_id.0, parse::DiscordIds::Channel),
       parse::discord_str_to_id(&params.args[1], Some(parse::DiscordIds::Message))?,
     )
   };
