@@ -6,12 +6,12 @@
 // pub mod slackimport;
 // pub mod gitcommands;
 // pub mod docker;
-// pub mod calendar;
 // pub mod frontline;
 // pub mod airtable;
 
 pub mod anyone;
 pub mod archivage;
+pub mod calendar;
 pub mod emoji;
 pub mod events;
 pub mod funny;

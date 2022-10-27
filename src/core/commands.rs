@@ -3,6 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Write, process, str::FromStr}
 
 use super::{parse, slash_command};
 use crate::features::anyone::anyone;
+use crate::features::calendar::check_calendar;
 use crate::features::{
   archivage, emoji, funny, invite_action, ordering, project_manager, renaming,
 };
@@ -309,6 +310,15 @@ lazy_static! {
       argument_max: 1,
       channel: None,
       usage: "@BOT anyone <message>",
+      permission: Role::User,
+    },
+    "check-calendar" =>
+    Command {
+      exec: check_calendar,
+      argument_min: 0,
+      argument_max: 1,
+      channel: None,
+      usage: "@BOT check_calendar <date = MM/AAAA>",
       permission: Role::User,
     }
   ];
