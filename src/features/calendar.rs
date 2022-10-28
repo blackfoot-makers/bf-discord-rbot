@@ -61,7 +61,7 @@ impl From<i32> for WarnReason {
 pub async fn check_calendar(params: CallBackParams) -> CallbackReturn {
   let client = Client::new();
   let date = if params.args.len() > 1 {
-    match NaiveDate::parse_from_str(&format!("01/{}", params.args[1]), "%m/%Y/%d") {
+    match NaiveDate::parse_from_str(&format!("01/{}", params.args[1]), "%d/%m/%Y") {
       Ok(date) => date,
       Err(_) => return Ok(Some(String::from("Invalid date format"))),
     }
