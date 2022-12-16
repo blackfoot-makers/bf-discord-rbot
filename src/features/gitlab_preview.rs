@@ -171,65 +171,93 @@ async fn display_preview(
     .await
 }
 
-pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<(), Error> {
+async fn check_update_cache(
+  project_to_find: &str,
+  merge_id: &Option<i64>,
+  force_update: &bool,
+) -> Result<(), Error> {
+  let projects_cache = PROJECTS_CACHE
+    .read()
+    .expect("unable to acquire the lock")
+    .clone();
+  if let Some((_, updated_at)) = projects_cache.as_ref() {
+    let now = Utc::now().naive_utc();
+    if *updated_at + Duration::hours(1) > now || *force_update {
+      let new_projects = gitlab_get_projects().await?;
+      let mut projects = PROJECTS_CACHE.write().expect("unable to acquire the lock");
+      let now = Utc::now().naive_utc();
+      *projects = Some((new_projects, now));
+    }
+  } else {
+    let new_projects = gitlab_get_projects().await?;
+    let mut projects = PROJECTS_CACHE.write().expect("unable to acquire the lock");
+    let now = Utc::now().naive_utc();
+    *projects = Some((new_projects, now));
+  }
+  drop(projects_cache);
+  let projects = PROJECTS_CACHE
+    .read()
+    .expect("unable to acquire the lock")
+    .clone();
+  if merge_id.is_none() {
+    return Ok(());
+  }
+  let (projects, updated_at) = projects.unwrap();
+  let found_project_url = projects
+    .iter()
+    .find(|p| p.path_with_namespace.contains(project_to_find));
+  if let Some(project) = found_project_url {
+    let now = Utc::now().naive_utc();
+    if updated_at + Duration::hours(1) > now || *force_update {
+      let new_mrs = gitlab_get_project_merge_requests(project.id).await?;
+      let mut projects_mr = PROJECTS_MR_CACHE
+        .write()
+        .expect("unable to acquire the lock");
+      projects_mr.insert(project.id, (new_mrs, now));
+    }
+  }
+  Ok(())
+}
+
+async fn preview_sender(message: &Message, context: &Context) -> Result<bool, Error> {
   let (project_to_find, merge_id) =
     if let Some((url, merge_id)) = check_message_should_preview(&message.content) {
       (url, merge_id)
     } else {
-      return Ok(());
+      return Ok(true);
     };
-
-  let should_update;
-  let mut projects = None;
-  {
-    let projects_cache = PROJECTS_CACHE.read().expect("unable to acquire the lock");
-    should_update = if let Some((cache_projects, updated_at)) = projects_cache.as_ref() {
-      let now = Utc::now().naive_utc();
-      if *updated_at + Duration::hours(1) > now {
-        projects = Some(cache_projects.clone());
-        false
-      } else {
-        true
-      }
-    } else {
-      true
-    };
-  }
-  if should_update {
-    projects = Some(gitlab_get_projects().await?);
-  };
-
-  let projects = projects.expect("projects should have been initialized");
+  check_update_cache(&project_to_find, &merge_id, &false).await?;
+  let projects_cache = PROJECTS_CACHE
+    .read()
+    .expect("unable to acquire the lock")
+    .clone();
+  let projects = projects_cache
+    .expect("projects should have been initialized")
+    .0;
   let found_project_url = projects
     .iter()
     .find(|p| p.path_with_namespace.contains(&project_to_find));
 
   if let Some(project) = found_project_url {
     let mut merge_request = None;
-    let should_update;
     if let Some(merge_id) = merge_id {
-      {
-        let mrs = PROJECTS_MR_CACHE
-          .read()
-          .expect("unable to acquire the lock");
-        should_update = if let Some((_, updated_at)) = mrs.get(&project.id) {
-          let now = Utc::now().naive_utc();
-          *updated_at + Duration::hours(1) <= now
-        } else {
-          true
-        };
-      }
-      let mut merge_requests = if should_update {
-        gitlab_get_project_merge_requests(project.id)
-          .await?
-          .into_iter()
-      } else {
-        let mrs = PROJECTS_MR_CACHE
-          .read()
-          .expect("unable to acquire the lock");
-        mrs.get(&project.id).unwrap().0.clone().into_iter()
-      };
+      let mrs = PROJECTS_MR_CACHE
+        .read()
+        .expect("unable to acquire the lock");
+
+      let mut merge_requests = mrs.get(&project.id).unwrap().0.clone().into_iter();
       merge_request = merge_requests.find(|mr| mr.iid == merge_id);
+    }
+    if merge_request.is_none() {
+      check_update_cache(&project_to_find, &merge_id, &true).await?;
+      if let Some(merge_id) = merge_id {
+        let mrs = PROJECTS_MR_CACHE
+          .read()
+          .expect("unable to acquire the lock");
+
+        let mut merge_requests = mrs.get(&project.id).unwrap().0.clone().into_iter();
+        merge_request = merge_requests.find(|mr| mr.iid == merge_id);
+      }
     }
     match display_preview(context, message, project, merge_request).await {
       Ok(_) => {
@@ -241,7 +269,17 @@ pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<
       }
       Err(err) => error!("Error building gitlab prewiew failed: {}", err),
     }
-  };
+    return Ok(true);
+  }
+  Ok(false)
+}
+
+pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<(), Error> {
+  let have_send_preview = preview_sender(message, context).await?;
+  if !have_send_preview {
+    check_update_cache("", &None, &true).await?;
+    preview_sender(message, context).await?;
+  }
   Ok(())
 }
 
