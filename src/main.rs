@@ -25,6 +25,8 @@
 //! [features docs]: features/index.html
 
 #![warn(clippy::all)]
+#![warn(unused_crate_dependencies)]
+#![warn(unused_extern_crates)]
 #![feature(drain_filter)]
 
 #[macro_use]
