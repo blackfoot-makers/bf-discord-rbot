@@ -5,7 +5,7 @@ use std::{
 
 use chrono::{Duration, NaiveDateTime, Utc};
 use regex::Regex;
-use reqwest::{header, Client, Error};
+use reqwest::{header, Client};
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use serenity::{client::Context, model::channel::Message, utils::Colour};
@@ -80,31 +80,6 @@ struct Author {
   username: String,
 }
 
-async fn gitlab_get_projects() -> Result<Vec<Project>, Error> {
-  let request = REQWEST_CLIENT_GITLAB.get(GITLAB_PROJECT_URL).send().await?;
-  let projects: Vec<Project> = request.json().await.unwrap();
-
-  let mut projects_cache = PROJECTS_CACHE.write().expect("unable to acquire the lock");
-  let now = Utc::now().naive_utc();
-  *projects_cache = Some((projects.clone(), now));
-  Ok(projects)
-}
-
-async fn gitlab_get_project_merge_requests(id: i64) -> Result<Vec<MergeRequest>, Error> {
-  let request = REQWEST_CLIENT_GITLAB
-    .get(GITLAB_PROJECT_MR_URL.replace("{}", &id.to_string()))
-    .send()
-    .await?;
-  let mrs: Vec<MergeRequest> = request.json().await.unwrap();
-
-  let mut projects_mr_cache = PROJECTS_MR_CACHE
-    .write()
-    .expect("unable to acquire the lock");
-  let now = Utc::now().naive_utc();
-  projects_mr_cache.insert(id, (mrs.clone(), now));
-  Ok(mrs)
-}
-
 fn check_message_should_preview(message: &str) -> Option<(String, Option<i64>)> {
   if let Some(caps) = REGEX_URL_PARSE.captures(message) {
     if let Some(cap) = caps.get(2) {
@@ -122,6 +97,46 @@ fn check_message_should_preview(message: &str) -> Option<(String, Option<i64>)> 
     }
   }
   None
+}
+
+/// Check if the date given as passed by more than hour
+fn is_outdated(updated_at: &NaiveDateTime) -> bool {
+  *updated_at + Duration::hours(1) > Utc::now().naive_utc()
+}
+
+async fn gitlab_get_projects() -> Result<Vec<Project>, anyhow::Error> {
+  let request = REQWEST_CLIENT_GITLAB.get(GITLAB_PROJECT_URL).send().await?;
+  let projects: Vec<Project> = request.json().await.unwrap();
+
+  let mut projects_cache = PROJECTS_CACHE.write().expect("unable to acquire the lock");
+  let now = Utc::now().naive_utc();
+  *projects_cache = Some((projects.clone(), now));
+  Ok(projects)
+}
+
+async fn gitlab_get_project_merge_requests(id: i64) -> Result<Vec<MergeRequest>, anyhow::Error> {
+  let mrs = {
+    let projects_mr_cache = PROJECTS_MR_CACHE.read().expect("to read PROJECTS_MR_CACHE");
+    projects_mr_cache
+      .get(&id)
+      .map(|(project, updated_at)| (!is_outdated(updated_at)).then_some(project.clone()))
+      .unwrap_or(None)
+  };
+  if let Some(mrs) = mrs {
+    Ok(mrs)
+  } else {
+    let request = REQWEST_CLIENT_GITLAB
+      .get(GITLAB_PROJECT_MR_URL.replace("{}", &id.to_string()))
+      .send()
+      .await?;
+    let mrs: Vec<MergeRequest> = request.json().await.unwrap();
+    let now = Utc::now().naive_utc();
+    let mut projects_mr_cache = PROJECTS_MR_CACHE
+      .write()
+      .expect("to write PROJECTS_MR_CACHE");
+    projects_mr_cache.insert(id, (mrs.clone(), now));
+    Ok(mrs)
+  }
 }
 
 async fn display_preview(
@@ -171,77 +186,82 @@ async fn display_preview(
     .await
 }
 
-pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<(), Error> {
-  let (project_to_find, merge_id) =
-    if let Some((url, merge_id)) = check_message_should_preview(&message.content) {
-      (url, merge_id)
-    } else {
-      return Ok(());
-    };
-
-  let should_update;
-  let mut projects = None;
+async fn get_or_update_cache(
+  project_to_find: &str,
+  merge_id: &Option<i64>,
+) -> Result<(Project, Option<MergeRequest>), anyhow::Error> {
   {
-    let projects_cache = PROJECTS_CACHE.read().expect("unable to acquire the lock");
-    should_update = if let Some((cache_projects, updated_at)) = projects_cache.as_ref() {
-      let now = Utc::now().naive_utc();
-      if *updated_at + Duration::hours(1) > now {
-        projects = Some(cache_projects.clone());
-        false
-      } else {
-        true
-      }
-    } else {
-      true
+    let projects_cache = PROJECTS_CACHE
+      .read()
+      .expect("to read PROJECTS_CACHE")
+      .clone();
+    let should_update = projects_cache
+      .as_ref()
+      .map(|(_, updated_at)| is_outdated(updated_at))
+      .unwrap_or(true);
+
+    if !should_update {
+      let (projects, _) = projects_cache.expect("PROJECTS_CACHE to be initialized");
+      return find_project(projects, project_to_find, merge_id).await;
     };
   }
-  if should_update {
-    projects = Some(gitlab_get_projects().await?);
+  let projects = {
+    let new_projects = gitlab_get_projects().await?;
+    let mut projects = PROJECTS_CACHE.write().expect("to write PROJECTS_CACHE");
+    let now = Utc::now().naive_utc();
+    *projects = Some((new_projects, now));
+    projects.as_ref().unwrap().0.clone()
   };
+  return find_project(projects, project_to_find, merge_id).await;
+}
 
-  let projects = projects.expect("projects should have been initialized");
+async fn find_project(
+  projects: Vec<Project>,
+  project_to_find: &str,
+  merge_id: &Option<i64>,
+) -> Result<(Project, Option<MergeRequest>), anyhow::Error> {
   let found_project_url = projects
     .iter()
-    .find(|p| p.path_with_namespace.contains(&project_to_find));
+    .find(|p| p.path_with_namespace.contains(project_to_find));
 
   if let Some(project) = found_project_url {
-    let mut merge_request = None;
-    let should_update;
-    if let Some(merge_id) = merge_id {
-      {
-        let mrs = PROJECTS_MR_CACHE
-          .read()
-          .expect("unable to acquire the lock");
-        should_update = if let Some((_, updated_at)) = mrs.get(&project.id) {
-          let now = Utc::now().naive_utc();
-          *updated_at + Duration::hours(1) <= now
-        } else {
-          true
-        };
-      }
-      let mut merge_requests = if should_update {
-        gitlab_get_project_merge_requests(project.id)
-          .await?
-          .into_iter()
-      } else {
-        let mrs = PROJECTS_MR_CACHE
-          .read()
-          .expect("unable to acquire the lock");
-        mrs.get(&project.id).unwrap().0.clone().into_iter()
-      };
-      merge_request = merge_requests.find(|mr| mr.iid == merge_id);
-    }
-    match display_preview(context, message, project, merge_request).await {
-      Ok(_) => {
-        if REGEX_URL_PARSE_ONLY.is_match(&message.content) {
-          if let Err(err) = message.delete(context).await {
-            error!("deleting message previewed failed: {}", err);
-          }
+    let mr = if let Some(merge_id) = merge_id {
+      let mrs = gitlab_get_project_merge_requests(project.id).await?;
+      mrs.into_iter().find(|mr| &mr.iid == merge_id)
+    } else {
+      None
+    };
+
+    Ok((project.clone(), mr))
+  } else {
+    Err(anyhow::anyhow!("project wasn't found"))
+  }
+}
+
+async fn preview_and_cleanup(
+  message: &Message,
+  context: &Context,
+  project: Project,
+  mr: Option<MergeRequest>,
+) -> Result<(), anyhow::Error> {
+  match display_preview(context, message, &project, mr).await {
+    Ok(_) => {
+      if REGEX_URL_PARSE_ONLY.is_match(&message.content) {
+        if let Err(err) = message.delete(context).await {
+          error!("deleting message previewed failed: {}", err);
         }
       }
-      Err(err) => error!("Error building gitlab prewiew failed: {}", err),
     }
-  };
+    Err(err) => error!("Error building gitlab prewiew failed: {}", err),
+  }
+  Ok(())
+}
+
+pub async fn gitlab_url_preview(message: &Message, context: &Context) -> Result<(), anyhow::Error> {
+  if let Some((url, merge_id)) = check_message_should_preview(&message.content) {
+    let (project, mr) = get_or_update_cache(&url, &merge_id).await?;
+    preview_and_cleanup(message, context, project, mr).await?;
+  }
   Ok(())
 }
 
