@@ -13,3 +13,4 @@ events\.json
 credentials\.json
 
 .env
+.envrc
