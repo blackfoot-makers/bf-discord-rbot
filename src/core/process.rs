@@ -4,6 +4,7 @@ use super::commands::{
 };
 use super::permissions;
 use crate::database;
+use crate::features::deployment::{DeploymentReactions, REACTION_COLLECTORS};
 use crate::features::funny::ATTACKED;
 use crate::{core::parse::split_message_args, features::gitlab_preview::gitlab_url_preview};
 use log::{debug, error};
@@ -366,4 +367,27 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
   };
 }
 
-pub async fn trigger_inchannel(_: &Message, _: &Context) {}
+pub async fn trigger_inchannel(msg: &Message, ctx: &Context) {
+  if msg.content == "!reaction" {
+    // TODO: remove all the '.unwrap()'
+    let sent_msg: Message = msg
+      .channel_id
+      .say(&ctx.http, "React with ✅ or ❌")
+      .await
+      .unwrap();
+    let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
+    let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
+
+    {
+      let mut react_collect = REACTION_COLLECTORS.write().await;
+
+      react_collect.insert(
+        sent_msg.id,
+        DeploymentReactions {
+          accept: accept.emoji,
+          reject: reject.emoji,
+        },
+      );
+    }
+  }
+}

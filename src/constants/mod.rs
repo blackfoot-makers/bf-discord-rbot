@@ -1,6 +1,8 @@
 #[allow(dead_code)]
 pub mod discordids;
 
+pub mod roles;
+
 pub const NUMBERS: [&str; 11] = [
   "0\u{fe0f}\u{20e3}",
   "1\u{fe0f}\u{20e3}",

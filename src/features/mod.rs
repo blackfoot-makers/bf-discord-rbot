@@ -12,6 +12,7 @@
 pub mod anyone;
 pub mod archivage;
 pub mod calendar;
+pub mod deployment;
 pub mod emoji;
 pub mod events;
 pub mod funny;

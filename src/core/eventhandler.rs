@@ -1,7 +1,9 @@
 use super::process::{archive_activity, database_update, getbotid};
 use super::validation::{check_validation, WaitingValidation};
-use super::{api, slash_command};
+use super::{api, parse, slash_command};
+use crate::constants::roles::ROLE_AUTHORIZED_TO_DEPLOY;
 use crate::core::process::process_message;
+use crate::features::deployment::REACTION_COLLECTORS;
 use crate::features::{invite_action, mecleanup, project_manager, Features};
 use log::{error, info};
 use serenity::http::CacheHttp;
@@ -111,9 +113,33 @@ impl EventHandler for Handler {
       .await
       .unwrap()
       .is_own(&ctx.cache);
+    let user_id = reaction.user_id.unwrap();
+    let guild = parse::get_guild(reaction.channel_id, &ctx, None)
+      .await
+      .unwrap();
 
-    if reaction.user_id.unwrap() != botid && isown {
+    if user_id != botid && isown {
       let emoji = reaction.emoji.as_data();
+
+      if let Ok(member) = guild.member(&ctx.http, user_id).await {
+        if member.roles.len() >= 1
+          && member
+            .roles
+            .iter()
+            .all(|role| dbg!(ROLE_AUTHORIZED_TO_DEPLOY.contains(&role.0)))
+        {
+          if let Some(reaction_collector) =
+            REACTION_COLLECTORS.read().await.get(&reaction.message_id)
+          {
+            if reaction.emoji == reaction_collector.accept {
+              log::info!("ACCEPTED !");
+            } else if reaction.emoji == reaction_collector.reject {
+              log::info!("REJECTED !");
+            }
+          }
+        }
+      }
+
       match &*emoji {
         "✅" => {
           project_manager::check_subscribe(&ctx, &reaction, false).await;
