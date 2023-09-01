@@ -49,6 +49,30 @@ fn index() -> &'static str {
   "hello"
 }
 
+#[post("/deployment", format = "json", data = "<data>")]
+async fn deployment(data: Json<String>, _apikey: ApiKey<'_>, ctx: &State<Context>) {
+  // ctx.http.send_message(channel_id, map)
+  // let sent_msg: Message = msg
+  //     .channel_id
+  //     .say(&ctx.http, "React with ✅ or ❌")
+  //     .await
+  //     .unwrap();
+  //   let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
+  //   let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
+
+  //   {
+  //     let mut react_collect = REACTION_COLLECTORS.write().await;
+
+  //     react_collect.insert(
+  //       sent_msg.id,
+  //       DeploymentReactions {
+  //         accept: accept.emoji,
+  //         reject: reject.emoji,
+  //       },
+  //     );
+  //   }
+}
+
 #[post("/message/<channelid>", data = "<message>")]
 async fn send_message(
   channelid: &str,
@@ -164,7 +188,12 @@ pub async fn run(ctx: Context) {
     .mount("/", routes![index])
     .mount(
       "/auth",
-      routes![send_message, get_channel_message, webhook_from_gcp],
+      routes![
+        send_message,
+        get_channel_message,
+        webhook_from_gcp,
+        deployment
+      ],
     )
     .attach(cors.to_cors().unwrap())
     .launch()
