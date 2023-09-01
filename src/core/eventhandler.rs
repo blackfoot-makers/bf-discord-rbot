@@ -126,7 +126,7 @@ impl EventHandler for Handler {
           && member
             .roles
             .iter()
-            .all(|role| dbg!(ROLE_AUTHORIZED_TO_DEPLOY.contains(&role.0)))
+            .all(|role| ROLE_AUTHORIZED_TO_DEPLOY.contains(&role.0))
         {
           if let Some(reaction_collector) =
             REACTION_COLLECTORS.read().await.get(&reaction.message_id)
