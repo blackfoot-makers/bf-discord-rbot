@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 pub mod discordids;
 
+pub mod common;
 pub mod roles;
 
 pub const NUMBERS: [&str; 11] = [

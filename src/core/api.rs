@@ -1,7 +1,8 @@
 use crate::{
-  constants::discordids::DEVOPS_CHANNEL,
+  constants::{common::TWO_FACTOR_DEPLOYMENT_CHANNEL, discordids::DEVOPS_CHANNEL},
   core::parse,
   database::{self, Message},
+  features::deployment::{DeploymentReactions, REACTION_COLLECTORS},
 };
 use parse::DiscordIds;
 use rocket::{
@@ -49,28 +50,27 @@ fn index() -> &'static str {
   "hello"
 }
 
+//
 #[post("/deployment", format = "json", data = "<data>")]
-async fn deployment(data: Json<String>, _apikey: ApiKey<'_>, ctx: &State<Context>) {
-  // ctx.http.send_message(channel_id, map)
-  // let sent_msg: Message = msg
-  //     .channel_id
-  //     .say(&ctx.http, "React with ✅ or ❌")
-  //     .await
-  //     .unwrap();
-  //   let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
-  //   let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
+async fn two_factor_deployment(data: Json<String>, _apikey: ApiKey<'_>, ctx: &State<Context>) {
+  let sent_msg: serenity::model::prelude::Message = TWO_FACTOR_DEPLOYMENT_CHANNEL
+    .send_message(&ctx.http, |m| m.content("React with ✅ or ❌"))
+    .await
+    .unwrap();
+  let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
+  let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
 
-  //   {
-  //     let mut react_collect = REACTION_COLLECTORS.write().await;
+  {
+    let mut react_collect = REACTION_COLLECTORS.write().await;
 
-  //     react_collect.insert(
-  //       sent_msg.id,
-  //       DeploymentReactions {
-  //         accept: accept.emoji,
-  //         reject: reject.emoji,
-  //       },
-  //     );
-  //   }
+    react_collect.insert(
+      sent_msg.id,
+      DeploymentReactions {
+        accept: accept.emoji,
+        reject: reject.emoji,
+      },
+    );
+  }
 }
 
 #[post("/message/<channelid>", data = "<message>")]
@@ -192,7 +192,7 @@ pub async fn run(ctx: Context) {
         send_message,
         get_channel_message,
         webhook_from_gcp,
-        deployment
+        two_factor_deployment
       ],
     )
     .attach(cors.to_cors().unwrap())
