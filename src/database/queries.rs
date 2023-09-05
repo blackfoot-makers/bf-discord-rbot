@@ -29,7 +29,7 @@ impl Instance {
 
     let conn = self.get_connection();
 
-    let mut user: &mut User = match self.user_search_mut(discord_id) {
+    let user: &mut User = match self.user_search_mut(discord_id) {
       Some(user) => user,
       None => return String::from("User not found"),
     };
@@ -71,7 +71,7 @@ impl Instance {
       .expect("Diesel: Unable to delete messages");
     let previous_bottom_list: Vec<Message> = self
       .messages
-      .drain_filter(|msg| messages_id.contains(&msg.id))
+      .extract_if(|msg| messages_id.contains(&msg.id))
       .collect();
     previous_bottom_list
   }
@@ -221,7 +221,7 @@ impl Instance {
       .set(data.eq(new_data))
       .get_result::<Storage>(&conn)
       .expect("Diesel: Unable to update storage element");
-    self.storage.drain_filter(|s| s.id == storage_id);
+    let _ = self.storage.extract_if(|s| s.id == storage_id);
     self.storage.push(newstorage);
   }
 
@@ -239,7 +239,7 @@ impl Instance {
       .expect("Diesel: Unable to delete storage");
     let previous_bottom_list: Vec<Storage> = self
       .storage
-      .drain_filter(|msg| storage_id.contains(&msg.id))
+      .extract_if(|msg| storage_id.contains(&msg.id))
       .collect();
     previous_bottom_list
   }

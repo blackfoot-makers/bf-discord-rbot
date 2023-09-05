@@ -27,7 +27,7 @@
 #![warn(clippy::all)]
 #![warn(unused_crate_dependencies)]
 #![warn(unused_extern_crates)]
-#![feature(drain_filter)]
+#![feature(extract_if)]
 
 #[macro_use]
 extern crate lazy_static;

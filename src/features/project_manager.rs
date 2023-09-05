@@ -309,10 +309,10 @@ async fn check_containing(
       let userid = members[0].0.user.id.0;
       create_read_permission(context, &guildchannel, userid, ReadState::Allow).await
     } else {
-      let membernames: String = members
-        .iter()
-        .map(|member| format!("{}, ", member.1))
-        .collect();
+      let membernames: String = members.iter().fold(String::new(), |mut out, member| {
+        write!(out, "{}, ", member.1).unwrap();
+        out
+      });
       Ok(Some(format!(
         "Found too many users with this name: {},\n found: {}",
         usertag, membernames

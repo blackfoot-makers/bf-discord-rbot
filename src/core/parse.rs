@@ -117,7 +117,7 @@ lazy_static! {
   static ref MESSAGE_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
 }
 pub fn split_message_args(input: &str) -> Vec<String> {
-  let list_of_quotations = vec!['“', '”', '‘', '’', '«', '»', '„', '“'];
+  let list_of_quotations = ['“', '”', '‘', '’', '«', '»', '„', '“'];
 
   let input_clean: String = input
     .chars()
