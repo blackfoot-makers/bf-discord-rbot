@@ -131,10 +131,27 @@ impl EventHandler for Handler {
           if let Some(reaction_collector) =
             REACTION_COLLECTORS.read().await.get(&reaction.message_id)
           {
+            let client = reqwest::Client::new();
             if reaction.emoji == reaction_collector.accept {
               log::info!("ACCEPTED !");
+              client
+                .post(format!(
+                  "http://127.0.0.1:3000/v1/two-factor-deployment/{}/approve",
+                  reaction_collector.deployment_name
+                ))
+                .send()
+                .await
+                .expect("Failed to send a request to bf-codeflow-supervisor");
             } else if reaction.emoji == reaction_collector.reject {
               log::info!("REJECTED !");
+              client
+                .post(format!(
+                  "http://127.0.0.1:3000/v1/two-factor-deployment/{}/reject",
+                  reaction_collector.deployment_name
+                ))
+                .send()
+                .await
+                .expect("Failed to send a request to bf-codeflow-supervisor");
             }
           }
         }

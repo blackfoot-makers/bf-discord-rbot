@@ -2,7 +2,7 @@ use crate::{
   constants::{common::TWO_FACTOR_DEPLOYMENT_CHANNEL, discordids::DEVOPS_CHANNEL},
   core::parse,
   database::{self, Message},
-  features::deployment::{DeploymentReactions, REACTION_COLLECTORS},
+  features::deployment::{DeploymentReactionsData, REACTION_COLLECTORS},
 };
 use parse::DiscordIds;
 use rocket::{
@@ -51,8 +51,12 @@ fn index() -> &'static str {
 }
 
 //
-#[post("/deployment", format = "json", data = "<data>")]
-async fn two_factor_deployment(data: Json<String>, _apikey: ApiKey<'_>, ctx: &State<Context>) {
+#[post("/deployment/<deployment_name>")]
+async fn two_factor_deployment(
+  deployment_name: &str,
+  _apikey: ApiKey<'_>,
+  ctx: &State<Context>,
+) -> (Status, String) {
   let sent_msg: serenity::model::prelude::Message = TWO_FACTOR_DEPLOYMENT_CHANNEL
     .send_message(&ctx.http, |m| m.content("React with ✅ or ❌"))
     .await
@@ -60,16 +64,22 @@ async fn two_factor_deployment(data: Json<String>, _apikey: ApiKey<'_>, ctx: &St
   let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
   let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
 
-  {
-    let mut react_collect = REACTION_COLLECTORS.write().await;
-
-    react_collect.insert(
-      sent_msg.id,
-      DeploymentReactions {
-        accept: accept.emoji,
-        reject: reject.emoji,
-      },
-    );
+  match REACTION_COLLECTORS.try_write() {
+    Err(err) => {
+      log::error!("Failed to write into REACTION_COLLECTORS: {} ", err);
+      (Status::InternalServerError, "error".to_string())
+    }
+    Ok(mut react_collect) => {
+      react_collect.insert(
+        sent_msg.id,
+        DeploymentReactionsData {
+          deployment_name: deployment_name.to_string(),
+          accept: accept.emoji,
+          reject: reject.emoji,
+        },
+      );
+      (Status::Ok, ":ok:".to_string())
+    }
   }
 }
 
