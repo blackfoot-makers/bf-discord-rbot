@@ -90,12 +90,13 @@ pub async fn handle_event(interaction: Interaction, ctx: Context) {
           .unwrap()
       }
       "office-week" => {
-        let month = Utc::now().iso_week().week() % 4;
+        let month = Utc::now().iso_week().week() % 4 + 2;
+        let result = format!("it's currently S0{month}");
         command
           .create_interaction_response(&ctx.http, |res| {
             res
               .kind(InteractionResponseType::ChannelMessageWithSource)
-              .interaction_response_data(|resdata| resdata.content(month.to_string()))
+              .interaction_response_data(|resdata| resdata.content(result))
           })
           .await
           .unwrap()
