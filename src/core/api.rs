@@ -51,9 +51,9 @@ fn index() -> &'static str {
 }
 
 //
-#[post("/deployment/<deployment_name>")]
+#[post("/deployment/<short_sha>")]
 async fn two_factor_deployment(
-  deployment_name: &str,
+  short_sha: &str,
   _apikey: ApiKey<'_>,
   ctx: &State<Context>,
 ) -> (Status, String) {
@@ -74,7 +74,7 @@ async fn two_factor_deployment(
       react_collect.insert(
         sent_msg.id,
         DeploymentReactionsData {
-          deployment_name: deployment_name.to_string(),
+          short_sha: short_sha.to_string(),
           accept: accept.emoji,
           reject: reject.emoji,
         },

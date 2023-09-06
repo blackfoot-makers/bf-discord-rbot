@@ -4,7 +4,8 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock as TokioRwLock;
 
 pub struct DeploymentReactionsData {
-  pub deployment_name: String,
+  /// Unique ID used to dissociate deployments
+  pub short_sha: String,
   pub accept: ReactionType,
   pub reject: ReactionType,
 }

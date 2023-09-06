@@ -133,21 +133,21 @@ impl EventHandler for Handler {
 
           if let Some(reaction_collector) = handler.get(&reaction.message_id) {
             if reaction.emoji == reaction_collector.accept {
-              log::info!("ACCEPTED: {}", reaction_collector.deployment_name);
+              log::info!("ACCEPTED: {}", reaction_collector.short_sha);
               reqwest::Client::new()
                 .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
                   "v1/two-factor-deployment/{}/approve",
-                  reaction_collector.deployment_name
+                  reaction_collector.short_sha
                 )))
                 .send()
                 .await
                 .expect("Failed to send a request to bf-codeflow-supervisor");
             } else if reaction.emoji == reaction_collector.reject {
-              log::info!("REJECTED: {}", reaction_collector.deployment_name);
+              log::info!("REJECTED: {}", reaction_collector.short_sha);
               reqwest::Client::new()
                 .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
                   "v1/two-factor-deployment/{}/reject",
-                  reaction_collector.deployment_name
+                  reaction_collector.short_sha
                 )))
                 .send()
                 .await
