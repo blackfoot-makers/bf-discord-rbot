@@ -511,37 +511,34 @@ pub async fn check_subscribe_bottom_list(
 
 #[command]
 pub async fn remove_user_from_all(params: CallBackParams<'_>) -> CallbackReturn {
-  if let Ok((useid, _)) = discord_str_to_id(&params.args[1], Some(DiscordIds::User)) {
-    let channels = params
-      .message
-      .guild_id
-      .expect("Unable to find guildid in message")
-      .channels(&params.context.http)
+  let (useid, _) = discord_str_to_id(&params.args[1], Some(DiscordIds::User))?;
+  let channels = params
+    .message
+    .guild_id
+    .expect("Unable to find guildid in message")
+    .channels(&params.context.http)
+    .await
+    .unwrap();
+  let text_projects_channels: Vec<_> = channels
+    .iter()
+    .filter(|(_, chan)| {
+      chan.kind == ChannelType::Text
+        && match chan.parent_id {
+          Some(chan) => chan == PROJECT_CATEGORY,
+          _ => false,
+        }
+    })
+    .collect();
+
+  for (channel_id, _) in text_projects_channels {
+    channel_id
+      .delete_permission(
+        &params.context.http,
+        PermissionOverwriteType::Member(UserId(useid)),
+      )
       .await
       .unwrap();
-    let text_projects_channels: Vec<_> = channels
-      .iter()
-      .filter(|(_, chan)| {
-        chan.kind == ChannelType::Text
-          && match chan.parent_id {
-            Some(chan) => chan == PROJECT_CATEGORY,
-            _ => false,
-          }
-      })
-      .collect();
-
-    for (channel_id, _) in text_projects_channels {
-      channel_id
-        .delete_permission(
-          &params.context.http,
-          PermissionOverwriteType::Member(UserId(useid)),
-        )
-        .await
-        .unwrap();
-    }
-
-    Ok(Some(String::from(":ok:")))
-  } else {
-    Ok(Some(String::from("Unable to parse userid")))
   }
+
+  Ok(Some(String::from(":ok:")))
 }
