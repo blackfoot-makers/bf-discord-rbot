@@ -134,6 +134,7 @@ impl EventHandler for Handler {
           if let Some(reaction_collector) = handler.get(&reaction.message_id) {
             if reaction.emoji == reaction_collector.accept {
               log::info!("ACCEPTED: {}", reaction_collector.short_sha);
+
               reqwest::Client::new()
                 .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
                   "v1/two-factor-deployment/{}/approve",
@@ -142,8 +143,10 @@ impl EventHandler for Handler {
                 .send()
                 .await
                 .expect("Failed to send a request to bf-codeflow-supervisor");
+              handler.remove_entry(&reaction.message_id);
             } else if reaction.emoji == reaction_collector.reject {
               log::info!("REJECTED: {}", reaction_collector.short_sha);
+
               reqwest::Client::new()
                 .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
                   "v1/two-factor-deployment/{}/reject",
@@ -152,9 +155,9 @@ impl EventHandler for Handler {
                 .send()
                 .await
                 .expect("Failed to send a request to bf-codeflow-supervisor");
+              handler.remove_entry(&reaction.message_id);
             }
           }
-          handler.remove_entry(&reaction.message_id);
         }
       }
 
