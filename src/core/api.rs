@@ -67,7 +67,8 @@ async fn two_factor_deployment(
   match REACTION_COLLECTORS.try_write() {
     Err(err) => {
       log::error!("Failed to write into REACTION_COLLECTORS: {} ", err);
-      (Status::InternalServerError, "error".to_string())
+
+      return (Status::InternalServerError, "error".to_string());
     }
     Ok(mut react_collect) => {
       react_collect.insert(
@@ -78,9 +79,9 @@ async fn two_factor_deployment(
           reject: reject.emoji,
         },
       );
-      (Status::Ok, ":ok:".to_string())
     }
   }
+  (Status::Ok, ":ok:".to_string())
 }
 
 #[post("/message/<channelid>", data = "<message>")]

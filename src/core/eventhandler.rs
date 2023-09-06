@@ -1,6 +1,7 @@
 use super::process::{archive_activity, database_update, getbotid};
 use super::validation::{check_validation, WaitingValidation};
 use super::{api, parse, slash_command};
+use crate::constants::common::CODEFLOW_SUPERVISOR_URL;
 use crate::constants::roles::ROLE_AUTHORIZED_TO_DEPLOY;
 use crate::core::process::process_message;
 use crate::features::deployment::REACTION_COLLECTORS;
@@ -128,32 +129,32 @@ impl EventHandler for Handler {
             .iter()
             .all(|role| ROLE_AUTHORIZED_TO_DEPLOY.contains(&role.0))
         {
-          if let Some(reaction_collector) =
-            REACTION_COLLECTORS.read().await.get(&reaction.message_id)
-          {
-            let client = reqwest::Client::new();
+          let mut handler = REACTION_COLLECTORS.write().await;
+
+          if let Some(reaction_collector) = handler.get(&reaction.message_id) {
             if reaction.emoji == reaction_collector.accept {
-              log::info!("ACCEPTED !");
-              client
-                .post(format!(
-                  "http://127.0.0.1:3000/v1/two-factor-deployment/{}/approve",
+              log::info!("ACCEPTED: {}", reaction_collector.deployment_name);
+              reqwest::Client::new()
+                .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
+                  "v1/two-factor-deployment/{}/approve",
                   reaction_collector.deployment_name
-                ))
+                )))
                 .send()
                 .await
                 .expect("Failed to send a request to bf-codeflow-supervisor");
             } else if reaction.emoji == reaction_collector.reject {
-              log::info!("REJECTED !");
-              client
-                .post(format!(
-                  "http://127.0.0.1:3000/v1/two-factor-deployment/{}/reject",
+              log::info!("REJECTED: {}", reaction_collector.deployment_name);
+              reqwest::Client::new()
+                .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
+                  "v1/two-factor-deployment/{}/reject",
                   reaction_collector.deployment_name
-                ))
+                )))
                 .send()
                 .await
                 .expect("Failed to send a request to bf-codeflow-supervisor");
             }
           }
+          handler.remove_entry(&reaction.message_id);
         }
       }
 
