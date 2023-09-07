@@ -1,11 +1,8 @@
-use super::process::{archive_activity, database_update, getbotid};
-use super::validation::{check_validation, WaitingValidation};
-use super::{api, parse, slash_command};
-use crate::constants::common::CODEFLOW_SUPERVISOR_URL;
-use crate::constants::roles::ROLE_AUTHORIZED_TO_DEPLOY;
-use crate::core::process::process_message;
-use crate::features::deployment::REACTION_COLLECTORS;
-use crate::features::{invite_action, mecleanup, project_manager, Features};
+use std::{
+  env, process,
+  sync::atomic::{AtomicBool, Ordering},
+};
+
 use log::{error, info};
 use serenity::http::CacheHttp;
 use serenity::model::id::ChannelId;
@@ -22,9 +19,19 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{
-  env, process,
-  sync::atomic::{AtomicBool, Ordering},
+
+use crate::{
+  core::{
+    api,
+    process::{archive_activity, database_update, getbotid, process_message},
+    slash_command,
+    validation::check_validation,
+    validation::WaitingValidation,
+  },
+  features::{
+    deployment::{DeploymentReactionsData, ValidationEmoji},
+    invite_action, mecleanup, project_manager, Features,
+  },
 };
 
 struct Handler {
@@ -115,59 +122,19 @@ impl EventHandler for Handler {
       .unwrap()
       .is_own(&ctx.cache);
     let user_id = reaction.user_id.unwrap();
-    let guild = parse::get_guild(reaction.channel_id, &ctx, None)
-      .await
-      .unwrap();
 
     if user_id != botid && isown {
       let emoji = reaction.emoji.as_data();
-
-      if let Ok(member) = guild.member(&ctx.http, user_id).await {
-        if member.roles.len() >= 1
-          && member
-            .roles
-            .iter()
-            .all(|role| ROLE_AUTHORIZED_TO_DEPLOY.contains(&role.0))
-        {
-          let mut handler = REACTION_COLLECTORS.write().await;
-
-          if let Some(reaction_collector) = handler.get(&reaction.message_id) {
-            if reaction.emoji == reaction_collector.accept {
-              log::info!("ACCEPTED: {}", reaction_collector.short_sha);
-
-              reqwest::Client::new()
-                .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
-                  "v1/two-factor-deployment/{}/approve",
-                  reaction_collector.short_sha
-                )))
-                .send()
-                .await
-                .expect("Failed to send a request to bf-codeflow-supervisor");
-              handler.remove_entry(&reaction.message_id);
-            } else if reaction.emoji == reaction_collector.reject {
-              log::info!("REJECTED: {}", reaction_collector.short_sha);
-
-              reqwest::Client::new()
-                .post(CODEFLOW_SUPERVISOR_URL.format_url(format!(
-                  "v1/two-factor-deployment/{}/reject",
-                  reaction_collector.short_sha
-                )))
-                .send()
-                .await
-                .expect("Failed to send a request to bf-codeflow-supervisor");
-              handler.remove_entry(&reaction.message_id);
-            }
-          }
-        }
-      }
 
       match &*emoji {
         "✅" => {
           project_manager::check_subscribe(&ctx, &reaction, false).await;
           check_validation(&ctx, &reaction, &emoji).await;
+          DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Approve).await;
         }
         "❌" => {
           check_validation(&ctx, &reaction, &emoji).await;
+          DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Reject).await;
         }
         "🧹" => {
           mecleanup::check_mecleanup(&ctx, &reaction).await;

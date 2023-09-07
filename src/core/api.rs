@@ -1,5 +1,5 @@
 use crate::{
-  constants::{common::TWO_FACTOR_DEPLOYMENT_CHANNEL, discordids::DEVOPS_CHANNEL},
+  constants::discordids::{DEVOPS_CHANNEL, TWO_FACTOR_DEPLOYMENT_CHANNEL},
   core::parse,
   database::{self, Message},
   features::deployment::{DeploymentReactionsData, REACTION_COLLECTORS},
@@ -61,26 +61,20 @@ async fn two_factor_deployment(
     .send_message(&ctx.http, |m| m.content("React with ✅ or ❌"))
     .await
     .unwrap();
-  let accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
-  let reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
+  let _accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
+  let _reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
 
-  match REACTION_COLLECTORS.try_write() {
-    Err(err) => {
-      log::error!("Failed to write into REACTION_COLLECTORS: {} ", err);
+  {
+    let mut react_collect = REACTION_COLLECTORS.write().await;
 
-      return (Status::InternalServerError, "error".to_string());
-    }
-    Ok(mut react_collect) => {
-      react_collect.insert(
-        sent_msg.id,
-        DeploymentReactionsData {
-          short_sha: short_sha.to_string(),
-          accept: accept.emoji,
-          reject: reject.emoji,
-        },
-      );
-    }
+    react_collect.insert(
+      sent_msg.id,
+      DeploymentReactionsData {
+        short_sha: short_sha.to_string(),
+      },
+    );
   }
+
   (Status::Ok, ":ok:".to_string())
 }
 
