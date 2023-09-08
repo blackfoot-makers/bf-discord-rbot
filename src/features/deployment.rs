@@ -7,7 +7,10 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock as TokioRwLock;
 
 use crate::{
-  constants::{common::CODEFLOW_SUPERVISOR_URL, roles::ROLE_AUTHORIZED_TO_DEPLOY},
+  constants::{
+    common::{CODEFLOW_SUPERVISOR_URL, SUPERVISOR_API_KEY},
+    roles::ROLE_AUTHORIZED_TO_DEPLOY,
+  },
   core::parse,
 };
 
@@ -59,6 +62,7 @@ impl DeploymentReactionsData {
               "v1/two-factor-deployment/{}/{}",
               reaction_collector.short_sha, validation_str
             )))
+            .header("x-api-key", SUPERVISOR_API_KEY.to_string())
             .send()
             .await
             .expect("Failed to send a request to bf-codeflow-supervisor");

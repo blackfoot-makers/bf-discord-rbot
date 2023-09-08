@@ -127,12 +127,12 @@ impl EventHandler for Handler {
       let emoji = reaction.emoji.as_data();
 
       match &*emoji {
-        "✅" => {
+        "✅" | "%E2%9C%85" => {
           project_manager::check_subscribe(&ctx, &reaction, false).await;
           check_validation(&ctx, &reaction, &emoji).await;
           DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Approve).await;
         }
-        "❌" => {
+        "❌" | "%E2%9D%8C" => {
           check_validation(&ctx, &reaction, &emoji).await;
           DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Reject).await;
         }
