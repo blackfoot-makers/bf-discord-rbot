@@ -1,7 +1,8 @@
 use crate::{
-  constants::discordids::DEVOPS_CHANNEL,
+  constants::discordids::{DEVOPS_CHANNEL, TWO_FACTOR_DEPLOYMENT_CHANNEL},
   core::parse,
   database::{self, Message},
+  features::deployment::{DeploymentReactionsData, REACTION_COLLECTORS},
 };
 use parse::DiscordIds;
 use rocket::{
@@ -12,7 +13,7 @@ use rocket::{
 };
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use serde_derive::Deserialize;
-use serenity::{client::Context, model::id::ChannelId};
+use serenity::{builder::CreateEmbed, client::Context, model::id::ChannelId};
 use std::env;
 
 struct ApiKey<'r>(&'r str);
@@ -47,6 +48,52 @@ impl<'r> FromRequest<'r> for ApiKey<'r> {
 #[get("/")]
 fn index() -> &'static str {
   "hello"
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Deployment {
+  deployment_name: String,
+  ci_url: String,
+}
+
+//
+#[post("/deployment/<short_sha>", format = "json", data = "<body>")]
+async fn two_factor_deployment(
+  short_sha: &str,
+  body: Json<Deployment>,
+  _apikey: ApiKey<'_>,
+  ctx: &State<Context>,
+) -> (Status, String) {
+  let sent_msg: serenity::model::prelude::Message = TWO_FACTOR_DEPLOYMENT_CHANNEL
+    .send_message(&ctx.http, |m| {
+      let mut embed = CreateEmbed::default();
+      embed.title("2FD");
+      embed.url(&body.ci_url);
+      embed.description(format!(
+        "A Github Actions want to update **{}** docker image.\n\n✅ Accept | ❌ Reject",
+        body.deployment_name
+      ));
+
+      m.set_embed(embed);
+      m
+    })
+    .await
+    .unwrap();
+  let _accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
+  let _reject = sent_msg.react(&ctx.http, '❌').await.unwrap();
+
+  {
+    let mut react_collect = REACTION_COLLECTORS.write().await;
+
+    react_collect.insert(
+      sent_msg.id,
+      DeploymentReactionsData {
+        short_sha: short_sha.to_string(),
+      },
+    );
+  }
+
+  (Status::Ok, ":ok:".to_string())
 }
 
 #[post("/message/<channelid>", data = "<message>")]
@@ -164,7 +211,12 @@ pub async fn run(ctx: Context) {
     .mount("/", routes![index])
     .mount(
       "/auth",
-      routes![send_message, get_channel_message, webhook_from_gcp],
+      routes![
+        send_message,
+        get_channel_message,
+        webhook_from_gcp,
+        two_factor_deployment
+      ],
     )
     .attach(cors.to_cors().unwrap())
     .launch()

@@ -1,8 +1,8 @@
-use super::process::{archive_activity, database_update, getbotid};
-use super::validation::{check_validation, WaitingValidation};
-use super::{api, slash_command};
-use crate::core::process::process_message;
-use crate::features::{invite_action, mecleanup, project_manager, Features};
+use std::{
+  env, process,
+  sync::atomic::{AtomicBool, Ordering},
+};
+
 use log::{error, info};
 use serenity::http::CacheHttp;
 use serenity::model::id::ChannelId;
@@ -19,9 +19,19 @@ use serenity::{
   },
   prelude::*,
 };
-use std::{
-  env, process,
-  sync::atomic::{AtomicBool, Ordering},
+
+use crate::{
+  core::{
+    api,
+    process::{archive_activity, database_update, getbotid, process_message},
+    slash_command,
+    validation::check_validation,
+    validation::WaitingValidation,
+  },
+  features::{
+    deployment::{DeploymentReactionsData, ValidationEmoji},
+    invite_action, mecleanup, project_manager, Features,
+  },
 };
 
 struct Handler {
@@ -111,16 +121,20 @@ impl EventHandler for Handler {
       .await
       .unwrap()
       .is_own(&ctx.cache);
+    let user_id = reaction.user_id.unwrap();
 
-    if reaction.user_id.unwrap() != botid && isown {
+    if user_id != botid && isown {
       let emoji = reaction.emoji.as_data();
+
       match &*emoji {
-        "✅" => {
+        "✅" | "%E2%9C%85" => {
           project_manager::check_subscribe(&ctx, &reaction, false).await;
           check_validation(&ctx, &reaction, &emoji).await;
+          DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Approve).await;
         }
-        "❌" => {
+        "❌" | "%E2%9D%8C" => {
           check_validation(&ctx, &reaction, &emoji).await;
+          DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Reject).await;
         }
         "🧹" => {
           mecleanup::check_mecleanup(&ctx, &reaction).await;

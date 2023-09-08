@@ -2,6 +2,7 @@
 pub use development::*;
 #[cfg(feature = "production")]
 pub use production::*;
+use serenity::model::prelude::ChannelId;
 
 pub mod production {
   pub const GUILD_ID: u64 = 464779118857420811;
@@ -15,6 +16,7 @@ pub mod production {
   pub const ANNOYED_CHAN_HERDINGCHATTE: u64 = 570275817804791809;
   pub const ANNOYED_CHAN_CYBERGOD: u64 = 588666452849065994;
   pub const ANNOYED_CHAN_TESTBOT: u64 = 555206410619584519;
+  pub const DEPLOYMENT_CHAN: u64 = 826412321801764894; // todo: change to a real channel
 }
 
 pub mod development {
@@ -30,4 +32,9 @@ pub mod development {
   pub const ANNOYED_CHAN_HERDINGCHATTE: u64 = 555206410619584519;
   pub const ANNOYED_CHAN_CYBERGOD: u64 = 555206410619584519;
   pub const ANNOYED_CHAN_TESTBOT: u64 = 555206410619584519;
+  pub const DEPLOYMENT_CHAN: u64 = 826412321801764894;
+}
+
+lazy_static! {
+  pub static ref TWO_FACTOR_DEPLOYMENT_CHANNEL: ChannelId = ChannelId(DEPLOYMENT_CHAN);
 }

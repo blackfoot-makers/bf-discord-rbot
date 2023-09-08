@@ -366,4 +366,4 @@ pub async fn archive_activity(ctx: &Context, message: &Message) {
   };
 }
 
-pub async fn trigger_inchannel(_: &Message, _: &Context) {}
+pub async fn trigger_inchannel(_msg: &Message, _ctx: &Context) {}
