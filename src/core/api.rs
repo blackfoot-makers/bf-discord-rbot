@@ -13,7 +13,7 @@ use rocket::{
 };
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use serde_derive::Deserialize;
-use serenity::{client::Context, model::id::ChannelId};
+use serenity::{builder::CreateEmbed, client::Context, model::id::ChannelId};
 use std::env;
 
 struct ApiKey<'r>(&'r str);
@@ -50,15 +50,33 @@ fn index() -> &'static str {
   "hello"
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Deployment {
+  deployment_name: String,
+  ci_url: String,
+}
+
 //
-#[post("/deployment/<short_sha>")]
+#[post("/deployment/<short_sha>", format = "json", data = "<body>")]
 async fn two_factor_deployment(
   short_sha: &str,
+  body: Json<Deployment>,
   _apikey: ApiKey<'_>,
   ctx: &State<Context>,
 ) -> (Status, String) {
   let sent_msg: serenity::model::prelude::Message = TWO_FACTOR_DEPLOYMENT_CHANNEL
-    .send_message(&ctx.http, |m| m.content("React with ✅ or ❌"))
+    .send_message(&ctx.http, |m| {
+      let mut embed = CreateEmbed::default();
+      embed.title("2FD");
+      embed.url(&body.ci_url);
+      embed.description(format!(
+        "A Github Actions want to update **{}** docker image.\n\n✅ Accept | ❌ Reject",
+        body.deployment_name
+      ));
+
+      m.set_embed(embed);
+      m
+    })
     .await
     .unwrap();
   let _accept = sent_msg.react(&ctx.http, '✅').await.unwrap();
