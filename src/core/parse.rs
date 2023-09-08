@@ -44,43 +44,86 @@ pub async fn get_guild(
   }
 }
 
+lazy_static! {
+  static ref DISCORD_IDS_REGEX: Regex =
+    Regex::new(r#"<(?<type>@!?|#|@&)(?<id>[0-9]{18,24})>"#).unwrap();
+}
+
 pub fn discord_str_to_id(
   id: &str,
   exepected_type: Option<DiscordIds>,
 ) -> Result<(u64, DiscordIds), String> {
-  let size = id.len();
-  const SIZEBIGINT: usize = 18;
-  if size < SIZEBIGINT {
-    return Err(String::from("Unable to parse, text isn't an disocrd ID"));
-  }
+  let Some(captures) = DISCORD_IDS_REGEX.captures(id) else {
+    return Err("Did not match an discord id".to_string());
+  };
 
-  if size == SIZEBIGINT {
-    let parsedid = id.parse::<u64>().expect("Unable to parse Id, not numeric");
-    Ok((parsedid, DiscordIds::Channel))
-  } else {
-    let parsedid = id[size - (SIZEBIGINT + 1)..size - 1]
-      .parse::<u64>()
-      .expect("Unable to parse Id, badly formated");
-    let identifier = &id[0..size - (SIZEBIGINT + 1)];
-    let discordtype: DiscordIds = match identifier {
-      "<@" | "<@!" => DiscordIds::User,
-      "<#" => DiscordIds::Channel,
-      "<@&" => DiscordIds::Role,
-      _ => DiscordIds::Channel,
-      // Channel can't be pinged so no identifier sadly
-      // _ => return Err(&*format!("Incored type for discordid: {}", identifier)),
-    };
-    if let Some(expected) = exepected_type {
-      if expected != discordtype {
-        let msg = format!(
-          "Mismatched type, expected: {}, got: {}",
-          expected, discordtype
-        );
-        return Err(msg);
-      }
+  let kind = captures.name("type").unwrap();
+  let discord_type: DiscordIds = match kind.as_str() {
+    "@" | "@!" => DiscordIds::User,
+    "#" => DiscordIds::Channel,
+    "@&" => DiscordIds::Role,
+    _ => return Err(format!("Incorect type for discordid: {}", id)),
+  };
+  if let Some(expected) = exepected_type {
+    if expected != discord_type {
+      let msg = format!(
+        "Mismatched type, expected: {}, got: {}",
+        expected, discord_type
+      );
+      return Err(msg);
     }
-    Ok((parsedid, discordtype))
   }
+  let id = captures.name("id").unwrap();
+  // This is already validated by the regex, error should not be possible.
+  let id = id.as_str().parse().unwrap();
+
+  Ok((id, discord_type))
+}
+
+#[test]
+fn test_discord_str_to_id() {
+  assert_eq!(
+    discord_str_to_id("<@256544457594241024>", None).unwrap().1,
+    DiscordIds::User
+  );
+  assert_eq!(
+    discord_str_to_id("<@173013989180178432>", None).unwrap().1,
+    DiscordIds::User
+  );
+  assert_eq!(
+    discord_str_to_id("<@173013989180178432>", None).unwrap().1,
+    DiscordIds::User
+  );
+  assert_eq!(
+    discord_str_to_id("<@1096007878160154697>", None).unwrap().1,
+    DiscordIds::User
+  );
+  assert_eq!(
+    discord_str_to_id("<@!1096007878160154697>", None)
+      .unwrap()
+      .1,
+    DiscordIds::User
+  );
+  assert_eq!(
+    discord_str_to_id("<#1096007878160154697>", None).unwrap().1,
+    DiscordIds::Channel
+  );
+  assert_eq!(
+    discord_str_to_id("<#852815758911340565>", None).unwrap().1,
+    DiscordIds::Channel
+  );
+  assert_eq!(
+    discord_str_to_id("<@&1096007878160154697>", None)
+      .unwrap()
+      .1,
+    DiscordIds::Role
+  );
+  assert_eq!(
+    discord_str_to_id("<@&1148945189935788056>", None)
+      .unwrap()
+      .1,
+    DiscordIds::Role
+  );
 }
 
 #[test]
@@ -117,7 +160,7 @@ lazy_static! {
   static ref MESSAGE_SPLIT: Regex = Regex::new(r#"([^"\s]*"[^"\n]*"[^"\s]*)|([^\s]+)"#).unwrap();
 }
 pub fn split_message_args(input: &str) -> Vec<String> {
-  let list_of_quotations = vec!['“', '”', '‘', '’', '«', '»', '„', '“'];
+  let list_of_quotations = ['“', '”', '‘', '’', '«', '»', '„', '“'];
 
   let input_clean: String = input
     .chars()

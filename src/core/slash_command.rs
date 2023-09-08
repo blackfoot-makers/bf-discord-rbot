@@ -2,6 +2,7 @@ use std::time::SystemTime;
 
 use crate::constants;
 use crate::features::funny;
+use chrono::{Datelike, Utc};
 use procedural_macros::command;
 use serenity::{
   client::Context,
@@ -37,6 +38,11 @@ pub async fn set(params: CallBackParams) -> CallbackReturn {
                 .required(true)
             })
         })
+        .create_application_command(|command| {
+          command
+            .name("office-week")
+            .description("Get the current week of the office")
+        })
     })
     .await
     .unwrap();
@@ -46,40 +52,63 @@ pub async fn set(params: CallBackParams) -> CallbackReturn {
 
 pub async fn handle_event(interaction: Interaction, ctx: Context) {
   if let Interaction::ApplicationCommand(command) = interaction {
-    if command.data.name == "mom" {
-      let mom_result = funny::which_mom_cmdless().await;
-      command
-        .create_interaction_response(&ctx.http, |res| {
-          res
-            .kind(InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|resdata| resdata.content(mom_result.unwrap()))
-        })
-        .await
-        .unwrap()
-    } else if command.data.name == "mom-change" {
-      let newuser = command
-        .data
-        .options
-        .first()
-        .unwrap()
-        .value
-        .as_ref()
-        .unwrap()
-        .as_str()
-        .unwrap();
-      let system_time_now = SystemTime::now();
+    match &*command.data.name {
+      "mom" => {
+        let mom_result = funny::which_mom_cmdless().await;
+        command
+          .create_interaction_response(&ctx.http, |res| {
+            res
+              .kind(InteractionResponseType::ChannelMessageWithSource)
+              .interaction_response_data(|resdata| resdata.content(mom_result.unwrap()))
+          })
+          .await
+          .unwrap()
+      }
+      "mom-change" => {
+        let newuser = command
+          .data
+          .options
+          .first()
+          .unwrap()
+          .value
+          .as_ref()
+          .unwrap()
+          .as_str()
+          .unwrap();
+        let system_time_now = SystemTime::now();
 
-      let mom_result =
-        funny::mom_change_cmdless(&format!("<@{}>", newuser), system_time_now.into()).await;
+        let mom_result =
+          funny::mom_change_cmdless(&format!("<@{}>", newuser), system_time_now.into()).await;
 
-      command
-        .create_interaction_response(&ctx.http, |res| {
-          res
-            .kind(InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|resdata| resdata.content(mom_result.unwrap()))
-        })
-        .await
-        .unwrap()
+        command
+          .create_interaction_response(&ctx.http, |res| {
+            res
+              .kind(InteractionResponseType::ChannelMessageWithSource)
+              .interaction_response_data(|resdata| resdata.content(mom_result.unwrap()))
+          })
+          .await
+          .unwrap()
+      }
+      "office-week" => {
+        let month = Utc::now().iso_week().week() % 4 + 2;
+        let result = format!("it's currently S0{month}");
+        command
+          .create_interaction_response(&ctx.http, |res| {
+            res
+              .kind(InteractionResponseType::ChannelMessageWithSource)
+              .interaction_response_data(|resdata| resdata.content(result))
+          })
+          .await
+          .unwrap()
+      }
+      _ => {}
     }
   }
+}
+
+#[test]
+fn test_office_week() {
+  let month = Utc::now().iso_week().week() % 4 + 2;
+  dbg!(month);
+  //
 }

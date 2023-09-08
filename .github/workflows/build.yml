@@ -21,7 +21,6 @@ jobs:
       image: ${{ github.event.repository.name }}
     secrets:
       GCP_CREDENTIALS_BASE64: ${{ secrets.GCP_CREDENTIALS_BASE64 }}
-  # TODO: Update only on main
   build-image-on-prod:
     if: github.event.pull_request.draft == false
     needs: build-image
