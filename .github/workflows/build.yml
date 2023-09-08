@@ -2,7 +2,7 @@ name: Build Docker images
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feat/2fd"]
   pull_request:
     branches: ["main"]
     types: [ready_for_review, opened, reopened, synchronize]
