@@ -7,6 +7,6 @@ lazy_static! {
 
 impl CODEFLOW_SUPERVISOR_URL {
   pub fn format_url(&self, path: String) -> String {
-    format!("{}/{}", self.to_string(), path)
+    format!("{}/{}", **self, path)
   }
 }

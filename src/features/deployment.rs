@@ -41,7 +41,7 @@ impl DeploymentReactionsData {
     if let Some(reaction_collector) = handler.get(&reaction.message_id) {
       let user_id = reaction.user_id.unwrap();
       let validation_str = validation.as_str();
-      let guild = parse::get_guild(reaction.channel_id, &ctx, None)
+      let guild = parse::get_guild(reaction.channel_id, ctx, None)
         .await
         .unwrap();
 

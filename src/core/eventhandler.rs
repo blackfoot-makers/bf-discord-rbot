@@ -4,7 +4,6 @@ use std::{
 };
 
 use log::{error, info};
-use serenity::http::CacheHttp;
 use serenity::model::id::ChannelId;
 use serenity::model::Timestamp;
 use serenity::{
@@ -19,6 +18,7 @@ use serenity::{
   },
   prelude::*,
 };
+use serenity::{http::CacheHttp, model::prelude::ReactionType};
 
 use crate::{
   core::{
@@ -115,25 +115,18 @@ impl EventHandler for Handler {
   }
 
   async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-    let botid = getbotid(&ctx).await;
-    let isown = reaction
-      .message(&ctx.http)
-      .await
-      .unwrap()
-      .is_own(&ctx.cache);
-    let user_id = reaction.user_id.unwrap();
-
-    if user_id != botid && isown {
-      let emoji = reaction.emoji.as_data();
-
-      match &*emoji {
+    if reaction.user_id.unwrap() == getbotid(&ctx).await {
+      return;
+    }
+    if let ReactionType::Unicode(emoji) = &reaction.emoji {
+      match emoji.as_str() {
         "✅" | "%E2%9C%85" => {
           project_manager::check_subscribe(&ctx, &reaction, false).await;
-          check_validation(&ctx, &reaction, &emoji).await;
+          check_validation(&ctx, &reaction, emoji).await;
           DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Approve).await;
         }
         "❌" | "%E2%9D%8C" => {
-          check_validation(&ctx, &reaction, &emoji).await;
+          check_validation(&ctx, &reaction, emoji).await;
           DeploymentReactionsData::validate(&ctx, &reaction, ValidationEmoji::Reject).await;
         }
         "🧹" => {
@@ -145,18 +138,13 @@ impl EventHandler for Handler {
   }
 
   async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
-    let botid = getbotid(&ctx).await;
-    let isown = reaction
-      .message(&ctx.http)
-      .await
-      .unwrap()
-      .is_own(&ctx.cache);
-
-    if reaction.user_id.unwrap() != botid && isown {
-      let emoji = reaction.emoji.as_data();
-      #[allow(clippy::single_match)] // TODO: remove this when we have more eventualy
-      match &*emoji {
-        "✅" => {
+    if reaction.user_id.unwrap() == getbotid(&ctx).await {
+      return;
+    }
+    #[allow(clippy::single_match)] // TODO: remove this when we have more eventualy
+    if let ReactionType::Unicode(emoji) = &reaction.emoji {
+      match emoji.as_str() {
+        "✅" | "%E2%9C%85" => {
           project_manager::check_subscribe(&ctx, &reaction, true).await;
         }
         _ => {}

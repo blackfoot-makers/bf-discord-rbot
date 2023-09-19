@@ -212,7 +212,7 @@ async fn get_or_update_cache(
     *projects = Some((new_projects, now));
     projects.as_ref().unwrap().0.clone()
   };
-  return find_project(projects, project_to_find, merge_id).await;
+  find_project(projects, project_to_find, merge_id).await
 }
 
 async fn find_project(
