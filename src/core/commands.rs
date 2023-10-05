@@ -320,6 +320,15 @@ lazy_static! {
       channel: None,
       usage: "@BOT check_calendar <date = MM/AAAA>",
       permission: Role::User,
+    },
+    "emoji-steal" =>
+    Command {
+      exec: emoji::emoji_steal,
+      argument_min: 0,
+      argument_max: 0,
+      channel: None,
+      usage: "@BOT emoji-steal (expected to be used as a reply to a message containing an emoji)",
+      permission: Role::User,
     }
   ];
 }
