@@ -90,7 +90,7 @@ pub async fn handle_event(interaction: Interaction, ctx: Context) {
           .unwrap()
       }
       "office-week" => {
-        let month = (Utc::now().iso_week().week() + 2) % 4;
+        let month = (Utc::now().iso_week().week() + 1) % 3 + 1;
         let result = format!("it's currently S0{month}");
         command
           .create_interaction_response(&ctx.http, |res| {
@@ -108,7 +108,7 @@ pub async fn handle_event(interaction: Interaction, ctx: Context) {
 
 #[test]
 fn test_office_week() {
-  let month = (Utc::now().iso_week().week() + 2) % 4;
+  let month = (Utc::now().iso_week().week() + 1) % 3 + 1;
   dbg!(month);
   //
 }
