@@ -19,6 +19,7 @@ pub mod funny;
 pub mod gitlab_preview;
 pub mod invite_action;
 pub mod mecleanup;
+pub mod minecraft;
 pub mod ordering;
 pub mod project_manager;
 pub mod renaming;

@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 
-use crate::constants;
 use crate::features::funny;
+use crate::{constants, features::minecraft};
 use chrono::{Datelike, Utc};
 use procedural_macros::command;
 use serenity::{
@@ -42,6 +42,11 @@ pub async fn set(params: CallBackParams) -> CallbackReturn {
           command
             .name("office-week")
             .description("Get the current week of the office")
+        })
+        .create_application_command(|command| {
+          command
+            .name("playing-mc")
+            .description("Get the list of users connected to minecraft")
         })
     })
     .await
@@ -97,6 +102,17 @@ pub async fn handle_event(interaction: Interaction, ctx: Context) {
             res
               .kind(InteractionResponseType::ChannelMessageWithSource)
               .interaction_response_data(|resdata| resdata.content(result))
+          })
+          .await
+          .unwrap()
+      }
+      "playing-mc" => {
+        let players = minecraft::list_players();
+        command
+          .create_interaction_response(&ctx.http, |res| {
+            res
+              .kind(InteractionResponseType::ChannelMessageWithSource)
+              .interaction_response_data(|resdata| resdata.content(players.join(" ")))
           })
           .await
           .unwrap()

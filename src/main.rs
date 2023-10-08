@@ -28,6 +28,7 @@
 #![warn(unused_crate_dependencies)]
 #![warn(unused_extern_crates)]
 #![feature(extract_if)]
+#![feature(iter_map_windows)]
 
 #[macro_use]
 extern crate lazy_static;
