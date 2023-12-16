@@ -4,7 +4,7 @@ use crate::core::{
   permissions::member_channel_read,
 };
 use crate::database::INSTANCE;
-use log::warn;
+use log::{debug, warn};
 use procedural_macros::command;
 use serenity::{
   model::{

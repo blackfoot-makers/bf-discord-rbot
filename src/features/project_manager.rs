@@ -24,7 +24,7 @@ use crate::{
 };
 use chrono::{offset::Utc, DateTime};
 use futures::FutureExt;
-use log::error;
+use log::{debug, error};
 use procedural_macros::command;
 use serenity::{
   http::Http,

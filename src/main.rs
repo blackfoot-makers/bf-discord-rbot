@@ -40,8 +40,6 @@ extern crate serde_derive;
 extern crate diesel;
 #[macro_use]
 pub mod macros;
-#[macro_use]
-extern crate rocket;
 
 mod constants;
 mod core;

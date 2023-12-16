@@ -8,6 +8,7 @@
 // pub mod docker;
 // pub mod frontline;
 // pub mod airtable;
+// pub mod gitlab_preview;
 
 pub mod anyone;
 pub mod archivage;
@@ -17,7 +18,7 @@ pub mod emoji;
 pub mod events;
 pub mod funny;
 pub mod gemini;
-pub mod gitlab_preview;
+
 pub mod invite_action;
 pub mod mecleanup;
 pub mod minecraft;
@@ -26,6 +27,7 @@ pub mod project_manager;
 pub mod renaming;
 pub mod threadcontrol;
 
+use log::info;
 use serenity::{http, prelude::TypeMapKey};
 use std::sync::Arc;
 use threadcontrol::ThreadControl;

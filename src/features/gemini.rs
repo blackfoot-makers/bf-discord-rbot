@@ -66,37 +66,37 @@ impl GeminiBody {
 
 #[derive(Debug, Deserialize)]
 struct SafetyRatings {
-  category: String,
-  probability: String,
+  _category: String,
+  _probability: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct UsageMetadata {
   #[serde(rename(deserialize = "candidatesTokenCount"))]
-  candidates_token_count: i64,
+  _candidates_token_count: i64,
   #[serde(rename(deserialize = "promptTokenCount"))]
-  prompt_token_count: i64,
+  _prompt_token_count: i64,
   #[serde(rename(deserialize = "totalTokenCount"))]
-  total_token_count: i64,
+  _total_token_count: i64,
 }
 
 #[derive(Debug, Deserialize)]
 struct Candidate {
   content: Content,
   #[serde(rename(deserialize = "finishReason"))]
-  finish_reason: Option<String>,
+  _finish_reason: Option<String>,
   #[serde(rename(deserialize = "safetyRatings"))]
-  safety_ratings: Vec<SafetyRatings>,
+  _safety_ratings: Vec<SafetyRatings>,
 }
 
 #[derive(Debug, Deserialize)]
 struct GeminiResult {
   candidates: Vec<Candidate>,
   #[serde(rename(deserialize = "usageMetadata"))]
-  usage_metadata: Option<UsageMetadata>,
+  _usage_metadata: Option<UsageMetadata>,
 }
 
-async fn query_gemini(question: &str) -> Vec<GeminiResult> {
+async fn query_gemini(question: &str) -> Result<Vec<GeminiResult>, &str> {
   const API_ENDPOINT: &str = "us-east4-aiplatform.googleapis.com";
   const PROJECT_ID: &str = "blackfoot-dev";
   const MODEL_ID: &str = "gemini-pro-vision";
@@ -113,14 +113,20 @@ async fn query_gemini(question: &str) -> Vec<GeminiResult> {
     .send()
     .await
     .unwrap();
-  response.json().await.unwrap()
+
+  let res_text = response.text().await.unwrap();
+  let Ok(res) = serde_json::from_str(&res_text) else {
+    eprintln!("unable to deserialize gemini response: \n{res_text}");
+    return Err("failed to query gemini");
+  };
+  Ok(res)
 }
 
 #[command]
 pub async fn question(params: CallBackParams) -> CallbackReturn {
   let question = params.args[1..].join(" ");
   let res = query_gemini(&question).await;
-  let response_text = res
+  let response_text = res?
     .into_iter()
     .flat_map(|r| {
       r.candidates
@@ -133,8 +139,10 @@ pub async fn question(params: CallBackParams) -> CallbackReturn {
 
 #[tokio::test]
 async fn test_call_gemini() {
-  let res = query_gemini("what is the result of 2 + 3 * 29").await;
+  let res =
+    query_gemini("Can you tell  the story of why Baptiste is nicknamed \"potatoe aim\" ?").await;
   let response_text: String = res
+    .unwrap()
     .into_iter()
     .flat_map(|r| {
       r.candidates
@@ -148,237 +156,269 @@ async fn test_call_gemini() {
 #[test]
 fn test_gemini_deserialize() {
   let input = r#"[
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Baptiste earned the nickname \"Potato\" during his early days as a member of the"
+              }
+            ]
+          },
+          "safetyRatings": [
             {
-              "text": "Sure, here is a test:\n\n**Question 1:**\n\nWhat is"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " Talon organization. During a mission, Baptiste and his team were tasked with infiltrating"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": " the capital of France?\n\nA. London\nB. Paris\nC."
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " a heavily guarded facility. As they made their way through the complex, they encountered a group of guards who were armed with powerful weapons.\n\nIn the ensuing fire"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": " Rome\nD. Berlin\n\n**Question 2:**\n\nWhat is the largest ocean in the world?\n\nA. Pacific Ocean\nB. Atlantic Ocean\n"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "fight, Baptiste's teammates were quickly overwhelmed and taken down. Baptiste, however, managed to hold his own, using his agility and combat skills to evade the"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": "C. Indian Ocean\nD. Arctic Ocean\n\n**Question 3:**\n\nWhat is the most common element in the universe?\n\nA. Hydrogen\nB"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " enemy fire. As the guards closed in on him, Baptiste realized that he needed to find a way to escape.\n\nSpotting a pile of potatoes nearby, Baptiste had an idea. He quickly grabbed a handful of potatoes and threw them at"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": ". Helium\nC. Carbon\nD. Oxygen\n\n**Question 4:**\n\nWhat is the name of the largest planet in our solar system?\n\nA. Jupiter\nB. Saturn\nC. Uranus\nD. Neptune\n\n**"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " the guards, blinding them momentarily. This gave Baptiste the opportunity to make his escape, and he managed to slip away without being seen.\n\nAfter the mission, Baptiste's teammates couldn't help but laugh at the story of how he"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": "Question 5:**\n\nWhat is the name of the star at the center of our solar system?\n\nA. Sun\nB. Moon\nC. Mars\nD. Venus\n\n**Answers:**\n\n1. B. Paris\n2"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " had used potatoes to escape. They started calling him \"Potato\" as a joke, and the nickname stuck.\n\nBaptiste initially disliked the nickname, but over time he came to embrace it. He realized that the nickname was a reminder of his resourcefulness and his ability to think on his feet. He also liked the fact"
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "candidates": [
-      {
-        "content": {
-          "role": "model",
-          "parts": [
+          "safetyRatings": [
             {
-              "text": ". A. Pacific Ocean\n3. A. Hydrogen\n4. A. Jupiter\n5. A. Sun\n\nI hope you enjoyed this test!"
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
             }
           ]
-        },
-        "finishReason": "STOP",
-        "safetyRatings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
+        }
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": " that it made him stand out from the other members of Talon.\n\nTo this day, Baptiste is still known as \"Potato\" by his teammates and associates. The nickname is a testament to his unique skills and his ability to overcome any challenge that comes his way."
+              }
+            ]
           },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
-          }
-        ]
+          "finishReason": "STOP",
+          "safetyRatings": [
+            {
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
+            }
+          ]
+        }
+      ],
+      "usageMetadata": {
+        "promptTokenCount": 16,
+        "candidatesTokenCount": 309,
+        "totalTokenCount": 325
       }
-    ],
-    "usageMetadata": {
-      "promptTokenCount": 1,
-      "candidatesTokenCount": 223,
-      "totalTokenCount": 224
     }
-  }
-]"#;
+  ]"#;
 
   let deserialized: Vec<GeminiResult> = serde_json::from_str(input).unwrap();
   let response_text: String = deserialized

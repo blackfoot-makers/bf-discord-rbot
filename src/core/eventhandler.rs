@@ -22,7 +22,6 @@ use serenity::{http::CacheHttp, model::prelude::ReactionType};
 
 use crate::{
   core::{
-    api,
     process::{archive_activity, database_update, getbotid, process_message},
     slash_command,
     validation::check_validation,
@@ -182,10 +181,11 @@ impl EventHandler for Handler {
     data.get_mut::<Features>().unwrap().thread_control.resume();
   }
 
-  async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
+  async fn cache_ready(&self, _ctx: Context, _guilds: Vec<GuildId>) {
     info!("Cache ready");
     if !self.is_loop_running.load(Ordering::Relaxed) {
-      tokio::spawn(async move { api::run(ctx).await });
+      // FIXME: disabled the API, should be secured and updated
+      // tokio::spawn(async move { api::run(ctx).await });
       self.is_loop_running.swap(true, Ordering::Relaxed);
     }
   }

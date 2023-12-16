@@ -4,6 +4,7 @@ use crate::{
 };
 use chrono::{prelude::*, Duration};
 use chrono_tz::Europe::Paris;
+use log::{error, info};
 use procedural_macros::command;
 use regex::Regex;
 use serenity::{
