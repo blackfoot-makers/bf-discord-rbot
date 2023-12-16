@@ -103,7 +103,7 @@ struct GeminiResult {
 async fn query_gemini(question: &str) -> Result<Vec<GeminiResult>, &str> {
   const API_ENDPOINT: &str = "us-east4-aiplatform.googleapis.com";
   const PROJECT_ID: &str = "blackfoot-dev";
-  const MODEL_ID: &str = "gemini-pro-vision";
+  const MODEL_ID: &str = "gemini-pro";
   const LOCATION_ID: &str = "us-east4";
 
   let url = format!("https://{API_ENDPOINT}/v1beta1/projects/{PROJECT_ID}/locations/{LOCATION_ID}/publishers/google/models/{MODEL_ID}:streamGenerateContent");
