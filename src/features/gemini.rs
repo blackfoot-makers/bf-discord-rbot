@@ -57,7 +57,8 @@ impl GeminiBody {
         }],
       }],
       generation_config: GenerationConfig {
-        max_output_tokens: 2048,
+        // This is to avoid multiple discord messages
+        max_output_tokens: 1900,
         temperature: 0.4,
         top_p: 1,
         top_k: 32,
@@ -67,9 +68,10 @@ impl GeminiBody {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(unused)]
 struct SafetyRatings {
-  _category: String,
-  _probability: String,
+  category: String,
+  probability: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -157,279 +159,20 @@ async fn test_call_gemini() {
 
 #[test]
 fn test_gemini_deserialize() {
-  let input = r#"[
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": "Baptiste earned the nickname \"Potato\" during his early days as a member of the"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " Talon organization. During a mission, Baptiste and his team were tasked with infiltrating"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " a heavily guarded facility. As they made their way through the complex, they encountered a group of guards who were armed with powerful weapons.\n\nIn the ensuing fire"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": "fight, Baptiste's teammates were quickly overwhelmed and taken down. Baptiste, however, managed to hold his own, using his agility and combat skills to evade the"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " enemy fire. As the guards closed in on him, Baptiste realized that he needed to find a way to escape.\n\nSpotting a pile of potatoes nearby, Baptiste had an idea. He quickly grabbed a handful of potatoes and threw them at"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " the guards, blinding them momentarily. This gave Baptiste the opportunity to make his escape, and he managed to slip away without being seen.\n\nAfter the mission, Baptiste's teammates couldn't help but laugh at the story of how he"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " had used potatoes to escape. They started calling him \"Potato\" as a joke, and the nickname stuck.\n\nBaptiste initially disliked the nickname, but over time he came to embrace it. He realized that the nickname was a reminder of his resourcefulness and his ability to think on his feet. He also liked the fact"
-              }
-            ]
-          },
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": " that it made him stand out from the other members of Talon.\n\nTo this day, Baptiste is still known as \"Potato\" by his teammates and associates. The nickname is a testament to his unique skills and his ability to overcome any challenge that comes his way."
-              }
-            ]
-          },
-          "finishReason": "STOP",
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ],
-      "usageMetadata": {
-        "promptTokenCount": 16,
-        "candidatesTokenCount": 309,
-        "totalTokenCount": 325
-      }
-    }
-  ]"#;
+  use std::fs;
 
-  let deserialized: Vec<GeminiResult> = serde_json::from_str(input).unwrap();
-  let response_text: String = deserialized
-    .into_iter()
-    .flat_map(|r| {
-      r.candidates
-        .into_iter()
-        .flat_map(|c| c.content.parts.into_iter().map(|p| p.text))
-    })
-    .collect();
-  println!("{response_text}");
+  for test_files in ["gemini-1.json", "gemini-2.json"] {
+    let input = fs::read_to_string(format!("fixtures/tests/{test_files}")).unwrap();
+
+    let deserialized: Vec<GeminiResult> = serde_json::from_str(&input).unwrap();
+    let response_text: String = deserialized
+      .into_iter()
+      .flat_map(|r| {
+        r.candidates
+          .into_iter()
+          .flat_map(|c| c.content.parts.into_iter().map(|p| p.text))
+      })
+      .collect();
+    println!("{response_text}");
+  }
 }

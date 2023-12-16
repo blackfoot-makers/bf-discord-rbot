@@ -1,0 +1,40 @@
+[
+  {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "1998"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "safetyRatings": [
+          {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "probability": "NEGLIGIBLE"
+          },
+          {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "probability": "NEGLIGIBLE"
+          }
+        ]
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 8,
+      "candidatesTokenCount": 4,
+      "totalTokenCount": 12
+    }
+  }
+]
