@@ -16,6 +16,7 @@ pub mod deployment;
 pub mod emoji;
 pub mod events;
 pub mod funny;
+pub mod gemini;
 pub mod gitlab_preview;
 pub mod invite_action;
 pub mod mecleanup;

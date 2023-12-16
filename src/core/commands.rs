@@ -2,8 +2,8 @@
 use std::{collections::HashMap, error::Error, fmt::Write, process, str::FromStr};
 
 use super::{parse, slash_command};
-use crate::features::anyone::anyone;
 use crate::features::calendar::check_calendar;
+use crate::features::{anyone::anyone, gemini};
 use crate::features::{
   archivage, emoji, funny, invite_action, ordering, project_manager, renaming,
 };
@@ -328,6 +328,15 @@ lazy_static! {
       argument_max: 0,
       channel: None,
       usage: "@BOT emoji-steal (expected to be used as a reply to a message containing an emoji)",
+      permission: Role::User,
+    },
+    "question" =>
+    Command {
+      exec: gemini::question,
+      argument_min: 1,
+      argument_max: 100,
+      channel: None,
+      usage: "@BOT question \"What is the capital of France ?\"",
       permission: Role::User,
     }
   ];

@@ -1,15 +1,15 @@
 version: "3"
 
 services:
-  bot:
-    build: .
-    container_name: "discord-rbot"
-    ports:
-      - 8080:8080
-    env_file: .env
+  # bot:
+  #   build: .
+  #   container_name: "discord-rbot"
+  #   ports:
+  #     - 8080:8080
+  #   env_file: .env
 
   postgres:
-    image: postgres
+    image: postgres:15
     restart: always
     ports:
       - 5432:5432

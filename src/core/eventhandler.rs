@@ -178,7 +178,7 @@ impl EventHandler for Handler {
   async fn resume(&self, ctx: Context, _: ResumedEvent) {
     info!("Resumed");
     let data = &mut ctx.data.write().await;
-    // FIXME: This is cool but we never get a stoped event
+    // FIXME: This is cool but we never get a stopped event
     data.get_mut::<Features>().unwrap().thread_control.resume();
   }
 

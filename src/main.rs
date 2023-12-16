@@ -29,6 +29,8 @@
 #![warn(unused_extern_crates)]
 #![feature(extract_if)]
 #![feature(iter_map_windows)]
+#![feature(lazy_cell)]
+#![feature(async_closure)]
 
 #[macro_use]
 extern crate lazy_static;

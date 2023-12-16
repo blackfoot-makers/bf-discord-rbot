@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose, Engine as _};
 use procedural_macros::command;
 use serenity::model::prelude::GuildId;
 
@@ -24,7 +25,7 @@ pub async fn add(params: CallBackParams<'_>) -> CallbackReturn {
     let base64_img = format!(
       "data:image/{};base64,{}",
       extension,
-      base64::encode(response_body)
+      general_purpose::STANDARD.encode(response_body)
     );
 
     let guild = params.message.guild_id.unwrap_or(GuildId(GUILD_ID));
@@ -63,7 +64,7 @@ pub async fn emoji_steal(params: CallBackParams<'_>) -> CallbackReturn {
         let base64_img = format!(
           "data:image/{};base64,{}",
           extension,
-          base64::encode(response_body)
+          general_purpose::STANDARD.encode(response_body)
         );
 
         let guild = params.message.guild_id.unwrap_or(GuildId(GUILD_ID));
