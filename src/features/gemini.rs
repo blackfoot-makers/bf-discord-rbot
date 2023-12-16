@@ -8,7 +8,9 @@ use crate::core::commands::{CallBackParams, CallbackReturn};
 static TOKEN: OnceCell<AccessToken> = OnceCell::const_new();
 
 async fn get_token() -> AccessToken {
-  let creds = yup_oauth2::read_service_account_key("blackfoot-dev-bd1f97a0d61e.json")
+  let key_path = std::env::var("GOOGLE_APPLICATION_CREDENTIALS")
+    .unwrap_or_else(|_| "blackfoot-dev-bd1f97a0d61e.json".to_string());
+  let creds = yup_oauth2::read_service_account_key(key_path)
     .await
     .unwrap();
   let sa = ServiceAccountAuthenticator::builder(creds)
