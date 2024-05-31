@@ -85,6 +85,7 @@ fn remove_cooked(attrs: &mut Vec<Attribute>) -> Vec<Attribute> {
   cooked
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CommandFun {
   /// `#[...]`-style attributes.
@@ -170,6 +171,7 @@ impl ToTokens for CommandFun {
   }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct FunctionCommand {
   /// `#[...]`-style attributes.
@@ -184,6 +186,7 @@ pub struct FunctionCommand {
   pub body: Vec<Stmt>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ClosureCommand {
   /// `#[...]`-style attributes.

@@ -360,15 +360,6 @@ async fn block_user(params: CallBackParams) -> CallbackReturn {
   Ok(Some(String::from(":ok:")))
 }
 
-#[derive(Queryable, Debug, Clone)]
-pub struct Storage {
-  pub id: i32,
-  pub datatype: i64,
-  pub dataid: Option<i64>,
-  pub data: String,
-  pub date: Option<std::time::SystemTime>,
-}
-
 #[command]
 async fn print_help(_: CallBackParams) -> CallbackReturn {
   let mut result =

@@ -12,7 +12,7 @@ impl Instance {
 
     let newuser: User = diesel::insert_into(users::table)
       .values(&new_user)
-      .get_result(&self.get_connection())
+      .get_result(&mut self.get_connection())
       .expect("Error saving new user");
     self.users.push(newuser);
   }
@@ -27,7 +27,7 @@ impl Instance {
   pub fn user_role_update(&mut self, discord_id: u64, new_role: Role) -> String {
     use super::schema::users::dsl::*;
 
-    let conn = self.get_connection();
+    let conn = &mut self.get_connection();
 
     let user: &mut User = match self.user_search_mut(discord_id) {
       Some(user) => user,
@@ -36,7 +36,7 @@ impl Instance {
 
     diesel::update(users.find(user.id))
       .set(role.eq(new_role.to_string()))
-      .get_result::<User>(&conn)
+      .get_result::<User>(conn)
       .expect("Diesel: Unable to save new role");
     user.role = new_role.to_string();
 
@@ -63,11 +63,11 @@ impl Instance {
       return Vec::new();
     }
 
-    let conn = self.get_connection();
+    let conn = &mut self.get_connection();
 
     let filter = messages.filter(id.eq_any(&messages_id)).or_filter(id.eq(0));
     diesel::delete(filter)
-      .execute(&conn)
+      .execute(conn)
       .expect("Diesel: Unable to delete messages");
     let previous_bottom_list: Vec<Message> = self
       .messages
@@ -75,42 +75,6 @@ impl Instance {
       .collect();
     previous_bottom_list
   }
-
-  // pub fn airtable_row_add(
-  //   &mut self,
-  //   aid: &str,
-  //   created_time: Option<std::time::SystemTime>,
-  //   content: &str,
-  // ) -> bool {
-  //   match self.airtable_row_search(aid.to_string()) {
-  //     Some(_) => false,
-  //     None => {
-  //       let new_row = NewAirtableRow {
-  //         aid: aid.to_string(),
-  //         content: content.to_string(),
-  //         created_time,
-  //       };
-
-  //       let new_row: AirtableRow = diesel::insert_into(airtable::table)
-  //         .values(&new_row)
-  //         .get_result(&self.get_connection())
-  //         .expect("Error saving new airtable_row");
-  //       self.airtable.push(new_row);
-  //       true
-  //     }
-  //   }
-  // }
-
-  // pub fn airtable_row_search(&self, aid: String) -> Option<&AirtableRow> {
-  //   for row in self.airtable.iter() {
-  //     if row.aid == aid {
-  //       return Some(row);
-  //     }
-  //   }
-  //   None
-  // }
-
-  // db_load! {airtable_load, AirtableRow, airtable}
 
   db_add! {project_add, NewProject, Project, projects}
 
@@ -141,8 +105,10 @@ impl Instance {
   ) -> Result<(&str, Option<Project>), Box<dyn Error + Send + Sync>> {
     use super::schema::projects::dsl::*;
 
+    let connection = &mut self.get_connection();
+
     if let Some((index, project)) = self.projects_search(p_channel_id as i64, DiscordIds::Channel) {
-      diesel::delete(projects.filter(id.eq(project.id))).execute(&self.get_connection())?;
+      diesel::delete(projects.filter(id.eq(project.id))).execute(connection)?;
       let project = self.projects.remove(index);
       return Ok((":ok:", Some(project)));
     }
@@ -162,7 +128,7 @@ impl Instance {
     p_actionchannel: Option<i64>,
     p_actionrole: Option<i64>,
   ) -> Result<(i32, Invite), Box<dyn Error + Send + Sync>> {
-    let connection = &self.get_connection();
+    let connection = &mut self.get_connection();
     if let Some(invite) = self.invite_search(&p_code) {
       use super::schema::invites::dsl::*;
       let updated: Invite = diesel::update(invites.filter(id.eq(invite.id)))
@@ -184,7 +150,7 @@ impl Instance {
       };
       let new_invite: Invite = diesel::insert_into(invites::table)
         .values(&new_invite)
-        .get_result(&self.get_connection())
+        .get_result(connection)
         .expect("Error saving new airtable_row");
       self.invites.push(new_invite.clone());
       Ok((0, new_invite))
@@ -215,11 +181,11 @@ impl Instance {
   pub fn storage_update(&mut self, storage_id: i32, new_data: &str) {
     use super::schema::storage::dsl::*;
 
-    let conn = self.get_connection();
+    let conn = &mut self.get_connection();
 
     let newstorage = diesel::update(storage.find(storage_id))
       .set(data.eq(new_data))
-      .get_result::<Storage>(&conn)
+      .get_result::<Storage>(conn)
       .expect("Diesel: Unable to update storage element");
     let _ = self.storage.extract_if(|s| s.id == storage_id);
     self.storage.push(newstorage);
@@ -231,11 +197,11 @@ impl Instance {
       return Vec::new();
     }
 
-    let conn = self.get_connection();
+    let conn = &mut self.get_connection();
 
     let filter = storage.filter(id.eq_any(&storage_id)).or_filter(id.eq(0));
     diesel::delete(filter)
-      .execute(&conn)
+      .execute(conn)
       .expect("Diesel: Unable to delete storage");
     let previous_bottom_list: Vec<Storage> = self
       .storage
@@ -250,11 +216,11 @@ impl Instance {
   pub fn event_delete(&mut self, event_id: i32) {
     use super::schema::events::dsl::*;
 
-    let conn = self.get_connection();
+    let conn = &mut self.get_connection();
 
     let filter = events.filter(id.eq(&event_id));
     diesel::delete(filter)
-      .execute(&conn)
+      .execute(conn)
       .expect("Diesel: Unable to delete storage");
     let event_pos = self.events.iter().position(|e| e.id == event_id);
     if let Some(pos) = event_pos {

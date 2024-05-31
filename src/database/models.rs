@@ -10,14 +10,14 @@ pub struct User {
 }
 
 #[derive(Insertable)]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct NewUser<'a> {
   pub discordid: i64,
   pub role: &'a str,
 }
 
 #[derive(Insertable, Queryable, Debug, Serialize, Clone)]
-#[table_name = "messages"]
+#[diesel(table_name = messages)]
 pub struct Message {
   pub id: i64,
   pub author: i64,
@@ -37,7 +37,7 @@ pub struct MessageEdit {
 }
 
 #[derive(Insertable, Debug, Serialize, Clone)]
-#[table_name = "messages_edits"]
+#[diesel(table_name = messages_edits)]
 pub struct NewMessageEdit {
   pub id: Option<i32>,
   pub author: i64,
@@ -55,22 +55,7 @@ pub enum Role {
   Admin,
 }
 
-#[derive(Queryable, Debug)]
-pub struct AirtableRow {
-  pub id: i32,
-  pub aid: String,
-  pub content: String,
-  pub created_time: Option<std::time::SystemTime>,
-}
-
-#[derive(Insertable, Debug)]
-#[table_name = "airtable"]
-pub struct NewAirtableRow {
-  pub aid: String,
-  pub content: String,
-  pub created_time: Option<std::time::SystemTime>,
-}
-
+#[allow(dead_code)]
 #[derive(Queryable, Debug)]
 pub struct Project {
   pub id: i32,
@@ -87,7 +72,7 @@ pub struct Project {
 }
 
 #[derive(Insertable, Debug)]
-#[table_name = "projects"]
+#[diesel(table_name = projects)]
 pub struct NewProject<'a> {
   pub message_id: i64,
   pub channel_id: i64,
@@ -110,7 +95,7 @@ pub struct Invite {
 }
 
 #[derive(Insertable, Debug)]
-#[table_name = "invites"]
+#[diesel(table_name = invites)]
 pub struct NewInvite {
   pub code: String,
   pub actionrole: Option<i64>,
@@ -118,6 +103,7 @@ pub struct NewInvite {
   pub used_count: i32,
 }
 
+#[allow(dead_code)]
 #[derive(Queryable, Debug, Clone)]
 pub struct Storage {
   pub id: i32,
@@ -128,7 +114,7 @@ pub struct Storage {
 }
 
 #[derive(Insertable, Debug)]
-#[table_name = "storage"]
+#[diesel(table_name = storage)]
 pub struct NewStorage<'a> {
   pub datatype: i64,
   pub dataid: Option<i64>,
@@ -146,7 +132,7 @@ pub struct Event {
 }
 
 #[derive(Insertable, Debug)]
-#[table_name = "events"]
+#[diesel(table_name = events)]
 pub struct NewEvent<'a> {
   pub author: i64,
   pub content: &'a str,
